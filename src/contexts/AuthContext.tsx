@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,9 +50,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (isRunningOnDeskThing) {
       console.log('AuthProvider: Running on DeskThing, using mock authentication');
-      // For DeskThing, we bypass Supabase auth entirely
       setUser(DESKTHING_USER);
-      setSession(null); // DeskThing doesn't need sessions
+      setSession(null);
       setLoading(false);
       return;
     }
@@ -63,8 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener for regular web usage
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id ? 'user logged in' : 'no user');
-        
+        console.log('[AuthProvider] onAuthStateChange event:', event, 'session:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -86,13 +83,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('AuthProvider: Getting initial session');
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error('Error getting initial session:', error);
+        console.error('[AuthProvider] Error getting initial session:', error);
       } else {
-        console.log('Initial session:', session?.user?.id ? 'user found' : 'no user');
+        console.log('[AuthProvider] Initial session:', !!session);
       }
-      
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
+    }).catch(err => {
+      console.error('[AuthProvider] Unhandled getSession error:', err);
       setLoading(false);
     });
 
