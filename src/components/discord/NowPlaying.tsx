@@ -16,6 +16,31 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   currentSong,
   isSpotifyConnected = false
 }) => {
+  // CSS for auto-scrolling text - moved to top to avoid re-creation
+  const scrollingStyles = `
+    .scrolling-text {
+      display: inline-block;
+      animation: scroll-left 15s linear infinite;
+    }
+    
+    .scrolling-text:hover {
+      animation-play-state: paused;
+    }
+    
+    @keyframes scroll-left {
+      0% {
+        transform: translateX(100%);
+      }
+      100% {
+        transform: translateX(-100%);
+      }
+    }
+    
+    .scrolling-text {
+      min-width: 100%;
+    }
+  `;
+
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const titleRef = useRef<HTMLDivElement>(null);
@@ -30,6 +55,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     isSpotifyConnected
   });
 
+  // Progress tracking - this can depend on currentSong since it needs timestamps
   useEffect(() => {
     if (!currentSong?.timestamps?.start || !currentSong?.timestamps?.end) {
       console.log('NowPlaying: No valid timestamps found');
@@ -62,7 +88,12 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     return () => clearInterval(interval);
   }, [currentSong]);
 
-  // Check if text overflows and needs scrolling
+  // Extract text values to use as dependencies
+  const titleText = currentSong?.details || 'Unknown Track';
+  const artistText = currentSong?.state || 'Unknown Artist';
+  const albumText = currentSong?.assets?.large_text || '';
+
+  // Check if text overflows and needs scrolling - only when text content changes
   useEffect(() => {
     const checkOverflow = () => {
       if (titleRef.current) {
@@ -88,7 +119,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     // Check overflow after render
     const timer = setTimeout(checkOverflow, 100);
     return () => clearTimeout(timer);
-  }, [currentSong]);
+  }, [titleText, artistText, albumText]); // Only run when actual text content changes
 
   const formatTime = (ms: number) => {
     const seconds = Math.floor(ms / 1000);
@@ -111,29 +142,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     <div className="relative w-full h-full rounded-lg overflow-hidden">
       {/* CSS for auto-scrolling text */}
       <style>
-        {`
-          .scrolling-text {
-            display: inline-block;
-            animation: scroll-left 15s linear infinite;
-          }
-          
-          .scrolling-text:hover {
-            animation-play-state: paused;
-          }
-          
-          @keyframes scroll-left {
-            0% {
-              transform: translateX(100%);
-            }
-            100% {
-              transform: translateX(-100%);
-            }
-          }
-          
-          .scrolling-text {
-            min-width: 100%;
-          }
-        `}
+        {scrollingStyles}
       </style>
 
       {/* Lighter Blurred Background */}
@@ -167,7 +176,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
                     ref={titleRef}
                     className="text-white font-bold text-3xl leading-tight whitespace-nowrap"
                   >
-                    {currentSong.details || 'Unknown Track'}
+                    {titleText}
                   </h3>
                 </div>
               </div>
@@ -179,20 +188,20 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
                     ref={artistRef}
                     className="text-gray-300 text-xl leading-tight whitespace-nowrap"
                   >
-                    {currentSong.state || 'Unknown Artist'}
+                    {artistText}
                   </p>
                 </div>
               </div>
               
               {/* Conditionally Scrolling Album */}
-              {currentSong.assets?.large_text && (
+              {albumText && (
                 <div className="h-6 overflow-hidden">
                   <div className={shouldScrollAlbum ? 'scrolling-text' : ''}>
                     <p 
                       ref={albumRef}
                       className="text-gray-400 text-lg leading-tight whitespace-nowrap"
                     >
-                      {currentSong.assets.large_text}
+                      {albumText}
                     </p>
                   </div>
                 </div>
