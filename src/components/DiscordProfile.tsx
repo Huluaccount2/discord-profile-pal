@@ -62,7 +62,7 @@ export const DiscordProfile = () => {
       name: "Spotify",
       type: 2,
       details: track.name,
-      state: `by ${track.artist}`,
+      state: `${track.artist}`,
       timestamps: {
         start: Math.floor(startTime),
         end: Math.floor(startTime + track.duration),
@@ -77,7 +77,7 @@ export const DiscordProfile = () => {
   }
 
   return (
-    <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-4 shadow-2xl h-full flex flex-col">
+    <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-2 shadow-2xl h-full flex flex-col">
       <WidgetHeader 
         currentTime={currentTime}
         refreshing={refreshing}
@@ -85,10 +85,10 @@ export const DiscordProfile = () => {
         hideRefreshButton={true}
       />
 
-      {/* Horizontal layout for Car Thing - larger profile, smaller music */}
-      <div className="flex-1 flex gap-6">
-        {/* Left side - Profile (expanded) */}
-        <div className="flex-shrink-0 w-[500px]">
+      {/* Car Thing optimized horizontal layout - compact profile, prominent music */}
+      <div className="flex-1 flex gap-3 min-h-0">
+        {/* Left side - Compact Profile for Car Thing */}
+        <div className="flex-shrink-0 w-[280px] min-h-0 overflow-hidden">
           <ProfileHeader 
             displayName={displayName}
             discriminator={discriminator}
@@ -101,7 +101,7 @@ export const DiscordProfile = () => {
           />
         </div>
 
-        {/* Right side - Music (compressed) */}
+        {/* Right side - Prominent Music Display for Car Thing */}
         <div className="flex-1 flex items-center min-w-0">
           {currentSong ? (
             <NowPlaying currentSong={currentSong} />

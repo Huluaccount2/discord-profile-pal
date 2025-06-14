@@ -57,8 +57,8 @@ export const ConnectionItem = ({ connection }: ConnectionItemProps) => {
   const colorClass = getConnectionColor(connection.type);
 
   return (
-    <div className="flex items-center gap-4 p-3 bg-gray-800/50 rounded-lg">
-      <div className={`w-10 h-10 ${colorClass} rounded-lg flex items-center justify-center p-2`}>
+    <div className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg">
+      <div className={`w-8 h-8 ${colorClass} rounded-lg flex items-center justify-center p-1.5`}>
         {logoUrl ? (
           <img
             src={logoUrl}
@@ -67,21 +67,21 @@ export const ConnectionItem = ({ connection }: ConnectionItemProps) => {
             style={{ filter: 'invert(1) brightness(1)' }}
           />
         ) : (
-          <span className="text-sm text-white font-bold">
+          <span className="text-xs text-white font-bold">
             {connection.type.charAt(0).toUpperCase()}
           </span>
         )}
       </div>
-      <div className="flex-1 space-y-1">
-        <div className="flex items-center gap-3">
-          <span className="text-base font-medium text-white capitalize">{connection.type}</span>
+      <div className="flex-1 space-y-0.5 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-white capitalize truncate">{connection.type}</span>
           {connection.verified && (
-            <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+            <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
               <span className="text-xs text-white">✓</span>
             </div>
           )}
         </div>
-        <span className="text-base text-gray-300 font-medium block">{connection.name}</span>
+        <span className="text-sm text-gray-300 font-medium block truncate">{connection.name}</span>
       </div>
     </div>
   );

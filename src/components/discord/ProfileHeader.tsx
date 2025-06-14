@@ -45,71 +45,72 @@ export const ProfileHeader = ({
   };
 
   return (
-    <div className="relative mb-6 h-full">
-      {/* Banner Background - Ends halfway through avatar like Discord */}
+    <div className="relative h-full overflow-hidden">
+      {/* Compact banner for Car Thing */}
       {bannerUrl && (
         <div 
-          className="absolute inset-0 h-32 rounded-lg bg-cover bg-center bg-no-repeat opacity-90"
+          className="absolute inset-0 h-20 rounded-lg bg-cover bg-center bg-no-repeat opacity-90"
           style={{ backgroundImage: `url(${bannerUrl})` }}
         />
       )}
       
-      {/* Lighter gradient overlay for better text readability */}
-      <div className="absolute inset-0 h-32 rounded-lg bg-gradient-to-b from-transparent to-gray-900/30" />
+      {/* Lighter gradient overlay */}
+      <div className="absolute inset-0 h-20 rounded-lg bg-gradient-to-b from-transparent to-gray-900/30" />
       
-      {/* Profile Content */}
-      <div className="relative flex flex-col pt-16">
-        {/* Avatar and Username Row - Avatar overlaps banner */}
-        <div className="flex items-start gap-4 mb-6">
-          <div className="relative -mt-8">
+      {/* Compact Profile Content for Car Thing */}
+      <div className="relative flex flex-col pt-8">
+        {/* Compact Avatar and Username Row */}
+        <div className="flex items-start gap-3 mb-3">
+          <div className="relative -mt-4">
             {avatarUrl ? (
               <img
                 src={avatarUrl}
                 alt={`${displayName}'s avatar`}
-                className="w-24 h-24 rounded-full ring-4 ring-gray-900 transition-transform hover:scale-105"
+                className="w-16 h-16 rounded-full ring-2 ring-gray-900 transition-transform hover:scale-105"
               />
             ) : (
-              <div className="w-24 h-24 rounded-full ring-4 ring-gray-900 bg-gray-600 flex items-center justify-center">
-                <User className="w-12 h-12 text-gray-400" />
+              <div className="w-16 h-16 rounded-full ring-2 ring-gray-900 bg-gray-600 flex items-center justify-center">
+                <User className="w-8 h-8 text-gray-400" />
               </div>
             )}
-            <div className={`absolute -bottom-1 -right-1 w-7 h-7 ${getStatusColor()} rounded-full border-3 border-gray-900`}></div>
+            <div className={`absolute -bottom-1 -right-1 w-5 h-5 ${getStatusColor()} rounded-full border-2 border-gray-900`}></div>
           </div>
           
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold text-white mb-2">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-bold text-white truncate">
               {displayName}
             </h2>
           </div>
         </div>
         
-        {/* Status Dot and Custom Status Row - Aligned to Left */}
-        <div className="flex items-center gap-3 mb-4">
-          {/* Just the status dot */}
-          <div className={`w-3 h-3 ${getStatusColor()} rounded-full`}></div>
+        {/* Compact Status Row */}
+        <div className="flex items-center gap-2 mb-3">
+          <div className={`w-2 h-2 ${getStatusColor()} rounded-full`}></div>
           
-          {/* Custom Status next to dot */}
+          {/* Compact Custom Status */}
           {customStatus?.text && (
-            <div className="inline-flex items-center gap-2 bg-gray-800 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-600 shadow-md">
+            <div className="inline-flex items-center gap-1 bg-gray-800 backdrop-blur-sm rounded-full px-2 py-1 border border-gray-600 shadow-md">
               {customStatus.emoji?.name && (
-                <span className="text-sm">
+                <span className="text-xs">
                   {customStatus.emoji.id ? 
                     <img 
                       src={`https://cdn.discordapp.com/emojis/${customStatus.emoji.id}.png`} 
                       alt={customStatus.emoji.name} 
-                      className="w-4 h-4 inline"
+                      className="w-3 h-3 inline"
                     /> : 
                     customStatus.emoji.name
                   }
                 </span>
               )}
-              <span className="text-sm text-gray-200 font-medium">{customStatus.text}</span>
+              <span className="text-xs text-gray-200 font-medium truncate max-w-[120px]">{customStatus.text}</span>
             </div>
           )}
         </div>
         
-        {/* Connections Section */}
-        <ConnectionsList connections={connections} />
+        {/* Compact Connections Section */}
+        <div className="flex-1 overflow-hidden">
+          <ConnectionsList connections={connections} />
+        </div>
       </div>
     </div>
   );

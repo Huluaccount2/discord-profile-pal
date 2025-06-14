@@ -39,24 +39,25 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-2">
-      <div className="w-full max-w-6xl h-[480px] flex flex-col">
-        {/* Header with logout button */}
-        <div className="flex justify-between items-center mb-3 px-2">
-          <h1 className="text-lg font-bold text-white">DesktThing</h1>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+      {/* Car Thing optimized layout - 800x480 */}
+      <div className="w-full h-screen max-w-[800px] max-h-[480px] mx-auto flex flex-col overflow-hidden">
+        {/* Compact header for Car Thing */}
+        <div className="flex justify-between items-center p-2 bg-gray-900/50 backdrop-blur-sm">
+          <h1 className="text-sm font-bold text-white">DesktThing</h1>
           <Button
             onClick={signOut}
             variant="outline"
             size="sm"
-            className="bg-gray-800/50 border-gray-700 text-gray-300 hover:bg-gray-700"
+            className="bg-gray-800/50 border-gray-700 text-gray-300 hover:bg-gray-700 text-xs px-2 py-1"
           >
-            <LogOut className="h-4 w-4 mr-2" />
+            <LogOut className="h-3 w-3 mr-1" />
             Sign Out
           </Button>
         </div>
         
-        {/* Main content area - horizontal layout */}
-        <div className="flex-1">
+        {/* Main content optimized for Car Thing resolution */}
+        <div className="flex-1 p-2">
           <DiscordProfile />
         </div>
       </div>
