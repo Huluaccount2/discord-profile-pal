@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useDeskThing } from '@/contexts/DeskThingContext';
 
 interface AuthContextType {
   user: User | null;
@@ -20,15 +21,38 @@ export const useAuth = () => {
   return context;
 };
 
+// Mock user for DeskThing
+const DESKTHING_USER = {
+  id: 'deskthing-user',
+  email: 'deskthing@local.app',
+  user_metadata: {
+    username: 'DeskThing User'
+  }
+} as User;
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // We can't use useDeskThing hook here due to context dependency order
+  // So we'll check for DeskThing environment directly
+  const isRunningOnDeskThing = typeof window !== 'undefined' && 
+                               typeof (window as any).DeskThing !== 'undefined';
 
   useEffect(() => {
-    console.log('AuthProvider: Setting up auth state listener');
+    if (isRunningOnDeskThing) {
+      console.log('AuthProvider: Running on DeskThing, using mock authentication');
+      // For DeskThing, we bypass Supabase auth entirely
+      setUser(DESKTHING_USER);
+      setSession(null); // DeskThing doesn't need sessions
+      setLoading(false);
+      return;
+    }
+
+    console.log('AuthProvider: Setting up Supabase auth state listener');
     
-    // Set up auth state listener
+    // Set up auth state listener for regular web usage
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id ? 'user logged in' : 'no user');
@@ -68,9 +92,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('AuthProvider: Cleaning up auth listener');
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isRunningOnDeskThing]);
 
   const signOut = async () => {
+    if (isRunningOnDeskThing) {
+      console.log('AuthProvider: Sign out not applicable for DeskThing');
+      return;
+    }
+
     try {
       console.log('Signing out user...');
       const { error } = await supabase.auth.signOut();

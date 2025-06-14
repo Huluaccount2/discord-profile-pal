@@ -19,21 +19,12 @@ const Index = () => {
     }
   }, [isRunningOnDeskThing, sendLog]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
-        <div className="text-white">Loading...</div>
-      </div>
-    );
-  }
-
-  // If running on DeskThing, skip authentication and show the profile directly
+  // If running on DeskThing, skip all authentication and show the profile directly
   if (isRunningOnDeskThing) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
-        {/* Car Thing optimized layout - 800x480 full width */}
+        {/* DeskThing optimized layout - 800x480 full width, no authentication needed */}
         <div className="w-full h-screen max-w-[800px] max-h-[480px] mx-auto flex flex-col overflow-hidden">
-          {/* Main content optimized for Car Thing resolution - no padding */}
           <div className="flex-1">
             <DiscordProfile />
           </div>
@@ -42,7 +33,15 @@ const Index = () => {
     );
   }
 
-  // Regular web app flow - require authentication
+  // Regular web app flow - require authentication for browser users
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
@@ -67,9 +66,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
-      {/* Car Thing optimized layout - 800x480 full width */}
+      {/* Regular web layout */}
       <div className="w-full h-screen max-w-[800px] max-h-[480px] mx-auto flex flex-col overflow-hidden">
-        {/* Main content optimized for Car Thing resolution - no padding */}
         <div className="flex-1">
           <DiscordProfile />
         </div>
