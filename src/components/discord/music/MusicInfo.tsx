@@ -58,18 +58,14 @@ export const MusicInfo: React.FC<MusicInfoProps> = ({
     <div className="mb-6">
       <h3 
         ref={titleRef}
-        className={`font-bold text-3xl mb-2 transition-opacity ${
-          !isPlaying ? 'text-gray-300' : 'text-white'
-        } ${titleOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
+        className={`font-bold text-3xl mb-2 transition-opacity text-white ${titleOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
       >
         {title || 'Unknown Track'}
       </h3>
       
       <p 
         ref={artistRef}
-        className={`text-xl mb-2 transition-opacity ${
-          !isPlaying ? 'text-gray-400' : 'text-gray-300'
-        } ${artistOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
+        className={`text-xl mb-2 transition-opacity text-gray-300 ${artistOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
       >
         {cleanArtistName(artist)}
       </p>
@@ -77,9 +73,7 @@ export const MusicInfo: React.FC<MusicInfoProps> = ({
       {album && (
         <p 
           ref={albumRef}
-          className={`text-lg transition-opacity ${
-            !isPlaying ? 'text-gray-500' : 'text-gray-400'
-          } ${albumOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
+          className={`text-lg transition-opacity text-gray-400 ${albumOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
         >
           {album}
         </p>
