@@ -1,4 +1,3 @@
-
 import { Music, Headphones, Play, Pause, SkipBack, SkipForward } from "lucide-react";
 import { DiscordActivity } from "@/types/discord";
 import { Progress } from "@/components/ui/progress";
@@ -7,9 +6,21 @@ import { useState, useEffect } from "react";
 
 interface NowPlayingProps {
   currentSong: DiscordActivity;
+  onPlay?: () => void;
+  onPause?: () => void;
+  onNext?: () => void;
+  onPrevious?: () => void;
+  isSpotifyConnected?: boolean;
 }
 
-export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
+export const NowPlaying = ({ 
+  currentSong, 
+  onPlay, 
+  onPause, 
+  onNext, 
+  onPrevious,
+  isSpotifyConnected = false 
+}: NowPlayingProps) => {
   const [progress, setProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
 
@@ -31,19 +42,29 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
   }, [currentSong]);
 
   const handlePlayPause = () => {
+    if (isSpotifyConnected) {
+      if (isPlaying) {
+        onPause?.();
+      } else {
+        onPlay?.();
+      }
+    }
     setIsPlaying(!isPlaying);
     console.log(isPlaying ? 'Pausing' : 'Playing');
-    // In a real implementation, this would control the actual playback
   };
 
   const handlePrevious = () => {
+    if (isSpotifyConnected) {
+      onPrevious?.();
+    }
     console.log('Previous track');
-    // In a real implementation, this would skip to previous track
   };
 
   const handleNext = () => {
+    if (isSpotifyConnected) {
+      onNext?.();
+    }
     console.log('Next track');
-    // In a real implementation, this would skip to next track
   };
 
   console.log('NowPlaying component received currentSong:', currentSong);
@@ -51,6 +72,27 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
 
   return (
     <div className="relative bg-gradient-to-r from-green-900/20 to-green-800/20 border border-green-700/30 rounded-lg p-4 w-full h-full flex flex-col overflow-hidden">
+      <style>
+        {`
+          @keyframes scroll-text {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+          }
+          .scroll-text {
+            display: inline-block;
+            animation: scroll-text 10s linear infinite;
+          }
+          .scroll-container {
+            white-space: nowrap;
+            overflow: hidden;
+            position: relative;
+          }
+          .scroll-container:hover .scroll-text {
+            animation-play-state: paused;
+          }
+        `}
+      </style>
+
       {/* Blurred background */}
       {currentSong.assets?.large_image && (
         <div 
@@ -94,13 +136,25 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
           
           <div className="space-y-2">
             {currentSong.details && (
-              <p className="text-white font-semibold text-2xl truncate">{currentSong.details}</p>
+              <div className="scroll-container">
+                <p className={`text-white font-semibold text-2xl ${currentSong.details.length > 30 ? 'scroll-text' : ''}`}>
+                  {currentSong.details}
+                </p>
+              </div>
             )}
             {currentSong.state && (
-              <p className="text-gray-400 text-xl truncate">{currentSong.state}</p>
+              <div className="scroll-container">
+                <p className={`text-gray-400 text-xl ${currentSong.state.length > 35 ? 'scroll-text' : ''}`}>
+                  {currentSong.state}
+                </p>
+              </div>
             )}
             {currentSong.assets?.large_text && (
-              <p className="text-gray-500 text-lg truncate">{currentSong.assets.large_text}</p>
+              <div className="scroll-container">
+                <p className={`text-gray-500 text-lg ${currentSong.assets.large_text.length > 40 ? 'scroll-text' : ''}`}>
+                  {currentSong.assets.large_text}
+                </p>
+              </div>
             )}
           </div>
         </div>
@@ -114,8 +168,9 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="text-green-400 hover:text-green-300 hover:bg-green-900/20 transition-all duration-200 hover:scale-110"
+            className={`text-green-400 hover:text-green-300 hover:bg-green-900/20 transition-all duration-200 hover:scale-110 ${!isSpotifyConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={handlePrevious}
+            disabled={!isSpotifyConnected}
           >
             <SkipBack className="w-5 h-5" />
           </Button>
@@ -123,8 +178,9 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="text-green-400 hover:text-green-300 hover:bg-green-900/20 transition-all duration-200 hover:scale-110"
+            className={`text-green-400 hover:text-green-300 hover:bg-green-900/20 transition-all duration-200 hover:scale-110 ${!isSpotifyConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={handlePlayPause}
+            disabled={!isSpotifyConnected}
           >
             {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
           </Button>
@@ -132,8 +188,9 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="text-green-400 hover:text-green-300 hover:bg-green-900/20 transition-all duration-200 hover:scale-110"
+            className={`text-green-400 hover:text-green-300 hover:bg-green-900/20 transition-all duration-200 hover:scale-110 ${!isSpotifyConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={handleNext}
+            disabled={!isSpotifyConnected}
           >
             <SkipForward className="w-5 h-5" />
           </Button>

@@ -73,6 +73,34 @@ export const useSpotify = (userId: string | undefined) => {
     }
   };
 
+  const controlPlayback = async (action: 'play' | 'pause' | 'next' | 'previous') => {
+    if (!userId || !isConnected) return;
+
+    try {
+      const { error } = await supabase.functions.invoke('spotify-auth', {
+        body: { action },
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error(`Error controlling playback (${action}):`, error);
+        return;
+      }
+
+      // Refresh track data after control action
+      setTimeout(fetchCurrentTrack, 500);
+    } catch (error) {
+      console.error(`Error controlling playback (${action}):`, error);
+    }
+  };
+
+  const play = () => controlPlayback('play');
+  const pause = () => controlPlayback('pause');
+  const nextTrack = () => controlPlayback('next');
+  const previousTrack = () => controlPlayback('previous');
+
   useEffect(() => {
     if (userId) {
       fetchCurrentTrack();
@@ -93,5 +121,9 @@ export const useSpotify = (userId: string | undefined) => {
     isConnected,
     connectSpotify,
     fetchCurrentTrack,
+    play,
+    pause,
+    nextTrack,
+    previousTrack,
   };
 };

@@ -15,7 +15,15 @@ export const DiscordProfile = () => {
   const { user } = useAuth();
   const { profile, loading } = useProfile(user?.id);
   const { discordData, refreshing, fetchDiscordData } = useDiscordData(user?.id, profile?.discord_id);
-  const { spotifyData, isConnected, connectSpotify } = useSpotify(user?.id);
+  const { 
+    spotifyData, 
+    isConnected, 
+    connectSpotify, 
+    play, 
+    pause, 
+    nextTrack, 
+    previousTrack 
+  } = useSpotify(user?.id);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -96,7 +104,14 @@ export const DiscordProfile = () => {
         {/* Right side - Prominent Music Display for Car Thing */}
         <div className="flex-1 flex items-center min-w-0">
           {currentSong ? (
-            <NowPlaying currentSong={currentSong} />
+            <NowPlaying 
+              currentSong={currentSong}
+              onPlay={play}
+              onPause={pause}
+              onNext={nextTrack}
+              onPrevious={previousTrack}
+              isSpotifyConnected={isConnected}
+            />
           ) : (
             <EmptyMusicState 
               isConnected={isConnected}
