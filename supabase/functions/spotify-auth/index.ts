@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -51,9 +52,10 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Invalid user token');
     }
 
-    // Parse request body to get action
+    // Parse request body to get action and frontend origin
     const body = await req.json().catch(() => ({}));
     const action = body.action;
+    const frontendOrigin = body.frontendOrigin || 'http://localhost:3000'; // fallback for development
 
     // Helper function to get and refresh access token
     const getValidAccessToken = async () => {
@@ -117,7 +119,7 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error('Spotify client ID not configured');
       }
 
-      const redirectUri = `${new URL(req.url).origin}/auth/spotify/callback`;
+      const redirectUri = `${frontendOrigin}/auth/spotify/callback`;
       const scopes = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
       const state = user.id; // Use user ID as state for security
 
@@ -149,7 +151,7 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error('Spotify credentials not configured');
       }
 
-      const redirectUri = `${new URL(req.url).origin}/auth/spotify/callback`;
+      const redirectUri = `${frontendOrigin}/auth/spotify/callback`;
 
       const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',

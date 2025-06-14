@@ -47,7 +47,8 @@ const SpotifyCallback = () => {
           body: { 
             action: 'exchange-code',
             code,
-            state
+            state,
+            frontendOrigin: window.location.origin
           },
           headers: {
             Authorization: `Bearer ${session.data.session.access_token}`,

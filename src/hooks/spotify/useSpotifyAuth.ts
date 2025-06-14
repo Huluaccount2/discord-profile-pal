@@ -24,7 +24,9 @@ export const useSpotifyAuth = (userId: string | undefined) => {
       }
 
       const { data, error } = await supabase.functions.invoke('spotify-auth', {
-        body: {},
+        body: { 
+          frontendOrigin: window.location.origin 
+        },
         headers: {
           Authorization: `Bearer ${session.data.session.access_token}`,
         },
