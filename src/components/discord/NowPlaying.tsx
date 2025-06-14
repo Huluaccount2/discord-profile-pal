@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -10,11 +9,13 @@ interface NowPlayingProps {
   onNext?: () => void;
   onPrevious?: () => void;
   isSpotifyConnected?: boolean;
+  spotifyData?: any;
 }
 
 export const NowPlaying: React.FC<NowPlayingProps> = ({
   currentSong,
-  isSpotifyConnected = false
+  isSpotifyConnected = false,
+  spotifyData
 }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -28,7 +29,8 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 
   console.log('NowPlaying: Props received:', {
     currentSong: currentSong ? 'present' : 'null',
-    isSpotifyConnected
+    isSpotifyConnected,
+    spotifyData: spotifyData ? 'present' : 'null'
   });
 
   useEffect(() => {
@@ -46,18 +48,33 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     const updateProgress = () => {
       const now = Date.now();
       const elapsed = now - startTime;
-      const currentPlayingState = elapsed >= 0 && elapsed <= duration;
       
-      setCurrentTime(Math.max(0, Math.min(elapsed, duration)));
-      setIsPlaying(currentPlayingState);
+      // For Spotify OAuth integration, use the actual playing state
+      if (isSpotifyConnected && currentSong.name === "Spotify" && spotifyData) {
+        console.log('NowPlaying: Using Spotify OAuth state:', spotifyData.isPlaying);
+        setIsPlaying(spotifyData.isPlaying);
+        if (spotifyData.isPlaying && spotifyData.track) {
+          // Use Spotify's actual progress
+          setCurrentTime(spotifyData.track.progress);
+        }
+      } else {
+        // For Discord activities, calculate based on timestamps
+        const currentPlayingState = elapsed >= 0 && elapsed <= duration;
+        setCurrentTime(Math.max(0, Math.min(elapsed, duration)));
+        setIsPlaying(currentPlayingState);
+      }
     };
 
     updateProgress();
     
-    // Only update progress if the song is playing (for Spotify-connected songs)
-    // For Discord activities, always update since we don't have real-time play/pause state
-    const shouldUpdateProgress = !isSpotifyConnected || 
-      (isSpotifyConnected && currentSong.name === "Spotify" && isPlaying);
+    // Only update progress if:
+    // 1. For Spotify OAuth: when actually playing
+    // 2. For Discord activities: always update (we don't have real-time state)
+    const shouldUpdateProgress = 
+      (isSpotifyConnected && currentSong.name === "Spotify" && spotifyData?.isPlaying) ||
+      (!isSpotifyConnected || currentSong.name !== "Spotify");
+    
+    console.log('NowPlaying: Should update progress:', shouldUpdateProgress);
     
     const interval = shouldUpdateProgress ? setInterval(updateProgress, 1000) : null;
 
@@ -66,7 +83,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
         clearInterval(interval);
       }
     };
-  }, [currentSong, isSpotifyConnected, isPlaying]);
+  }, [currentSong, isSpotifyConnected, spotifyData]);
 
   // Check for text overflow and determine if we need multiple lines
   useEffect(() => {
@@ -106,6 +123,13 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  // Helper function to clean artist name
+  const cleanArtistName = (artistName: string) => {
+    if (!artistName) return 'Unknown Artist';
+    // Remove "by " prefix if it exists (case insensitive)
+    return artistName.replace(/^by\s+/i, '');
+  };
+
   if (!currentSong) {
     console.log('NowPlaying: No current song, not rendering');
     return null;
@@ -114,7 +138,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
-  console.log('NowPlaying: Rendering with progress:', progress, 'isSpotifyConnected:', isSpotifyConnected);
+  console.log('NowPlaying: Rendering with progress:', progress, 'isPlaying:', isPlaying, 'isSpotifyConnected:', isSpotifyConnected);
 
   return (
     <div className="relative w-full h-full rounded-lg overflow-hidden">
@@ -152,14 +176,14 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
                 {currentSong.details || 'Unknown Track'}
               </h3>
               
-              {/* Artist - with overflow handling, removed "by" prefix */}
+              {/* Artist - with overflow handling, cleaned of "by" prefix */}
               <p 
                 ref={artistRef}
                 className={`text-gray-300 text-xl mb-2 ${
                   artistOverflows ? 'whitespace-normal break-words' : 'truncate'
                 }`}
               >
-                {currentSong.state || 'Unknown Artist'}
+                {cleanArtistName(currentSong.state)}
               </p>
               
               {/* Album - with overflow handling */}

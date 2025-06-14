@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -71,7 +70,7 @@ export const DiscordProfile = () => {
       name: "Spotify",
       type: 2,
       details: track.name,
-      state: `${track.artist}`,
+      state: track.artist,
       timestamps: {
         start: Math.floor(startTime),
         end: Math.floor(startTime + track.duration),
@@ -117,6 +116,7 @@ export const DiscordProfile = () => {
             <NowPlaying 
               currentSong={currentSong}
               isSpotifyConnected={isConnected}
+              spotifyData={spotifyData}
             />
           ) : (
             <EmptyMusicState 
