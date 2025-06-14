@@ -67,43 +67,55 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   console.log('NowPlaying: Rendering with progress:', progress, 'isSpotifyConnected:', isSpotifyConnected);
 
   return (
-    <Card className="bg-gray-800/50 border-gray-700/50 p-4 w-full">
-      <div className="flex items-center space-x-4">
-        {/* Album Art */}
-        <div className="flex-shrink-0">
-          <img
-            src={currentSong.assets?.large_image || '/placeholder.svg'}
-            alt={currentSong.assets?.large_text || 'Album Art'}
-            className="w-16 h-16 rounded-lg object-cover"
-          />
-        </div>
-
-        {/* Song Info */}
-        <div className="flex-1 min-w-0">
-          <div className="mb-2">
-            <h3 className="text-white font-semibold text-lg truncate">
-              {currentSong.details || 'Unknown Track'}
-            </h3>
-            <p className="text-gray-400 text-sm truncate">
-              {currentSong.state || 'Unknown Artist'}
-            </p>
-            {currentSong.assets?.large_text && (
-              <p className="text-gray-500 text-xs truncate">
-                {currentSong.assets.large_text}
-              </p>
-            )}
+    <div className="relative w-full h-full rounded-lg overflow-hidden">
+      {/* 90% Blurred Background */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center filter blur-sm"
+        style={{ 
+          backgroundImage: `url(${currentSong.assets?.large_image || '/placeholder.svg'})`,
+          filter: 'blur(20px) brightness(0.3)'
+        }}
+      />
+      
+      {/* Content overlay */}
+      <Card className="relative bg-black/50 backdrop-blur-sm border-gray-700/50 p-8 w-full h-full flex items-center">
+        <div className="flex items-center space-x-8 w-full">
+          {/* Large Album Art */}
+          <div className="flex-shrink-0">
+            <img
+              src={currentSong.assets?.large_image || '/placeholder.svg'}
+              alt={currentSong.assets?.large_text || 'Album Art'}
+              className="w-32 h-32 rounded-xl object-cover shadow-2xl"
+            />
           </div>
 
-          {/* Progress Bar */}
-          <div className="mb-2">
-            <Progress value={progress} className="h-2" />
-            <div className="flex justify-between text-xs text-gray-400 mt-1">
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
+          {/* Song Info */}
+          <div className="flex-1 min-w-0">
+            <div className="mb-6">
+              <h3 className="text-white font-bold text-3xl mb-2 truncate">
+                {currentSong.details || 'Unknown Track'}
+              </h3>
+              <p className="text-gray-300 text-xl mb-2 truncate">
+                {currentSong.state || 'Unknown Artist'}
+              </p>
+              {currentSong.assets?.large_text && (
+                <p className="text-gray-400 text-lg truncate">
+                  {currentSong.assets.large_text}
+                </p>
+              )}
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mb-4">
+              <Progress value={progress} className="h-3 mb-3" />
+              <div className="flex justify-between text-sm text-gray-300">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </div>
   );
 };
