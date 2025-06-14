@@ -1,3 +1,4 @@
+
 import { DeskThing } from 'deskthing-client';
 
 export class DeskThingIntegration {
@@ -6,7 +7,7 @@ export class DeskThingIntegration {
   private isConnected = false;
 
   private constructor() {
-    // Initialize DeskThing - it's likely a singleton or static object
+    // Initialize DeskThing - it's a static object
     this.deskThing = DeskThing;
     this.setupEventListeners();
   }
@@ -72,7 +73,7 @@ export class DeskThingIntegration {
       const profileData = await this.getCurrentProfileData();
       this.deskThing.send({
         type: 'discord-profile',
-        data: profileData
+        payload: profileData
       });
     } catch (error) {
       console.error('DeskThing: Error sending Discord profile', error);
@@ -85,7 +86,7 @@ export class DeskThingIntegration {
       const spotifyData = await this.getCurrentSpotifyData();
       this.deskThing.send({
         type: 'spotify-status',
-        data: spotifyData
+        payload: spotifyData
       });
     } catch (error) {
       console.error('DeskThing: Error sending Spotify status', error);
@@ -112,34 +113,44 @@ export class DeskThingIntegration {
   }
 
   public sendLog(level: 'info' | 'warn' | 'error', message: string, data?: any) {
-    if (this.deskThing.sendLog) {
-      this.deskThing.sendLog({
-        level,
-        message,
-        data: data ? JSON.stringify(data) : undefined
+    // Try to use the logging system if available
+    try {
+      this.deskThing.send({
+        type: 'log',
+        payload: {
+          level,
+          message,
+          data: data ? JSON.stringify(data) : undefined
+        }
       });
-    } else {
+    } catch (error) {
       console.log(`DeskThing Log [${level}]: ${message}`, data);
     }
   }
 
   public sendError(error: Error, context?: string) {
-    if (this.deskThing.sendError) {
-      this.deskThing.sendError({
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-        context
+    try {
+      this.deskThing.send({
+        type: 'error',
+        payload: {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+          context
+        }
       });
-    } else {
+    } catch (err) {
       console.error('DeskThing Error:', error, context);
     }
   }
 
   public updateSettings(settings: Record<string, any>) {
-    if (this.deskThing.sendSettings) {
-      this.deskThing.sendSettings(settings);
-    } else {
+    try {
+      this.deskThing.send({
+        type: 'settings',
+        payload: settings
+      });
+    } catch (error) {
       console.log('DeskThing: Settings update requested', settings);
     }
   }
@@ -157,7 +168,8 @@ export class DeskThingIntegration {
     if (this.isRunningOnDeskThing()) {
       console.log('DeskThing: Initializing DeskThing integration');
       try {
-        if (this.deskThing.start) {
+        // Try to start the DeskThing connection
+        if (typeof this.deskThing.start === 'function') {
           await this.deskThing.start();
         }
         this.sendLog('info', 'Discord Profile Pal started successfully');
