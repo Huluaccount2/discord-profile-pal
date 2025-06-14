@@ -33,6 +33,9 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     message: string;
     server: string;
     channel: string;
+    hasImage?: boolean;
+    hasGif?: boolean;
+    hasVoiceMessage?: boolean;
   }>({
     avatarUrl: "",
     username: "",
@@ -41,14 +44,18 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     channel: "",
   });
 
-  // DEMO ONLY: Remove later. Demo notification for testing.
-  const handleShowDemoNotification = () => {
+  // DEMO ONLY: Simple test button to launch a sample notification. Remove for production.
+  const handleShowDemoNotification = (variant: "text" | "image" | "gif" | "voice" = "text") => {
     setNotificationData({
       avatarUrl: "https://randomuser.me/api/portraits/men/32.jpg",
       username: "Alex McLean",
-      message: "Hey @you, let's finish the playlist collab!",
-      server: "Chill Hub",
-      channel: "music-chat",
+      message: variant === "text"
+        ? "Hey @you! Let's finish the playlist collab soon. Did you check all 4 songs I posted in #music-collab? DM me 😁\nExtra: with\nNewlines\nto test.",
+        server: "Chill Hub",
+        channel: "music-chat",
+        hasImage: variant === "image",
+        hasGif: variant === "gif",
+        hasVoiceMessage: variant === "voice",
     });
     setNotificationOpen(true);
   };
@@ -67,56 +74,77 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     onProgressUpdate: handleProgressUpdate
   });
 
-  if (!currentSong) {
-    return null;
-  }
+  if (!currentSong) return null;
 
   const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  // Add top padding to push player content down when notification appears
+  const playerSectionPaddingTop = notificationOpen ? 74 : 0;
+
   try {
     return (
       <div className="relative w-full h-full rounded-lg overflow-hidden">
-        {/* --- Notification appears at the very TOP of the player --- */}
         <PlayerNotification
           avatarUrl={notificationData.avatarUrl}
           username={notificationData.username}
           message={notificationData.message}
           server={notificationData.server}
           channel={notificationData.channel}
+          hasImage={notificationData.hasImage}
+          hasGif={notificationData.hasGif}
+          hasVoiceMessage={notificationData.hasVoiceMessage}
           open={notificationOpen}
           onClose={handleNotificationClose}
         />
-        {/* DEMO button - for testing the popup visually; remove when live */}
-        <button
-          onClick={handleShowDemoNotification}
-          className="absolute top-2 right-2 z-30 px-2 py-1 text-xs rounded bg-white bg-opacity-30 text-black font-bold shadow hover:bg-opacity-40 select-none"
-          style={{ pointerEvents: "auto" }}
-        >
-          Demo Notification
-        </button>
+        {/* Demo Notification Buttons below - REMOVE in production */}
+        <div className="absolute top-2 left-1/2 z-30 -translate-x-1/2 flex gap-1 pointer-events-auto">
+          <button
+            onClick={() => handleShowDemoNotification("text")}
+            className="px-2 py-1 text-xs rounded bg-white bg-opacity-20 text-black font-bold shadow hover:bg-opacity-30 select-none"
+            aria-label="Show mention popup (text)"
+          >Demo Text</button>
+          <button
+            onClick={() => handleShowDemoNotification("image")}
+            className="px-2 py-1 text-xs rounded bg-green-100/70 text-green-950 font-bold shadow hover:bg-green-100 select-none"
+            aria-label="Show mention popup (image)"
+          >Demo Image</button>
+          <button
+            onClick={() => handleShowDemoNotification("gif")}
+            className="px-2 py-1 text-xs rounded bg-blue-100/80 text-blue-950 font-bold shadow hover:bg-blue-100 select-none"
+            aria-label="Show mention popup (gif)"
+          >Demo GIF</button>
+          <button
+            onClick={() => handleShowDemoNotification("voice")}
+            className="px-2 py-1 text-xs rounded bg-violet-100/80 text-violet-950 font-bold shadow hover:bg-violet-100 select-none"
+            aria-label="Show mention popup (voice)"
+          >Demo Voice</button>
+        </div>
         <div 
           className="absolute inset-0 bg-cover bg-center filter blur-sm"
-          style={{ 
+          style={{
             backgroundImage: `url(${currentSong.assets?.large_image || '/placeholder.svg'})`,
             filter: 'blur(20px) brightness(0.6)'
           }}
         />
-        <Card className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-8 w-full h-full flex items-center">
+        <Card
+          className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-8 w-full h-full flex items-center"
+          style={{ paddingTop: playerSectionPaddingTop, transition: 'padding-top 0.33s cubic-bezier(0.34,1.56,0.64,1)' }}
+        >
           <div className="flex items-center space-x-8 w-full">
-            <MusicArtwork 
+            <MusicArtwork
               imageUrl={currentSong.assets?.large_image}
               altText={currentSong.assets?.large_text}
               isPlaying={isPlaying}
             />
             <div className="flex-1 min-w-0">
-              <MusicInfo 
+              <MusicInfo
                 title={currentSong.details}
                 artist={currentSong.state}
                 album={currentSong.assets?.large_text}
                 isPlaying={isPlaying}
               />
-              <MusicProgressBar 
+              <MusicProgressBar
                 currentTime={currentTime}
                 duration={duration}
                 progress={progress}
