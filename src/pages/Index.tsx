@@ -15,9 +15,9 @@ const Index = () => {
 
   useEffect(() => {
     if (isRunningOnDeskThing) {
-      sendLog('info', 'Discord Profile Pal loaded on DeskThing', { userId: user?.id });
+      sendLog('info', 'Discord Profile Pal loaded on DeskThing');
     }
-  }, [user, isRunningOnDeskThing, sendLog]);
+  }, [isRunningOnDeskThing, sendLog]);
 
   if (loading) {
     return (
@@ -27,6 +27,22 @@ const Index = () => {
     );
   }
 
+  // If running on DeskThing, skip authentication and show the profile directly
+  if (isRunningOnDeskThing) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+        {/* Car Thing optimized layout - 800x480 full width */}
+        <div className="w-full h-screen max-w-[800px] max-h-[480px] mx-auto flex flex-col overflow-hidden">
+          {/* Main content optimized for Car Thing resolution - no padding */}
+          <div className="flex-1">
+            <DiscordProfile />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Regular web app flow - require authentication
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
@@ -35,10 +51,7 @@ const Index = () => {
             <User className="h-16 w-16 text-blue-400 mx-auto" />
             <h1 className="text-2xl font-bold text-white">Welcome</h1>
             <p className="text-gray-400">
-              {isRunningOnDeskThing ? 
-                "Sign in to view your Discord profile on your Car Thing" : 
-                "Sign in to view your Discord profile and status"
-              }
+              Sign in to view your Discord profile and status
             </p>
             <Button 
               onClick={() => navigate('/auth')}

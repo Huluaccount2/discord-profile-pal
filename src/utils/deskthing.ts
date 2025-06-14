@@ -7,8 +7,8 @@ export class DeskThingIntegration {
   private isConnected = false;
 
   private constructor() {
-    // Initialize DeskThing directly instead of using getInstance
-    this.deskThing = new DeskThing();
+    // Initialize DeskThing using the static getInstance method
+    this.deskThing = DeskThing.getInstance();
     this.setupEventListeners();
   }
 
