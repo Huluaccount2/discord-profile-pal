@@ -40,10 +40,10 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
-      {/* Car Thing optimized layout - 800x480 */}
+      {/* Car Thing optimized layout - 800x480 full width */}
       <div className="w-full h-screen max-w-[800px] max-h-[480px] mx-auto flex flex-col overflow-hidden">
-        {/* Main content optimized for Car Thing resolution */}
-        <div className="flex-1 p-2">
+        {/* Main content optimized for Car Thing resolution - no padding */}
+        <div className="flex-1">
           <DiscordProfile />
         </div>
       </div>

@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -77,16 +76,9 @@ export const DiscordProfile = () => {
   }
 
   return (
-    <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-2 shadow-2xl h-full flex flex-col">
-      <WidgetHeader 
-        currentTime={currentTime}
-        refreshing={refreshing}
-        onRefresh={() => fetchDiscordData()}
-        hideRefreshButton={true}
-      />
-
+    <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 shadow-2xl h-full flex flex-col rounded-none border-0">
       {/* Car Thing optimized horizontal layout - compact profile, prominent music */}
-      <div className="flex-1 flex gap-3 min-h-0">
+      <div className="flex-1 flex gap-3 min-h-0 p-3">
         {/* Left side - Compact Profile for Car Thing */}
         <div className="flex-shrink-0 w-[280px] min-h-0 overflow-hidden">
           <ProfileHeader 
