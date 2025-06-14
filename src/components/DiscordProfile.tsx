@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -110,24 +109,25 @@ export const DiscordProfile = () => {
     const customStatus = discordData?.custom_status || null;
     const connections = discordData?.connections || [];
 
-    // Decide what song to display:
-    // 1. If Spotify is connected, show currentSong if available;
-    // 2. If currentSong is null but isConnected=true and we have lastKnownSong, show lastKnownSong even if paused;
-    // 3. Only show EmptyMusicState's connect UI if truly not connected and no lastKnownSong.
+    // New logic for song display and fallback:
+    // If connected, always show the last known song if available, even if paused.
+    // Only show the EmptyMusicState "connect" UI if NOT connected and NO last known song.
     let songToDisplay = currentSong;
-    const shouldShowLastKnownSong = isConnected && !currentSong && lastKnownSong;
-    if (!songToDisplay && shouldShowLastKnownSong) {
+    if (!songToDisplay && lastKnownSong) {
+      // Prefer to always display the last known song if available (even if paused)
       songToDisplay = lastKnownSong;
     }
 
+    const shouldShowConnectPrompt = !isConnected && !songToDisplay;
+
     console.log('DiscordProfile: Final songToDisplay:', songToDisplay);
-    console.log('DiscordProfile: About to render main component');
+    console.log('DiscordProfile: Show connect prompt?', shouldShowConnectPrompt);
 
     return (
       <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 shadow-2xl h-full flex flex-col rounded-none border-0">
         {/* Car Thing optimized horizontal layout - compact profile, prominent music */}
         <div className="flex-1 flex gap-3 min-h-0 p-3">
-          {/* Left side - Compact Profile for Car Thing */}
+          {/* Left side - Compact Profile */}
           <div className="flex-shrink-0 w-[280px] min-h-0 overflow-hidden">
             <ProfileHeader 
               displayName={displayName}
@@ -141,7 +141,7 @@ export const DiscordProfile = () => {
             />
           </div>
 
-          {/* Right side - Prominent Music Display for Car Thing */}
+          {/* Right side - Music or prompt based on state */}
           <div className="flex-1 flex items-center min-w-0">
             {songToDisplay ? (
               <NowPlaying 
@@ -149,15 +149,19 @@ export const DiscordProfile = () => {
                 isSpotifyConnected={isConnected}
                 spotifyData={spotifyData}
               />
-            ) : (
+            ) : shouldShowConnectPrompt ? (
               <EmptyMusicState 
                 isConnected={isConnected}
                 onConnect={connectSpotify}
               />
+            ) : (
+              // If connected, but somehow NO song, you could show a neutral empty state if preferred.
+              <div className="text-white text-center w-full">
+                No music currently detected.
+              </div>
             )}
           </div>
         </div>
-
         <WidgetFooter />
       </Card>
     );
