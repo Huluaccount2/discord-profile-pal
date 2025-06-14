@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { MusicArtwork } from './music/MusicArtwork';
 import { MusicInfo } from './music/MusicInfo';
@@ -43,6 +43,23 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     channel: "",
   });
 
+  // Add a ref for the notification so we can measure its height
+  const notificationRef = React.useRef<HTMLDivElement | null>(null);
+  const [notifHeight, setNotifHeight] = useState(0);
+
+  // Watch for open/close, update height
+  React.useEffect(() => {
+    if (notificationOpen && notificationRef.current) {
+      const rect = notificationRef.current.getBoundingClientRect();
+      setNotifHeight(rect.height);
+    } else {
+      setNotifHeight(0);
+    }
+  }, [notificationOpen, notificationData]);
+
+  // Bump the player content by notifHeight + 12px if open
+  const playerSectionPaddingTop = notificationOpen ? notifHeight + 12 : 0;
+
   // DEMO ONLY: Simple test button to launch a sample notification. Remove for production.
   const handleShowDemoNotification = (
     variant: "text" | "image" | "gif" | "voice" = "text"
@@ -82,13 +99,11 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
-  // Add top padding to push player content down when notification appears
-  const playerSectionPaddingTop = notificationOpen ? 74 : 0;
-
   try {
     return (
       <div className="relative w-full h-full rounded-lg overflow-hidden">
         <PlayerNotification
+          ref={notificationRef}
           avatarUrl={notificationData.avatarUrl}
           username={notificationData.username}
           message={notificationData.message}
