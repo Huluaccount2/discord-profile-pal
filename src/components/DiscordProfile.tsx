@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,12 +57,17 @@ export const DiscordProfile = () => {
   const customStatus = discordData?.custom_status || null;
   const connections = discordData?.connections || [];
 
-  // Check for current song - prioritize Spotify integration, fall back to Discord activities
-  const discordSong = discordData?.activities?.find(activity => activity.type === 2);
-  
-  // Convert Spotify data to Discord activity format if available
+  // Prioritize our Spotify OAuth integration over Discord's expired connection
   let currentSong = null;
-  if (spotifyData?.isPlaying && spotifyData.track) {
+  
+  console.log('DiscordProfile: Spotify integration status:', { 
+    isConnected, 
+    spotifyData,
+    discordActivities: discordData?.activities 
+  });
+
+  if (isConnected && spotifyData?.isPlaying && spotifyData.track) {
+    // Use our own Spotify integration first
     const track = spotifyData.track;
     const startTime = Date.now() - track.progress;
     
@@ -79,9 +85,17 @@ export const DiscordProfile = () => {
         large_text: track.album,
       },
     };
-  } else if (discordSong) {
-    currentSong = discordSong;
+    console.log('DiscordProfile: Using Spotify OAuth integration data');
+  } else {
+    // Fall back to Discord activities only if no Spotify OAuth connection
+    const discordSong = discordData?.activities?.find(activity => activity.type === 2);
+    if (discordSong) {
+      currentSong = discordSong;
+      console.log('DiscordProfile: Using Discord activity data');
+    }
   }
+
+  console.log('DiscordProfile: Final currentSong:', currentSong);
 
   return (
     <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 shadow-2xl h-full flex flex-col rounded-none border-0">
