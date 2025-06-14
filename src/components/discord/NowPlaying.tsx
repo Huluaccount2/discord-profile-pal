@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 
@@ -18,6 +18,12 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const titleRef = useRef<HTMLDivElement>(null);
+  const artistRef = useRef<HTMLDivElement>(null);
+  const albumRef = useRef<HTMLDivElement>(null);
+  const [shouldScrollTitle, setShouldScrollTitle] = useState(false);
+  const [shouldScrollArtist, setShouldScrollArtist] = useState(false);
+  const [shouldScrollAlbum, setShouldScrollAlbum] = useState(false);
 
   console.log('NowPlaying: Props received:', {
     currentSong: currentSong ? 'present' : 'null',
@@ -54,6 +60,34 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     const interval = setInterval(updateProgress, 1000);
 
     return () => clearInterval(interval);
+  }, [currentSong]);
+
+  // Check if text overflows and needs scrolling
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (titleRef.current) {
+        const container = titleRef.current.parentElement;
+        if (container) {
+          setShouldScrollTitle(titleRef.current.scrollWidth > container.clientWidth);
+        }
+      }
+      if (artistRef.current) {
+        const container = artistRef.current.parentElement;
+        if (container) {
+          setShouldScrollArtist(artistRef.current.scrollWidth > container.clientWidth);
+        }
+      }
+      if (albumRef.current) {
+        const container = albumRef.current.parentElement;
+        if (container) {
+          setShouldScrollAlbum(albumRef.current.scrollWidth > container.clientWidth);
+        }
+      }
+    };
+
+    // Check overflow after render
+    const timer = setTimeout(checkOverflow, 100);
+    return () => clearTimeout(timer);
   }, [currentSong]);
 
   const formatTime = (ms: number) => {
@@ -123,32 +157,41 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
             />
           </div>
 
-          {/* Song Info with Auto-Scrolling Text */}
+          {/* Song Info with Conditional Auto-Scrolling Text */}
           <div className="flex-1 min-w-0">
             <div className="mb-6">
-              {/* Auto-Scrolling Song Title */}
+              {/* Conditionally Scrolling Song Title */}
               <div className="h-12 mb-2 overflow-hidden">
-                <div className="scrolling-text">
-                  <h3 className="text-white font-bold text-3xl leading-tight whitespace-nowrap">
+                <div className={shouldScrollTitle ? 'scrolling-text' : ''}>
+                  <h3 
+                    ref={titleRef}
+                    className="text-white font-bold text-3xl leading-tight whitespace-nowrap"
+                  >
                     {currentSong.details || 'Unknown Track'}
                   </h3>
                 </div>
               </div>
               
-              {/* Auto-Scrolling Artist */}
+              {/* Conditionally Scrolling Artist */}
               <div className="h-8 mb-2 overflow-hidden">
-                <div className="scrolling-text">
-                  <p className="text-gray-300 text-xl leading-tight whitespace-nowrap">
+                <div className={shouldScrollArtist ? 'scrolling-text' : ''}>
+                  <p 
+                    ref={artistRef}
+                    className="text-gray-300 text-xl leading-tight whitespace-nowrap"
+                  >
                     {currentSong.state || 'Unknown Artist'}
                   </p>
                 </div>
               </div>
               
-              {/* Auto-Scrolling Album */}
+              {/* Conditionally Scrolling Album */}
               {currentSong.assets?.large_text && (
                 <div className="h-6 overflow-hidden">
-                  <div className="scrolling-text">
-                    <p className="text-gray-400 text-lg leading-tight whitespace-nowrap">
+                  <div className={shouldScrollAlbum ? 'scrolling-text' : ''}>
+                    <p 
+                      ref={albumRef}
+                      className="text-gray-400 text-lg leading-tight whitespace-nowrap"
+                    >
                       {currentSong.assets.large_text}
                     </p>
                   </div>
