@@ -168,10 +168,7 @@ export class DeskThingIntegration {
     if (this.isRunningOnDeskThing()) {
       console.log('DeskThing: Initializing DeskThing integration');
       try {
-        // Try to start the DeskThing connection
-        if (typeof this.deskThing.start === 'function') {
-          await this.deskThing.start();
-        }
+        // DeskThing auto-initializes when imported, no need to call start()
         this.sendLog('info', 'Discord Profile Pal started successfully');
       } catch (error) {
         console.error('DeskThing: Failed to initialize', error);
