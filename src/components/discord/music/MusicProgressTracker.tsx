@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 
 interface MusicProgressTrackerProps {
@@ -51,38 +52,46 @@ export const useMusicProgressTracker = ({
         
         onProgressUpdate(currentTime, isPlaying);
       } else {
-        // Fallback to Discord activity with improved pause detection
+        // Fallback to Discord activity with improved end detection
         const elapsed = now - startTime;
         const songEnded = elapsed >= duration;
         
-        // If we have cached data and it was paused, keep it paused unless song ended
-        let isPlaying = !songEnded && elapsed >= 0;
-        let currentTime = Math.max(0, Math.min(elapsed, duration));
-        
-        // Check if this looks like a pause based on Discord Rich Presence patterns
-        // Discord activities that don't update timestamps often indicate pause
-        const timeSinceLastKnownUpdate = now - lastUpdateTime;
-        if (timeSinceLastKnownUpdate > 5000 && !songEnded) {
-          // If we haven't seen an update in 5+ seconds and song hasn't ended, likely paused
-          isPlaying = false;
-          currentTime = cachedProgress; // Keep the last known position
-        } else if (!songEnded) {
-          // Update cached progress for future pause detection
-          setCachedProgress(currentTime);
-          setLastUpdateTime(now);
+        if (songEnded) {
+          // Song has completely finished - show as not playing and reset progress
+          console.log('MusicProgressTracker: Song ended, resetting state');
+          setCachedProgress(0);
+          setCachedIsPlaying(false);
+          onProgressUpdate(0, false);
+        } else {
+          // Song is still playing - calculate current progress
+          let isPlaying = true;
+          let currentTime = Math.max(0, Math.min(elapsed, duration));
+          
+          // Check if this looks like a pause based on Discord Rich Presence patterns
+          // Discord activities that don't update timestamps often indicate pause
+          const timeSinceLastKnownUpdate = now - lastUpdateTime;
+          if (timeSinceLastKnownUpdate > 5000) {
+            // If we haven't seen an update in 5+ seconds, likely paused
+            isPlaying = false;
+            currentTime = cachedProgress; // Keep the last known position
+          } else {
+            // Update cached progress for future pause detection
+            setCachedProgress(currentTime);
+            setLastUpdateTime(now);
+          }
+          
+          console.log('MusicProgressTracker: Using Discord activity state:', {
+            elapsed,
+            duration,
+            isPlaying,
+            currentTime,
+            songEnded,
+            timeSinceLastKnownUpdate
+          });
+          
+          setCachedIsPlaying(isPlaying);
+          onProgressUpdate(currentTime, isPlaying);
         }
-        
-        console.log('MusicProgressTracker: Using Discord activity state:', {
-          elapsed,
-          duration,
-          isPlaying,
-          currentTime,
-          songEnded,
-          timeSinceLastKnownUpdate
-        });
-        
-        setCachedIsPlaying(isPlaying);
-        onProgressUpdate(currentTime, isPlaying);
       }
     };
 
