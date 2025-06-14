@@ -28,15 +28,6 @@ export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, b
     }
   };
 
-  const getStatusText = () => {
-    switch (status) {
-      case 'online': return 'Online';
-      case 'idle': return 'Away';
-      case 'dnd': return 'Do Not Disturb';
-      default: return 'Offline';
-    }
-  };
-
   const renderBioWithLinks = (text: string) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const parts = text.split(urlRegex);
@@ -58,6 +49,13 @@ export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, b
       return part;
     });
   };
+
+  // Mock connections data - in a real app this would come from Discord API
+  const connections = [
+    { type: 'spotify', name: 'Spotify', verified: true },
+    { type: 'github', name: 'GitHub', verified: true },
+    { type: 'youtube', name: 'YouTube', verified: false },
+  ];
 
   return (
     <div className="relative mb-6 h-full">
@@ -98,44 +96,55 @@ export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, b
           </div>
         </div>
         
-        {/* Status and Bio Section - Aligned to Left */}
-        <div className="space-y-4">
-          <div className="flex justify-start">
-            <Badge variant="secondary" className="bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors">
-              <div className={`w-2 h-2 ${getStatusColor()} rounded-full mr-2`}></div>
-              {getStatusText()}
-            </Badge>
-          </div>
+        {/* Status Dot and Custom Status Row - Aligned to Left */}
+        <div className="flex items-center gap-3 mb-4">
+          {/* Just the status dot */}
+          <div className={`w-3 h-3 ${getStatusColor()} rounded-full`}></div>
           
-          {/* Custom Status - Left aligned */}
+          {/* Custom Status next to dot */}
           {customStatus?.text && (
-            <div className="flex justify-start">
-              <div className="inline-flex items-center gap-2 bg-gray-800 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-600 shadow-md">
-                {customStatus.emoji?.name && (
-                  <span className="text-sm">
-                    {customStatus.emoji.id ? 
-                      <img 
-                        src={`https://cdn.discordapp.com/emojis/${customStatus.emoji.id}.png`} 
-                        alt={customStatus.emoji.name} 
-                        className="w-4 h-4 inline"
-                      /> : 
-                      customStatus.emoji.name
-                    }
+            <div className="inline-flex items-center gap-2 bg-gray-800 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-600 shadow-md">
+              {customStatus.emoji?.name && (
+                <span className="text-sm">
+                  {customStatus.emoji.id ? 
+                    <img 
+                      src={`https://cdn.discordapp.com/emojis/${customStatus.emoji.id}.png`} 
+                      alt={customStatus.emoji.name} 
+                      className="w-4 h-4 inline"
+                    /> : 
+                    customStatus.emoji.name
+                  }
+                </span>
+              )}
+              <span className="text-sm text-gray-200 font-medium">{customStatus.text}</span>
+            </div>
+          )}
+        </div>
+        
+        {/* Connections Section - Replacing Bio */}
+        <div className="text-left">
+          <h3 className="text-sm font-semibold text-gray-300 mb-3">CONNECTIONS</h3>
+          <div className="space-y-2">
+            {connections.map((connection, index) => (
+              <div key={index} className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg">
+                <div className="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center">
+                  <span className="text-xs font-bold text-gray-300">
+                    {connection.type.charAt(0).toUpperCase()}
                   </span>
-                )}
-                <span className="text-sm text-gray-200 font-medium">{customStatus.text}</span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-white">{connection.name}</span>
+                    {connection.verified && (
+                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                        <span className="text-xs text-white">✓</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
-          
-          {/* Bio - Left aligned */}
-          {bio && (
-            <div className="text-left max-w-md">
-              <p className="text-sm text-gray-400 whitespace-pre-line">
-                {renderBioWithLinks(bio)}
-              </p>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       </div>
     </div>
