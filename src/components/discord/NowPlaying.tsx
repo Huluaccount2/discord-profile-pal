@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface NowPlayingProps {
   currentSong: any;
@@ -89,19 +90,30 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
             />
           </div>
 
-          {/* Song Info */}
+          {/* Song Info with Scrollable Text */}
           <div className="flex-1 min-w-0">
             <div className="mb-6">
-              <h3 className="text-white font-bold text-3xl mb-2 truncate">
-                {currentSong.details || 'Unknown Track'}
-              </h3>
-              <p className="text-gray-300 text-xl mb-2 truncate">
-                {currentSong.state || 'Unknown Artist'}
-              </p>
-              {currentSong.assets?.large_text && (
-                <p className="text-gray-400 text-lg truncate">
-                  {currentSong.assets.large_text}
+              {/* Scrollable Song Title */}
+              <ScrollArea className="h-12 mb-2">
+                <h3 className="text-white font-bold text-3xl leading-tight">
+                  {currentSong.details || 'Unknown Track'}
+                </h3>
+              </ScrollArea>
+              
+              {/* Scrollable Artist */}
+              <ScrollArea className="h-8 mb-2">
+                <p className="text-gray-300 text-xl leading-tight">
+                  {currentSong.state || 'Unknown Artist'}
                 </p>
+              </ScrollArea>
+              
+              {/* Scrollable Album */}
+              {currentSong.assets?.large_text && (
+                <ScrollArea className="h-6">
+                  <p className="text-gray-400 text-lg leading-tight">
+                    {currentSong.assets.large_text}
+                  </p>
+                </ScrollArea>
               )}
             </div>
 
