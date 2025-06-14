@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +24,7 @@ export const DiscordProfile = () => {
 
   console.log('DiscordProfile: Rendering with user:', user?.id, 'profile:', profile, 'loading:', loading);
 
+  // Timer effect - must be at top level
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -30,37 +32,9 @@ export const DiscordProfile = () => {
     return () => clearInterval(timer);
   }, []);
 
-  if (loading) {
-    console.log('DiscordProfile: Still loading profile...');
-    return (
-      <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-6 shadow-2xl h-full">
-        <div className="text-center text-white">Loading profile...</div>
-      </Card>
-    );
-  }
-
-  try {
-    // Use Discord data if available, otherwise fall back to regular profile data
-    const displayName = discordData?.user?.username || profile?.discord_username || profile?.username || "User";
-    const discriminator = discordData?.user?.discriminator || profile?.discord_discriminator || "0000";
-    const avatarUrl = discordData?.avatar_url || profile?.discord_avatar || profile?.avatar_url || null;
-    const status = discordData?.status || 'offline';
-
-    console.log('DiscordProfile: Display data:', { displayName, discriminator, avatarUrl, status });
-
-    // Get banner URL from Discord data
-    const bannerUrl = discordData?.user?.banner ? 
-      `https://cdn.discordapp.com/banners/${discordData.user.id}/${discordData.user.banner}.png?size=600` : 
-      null;
-
-    // Get bio, custom status, and connections from Discord data
-    const bio = discordData?.user?.bio || null;
-    const customStatus = discordData?.custom_status || null;
-    const connections = discordData?.connections || [];
-
-    // Prioritize our Spotify OAuth integration over Discord's expired connection
-    let currentSong = null;
-    
+  // Calculate current song data - moved outside try block
+  let currentSong = null;
+  if (profile && discordData) {
     console.log('DiscordProfile: Spotify integration status:', { 
       isConnected, 
       spotifyData,
@@ -95,14 +69,43 @@ export const DiscordProfile = () => {
         console.log('DiscordProfile: Using Discord activity data');
       }
     }
+  }
 
-    // Store the last known song to keep displaying it even when stopped
-    useEffect(() => {
-      if (currentSong) {
-        console.log('DiscordProfile: Storing last known song:', currentSong);
-        setLastKnownSong(currentSong);
-      }
-    }, [currentSong]);
+  // Store last known song effect - must be at top level
+  useEffect(() => {
+    if (currentSong) {
+      console.log('DiscordProfile: Storing last known song:', currentSong);
+      setLastKnownSong(currentSong);
+    }
+  }, [currentSong]);
+
+  if (loading) {
+    console.log('DiscordProfile: Still loading profile...');
+    return (
+      <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-6 shadow-2xl h-full">
+        <div className="text-center text-white">Loading profile...</div>
+      </Card>
+    );
+  }
+
+  try {
+    // Use Discord data if available, otherwise fall back to regular profile data
+    const displayName = discordData?.user?.username || profile?.discord_username || profile?.username || "User";
+    const discriminator = discordData?.user?.discriminator || profile?.discord_discriminator || "0000";
+    const avatarUrl = discordData?.avatar_url || profile?.discord_avatar || profile?.avatar_url || null;
+    const status = discordData?.status || 'offline';
+
+    console.log('DiscordProfile: Display data:', { displayName, discriminator, avatarUrl, status });
+
+    // Get banner URL from Discord data
+    const bannerUrl = discordData?.user?.banner ? 
+      `https://cdn.discordapp.com/banners/${discordData.user.id}/${discordData.user.banner}.png?size=600` : 
+      null;
+
+    // Get bio, custom status, and connections from Discord data
+    const bio = discordData?.user?.bio || null;
+    const customStatus = discordData?.custom_status || null;
+    const connections = discordData?.connections || [];
 
     // Use current song if available, otherwise show last known song
     const songToDisplay = currentSong || lastKnownSong;
