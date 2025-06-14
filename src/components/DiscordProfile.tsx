@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Music, User, RefreshCw, Headphones } from "lucide-react";
@@ -248,7 +247,14 @@ export const DiscordProfile = () => {
                 <img
                   src={currentSong.assets.large_image}
                   alt={currentSong.assets.large_text || 'Album cover'}
-                  className="w-20 h-20 rounded-lg shadow-lg"
+                  className="w-20 h-20 rounded-lg shadow-lg object-cover"
+                  onError={(e) => {
+                    console.log('Failed to load album cover:', currentSong.assets?.large_image);
+                    e.currentTarget.style.display = 'none';
+                  }}
+                  onLoad={() => {
+                    console.log('Album cover loaded successfully:', currentSong.assets?.large_image);
+                  }}
                 />
               </div>
             )}
