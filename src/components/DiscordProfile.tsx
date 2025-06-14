@@ -1,7 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { WidgetHeader } from "@/components/discord/WidgetHeader";
 import { ProfileHeader } from "@/components/discord/ProfileHeader";
 import { NowPlaying } from "@/components/discord/NowPlaying";
 import { EmptyMusicState } from "@/components/discord/EmptyMusicState";
@@ -22,6 +21,8 @@ export const DiscordProfile = () => {
     connectSpotify
   } = useSpotify(user?.id);
 
+  console.log('DiscordProfile: Rendering with user:', user?.id, 'profile:', profile, 'loading:', loading);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -30,6 +31,7 @@ export const DiscordProfile = () => {
   }, []);
 
   if (loading) {
+    console.log('DiscordProfile: Still loading profile...');
     return (
       <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-6 shadow-2xl h-full">
         <div className="text-center text-white">Loading profile...</div>
@@ -42,6 +44,8 @@ export const DiscordProfile = () => {
   const discriminator = discordData?.user?.discriminator || profile?.discord_discriminator || "0000";
   const avatarUrl = discordData?.avatar_url || profile?.discord_avatar || profile?.avatar_url || null;
   const status = discordData?.status || 'offline';
+
+  console.log('DiscordProfile: Display data:', { displayName, discriminator, avatarUrl, status });
 
   // Get banner URL from Discord data
   const bannerUrl = discordData?.user?.banner ? 
@@ -94,6 +98,7 @@ export const DiscordProfile = () => {
   // Store the last known song to keep displaying it even when stopped
   useEffect(() => {
     if (currentSong) {
+      console.log('DiscordProfile: Storing last known song:', currentSong);
       setLastKnownSong(currentSong);
     }
   }, [currentSong]);
@@ -102,6 +107,7 @@ export const DiscordProfile = () => {
   const songToDisplay = currentSong || lastKnownSong;
 
   console.log('DiscordProfile: Final songToDisplay:', songToDisplay);
+  console.log('DiscordProfile: About to render main component');
 
   return (
     <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 shadow-2xl h-full flex flex-col rounded-none border-0">

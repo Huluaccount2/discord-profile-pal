@@ -27,15 +27,31 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   const artistRef = useRef<HTMLParagraphElement>(null);
   const albumRef = useRef<HTMLParagraphElement>(null);
 
-  console.log('NowPlaying: Props received:', {
+  console.log('NowPlaying: Rendering with props:', {
     currentSong: currentSong ? 'present' : 'null',
     isSpotifyConnected,
     spotifyData: spotifyData ? 'present' : 'null'
   });
 
+  // Helper function to clean artist name
+  const cleanArtistName = (artistName: string) => {
+    if (!artistName) return 'Unknown Artist';
+    // Remove "by " prefix if it exists (case insensitive)
+    return artistName.replace(/^by\s+/i, '');
+  };
+
+  const formatTime = (ms: number) => {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
   useEffect(() => {
+    console.log('NowPlaying: Setting up progress tracking effect');
+    
     if (!currentSong?.timestamps?.start || !currentSong?.timestamps?.end) {
-      console.log('NowPlaying: No valid timestamps found');
+      console.log('NowPlaying: No valid timestamps found, keeping last known state');
       // Keep the last known time if no timestamps
       return;
     }
@@ -115,20 +131,6 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     };
   }, [currentSong?.details, currentSong?.state, currentSong?.assets?.large_text]);
 
-  const formatTime = (ms: number) => {
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  // Helper function to clean artist name
-  const cleanArtistName = (artistName: string) => {
-    if (!artistName) return 'Unknown Artist';
-    // Remove "by " prefix if it exists (case insensitive)
-    return artistName.replace(/^by\s+/i, '');
-  };
-
   if (!currentSong) {
     console.log('NowPlaying: No current song, not rendering');
     return null;
@@ -137,95 +139,104 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
-  console.log('NowPlaying: Rendering with progress:', progress, 'isPlaying:', isPlaying, 'isSpotifyConnected:', isSpotifyConnected);
+  console.log('NowPlaying: Final render state:', { progress, isPlaying, isSpotifyConnected });
 
-  return (
-    <div className="relative w-full h-full rounded-lg overflow-hidden">
-      {/* Lighter Blurred Background */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center filter blur-sm"
-        style={{ 
-          backgroundImage: `url(${currentSong.assets?.large_image || '/placeholder.svg'})`,
-          filter: 'blur(20px) brightness(0.6)'
-        }}
-      />
-      
-      {/* Content overlay with more transparency */}
-      <Card className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-8 w-full h-full flex items-center">
-        <div className="flex items-center space-x-8 w-full">
-          {/* Large Album Art with play state indicator */}
-          <div className="flex-shrink-0 relative">
-            <img
-              src={currentSong.assets?.large_image || '/placeholder.svg'}
-              alt={currentSong.assets?.large_text || 'Album Art'}
-              className={`w-32 h-32 rounded-xl object-cover shadow-2xl transition-opacity ${
-                !isPlaying ? 'opacity-60' : 'opacity-100'
-              }`}
-            />
-            {/* Show paused indicator when not playing */}
-            {!isPlaying && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-black/50 rounded-full p-2">
-                  <div className="text-white text-xs font-medium">PAUSED</div>
+  try {
+    return (
+      <div className="relative w-full h-full rounded-lg overflow-hidden">
+        {/* Lighter Blurred Background */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center filter blur-sm"
+          style={{ 
+            backgroundImage: `url(${currentSong.assets?.large_image || '/placeholder.svg'})`,
+            filter: 'blur(20px) brightness(0.6)'
+          }}
+        />
+        
+        {/* Content overlay with more transparency */}
+        <Card className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-8 w-full h-full flex items-center">
+          <div className="flex items-center space-x-8 w-full">
+            {/* Large Album Art with play state indicator */}
+            <div className="flex-shrink-0 relative">
+              <img
+                src={currentSong.assets?.large_image || '/placeholder.svg'}
+                alt={currentSong.assets?.large_text || 'Album Art'}
+                className={`w-32 h-32 rounded-xl object-cover shadow-2xl transition-opacity ${
+                  !isPlaying ? 'opacity-60' : 'opacity-100'
+                }`}
+              />
+              {/* Show paused indicator when not playing */}
+              {!isPlaying && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-black/50 rounded-full p-2">
+                    <div className="text-white text-xs font-medium">PAUSED</div>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Song Info */}
-          <div className="flex-1 min-w-0">
-            <div className="mb-6">
-              {/* Song Title - with overflow handling and play state styling */}
-              <h3 
-                ref={titleRef}
-                className={`font-bold text-3xl mb-2 transition-opacity ${
-                  !isPlaying ? 'text-gray-300' : 'text-white'
-                } ${titleOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
-              >
-                {currentSong.details || 'Unknown Track'}
-              </h3>
-              
-              {/* Artist - with overflow handling, cleaned of "by" prefix, and play state styling */}
-              <p 
-                ref={artistRef}
-                className={`text-xl mb-2 transition-opacity ${
-                  !isPlaying ? 'text-gray-400' : 'text-gray-300'
-                } ${artistOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
-              >
-                {cleanArtistName(currentSong.state)}
-              </p>
-              
-              {/* Album - with overflow handling and play state styling */}
-              {currentSong.assets?.large_text && (
-                <p 
-                  ref={albumRef}
-                  className={`text-lg transition-opacity ${
-                    !isPlaying ? 'text-gray-500' : 'text-gray-400'
-                  } ${albumOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
-                >
-                  {currentSong.assets.large_text}
-                </p>
               )}
             </div>
 
-            {/* Progress Bar - always show but dim when paused */}
-            <div className="mb-4">
-              <Progress 
-                value={progress} 
-                className={`h-3 mb-3 transition-opacity ${
-                  !isPlaying ? 'opacity-50' : 'opacity-100'
-                }`} 
-              />
-              <div className={`flex justify-between text-sm transition-opacity ${
-                !isPlaying ? 'text-gray-500' : 'text-gray-300'
-              }`}>
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration)}</span>
+            {/* Song Info */}
+            <div className="flex-1 min-w-0">
+              <div className="mb-6">
+                {/* Song Title - with overflow handling and play state styling */}
+                <h3 
+                  ref={titleRef}
+                  className={`font-bold text-3xl mb-2 transition-opacity ${
+                    !isPlaying ? 'text-gray-300' : 'text-white'
+                  } ${titleOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
+                >
+                  {currentSong.details || 'Unknown Track'}
+                </h3>
+                
+                {/* Artist - with overflow handling, cleaned of "by" prefix, and play state styling */}
+                <p 
+                  ref={artistRef}
+                  className={`text-xl mb-2 transition-opacity ${
+                    !isPlaying ? 'text-gray-400' : 'text-gray-300'
+                  } ${artistOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
+                >
+                  {cleanArtistName(currentSong.state)}
+                </p>
+                
+                {/* Album - with overflow handling and play state styling */}
+                {currentSong.assets?.large_text && (
+                  <p 
+                    ref={albumRef}
+                    className={`text-lg transition-opacity ${
+                      !isPlaying ? 'text-gray-500' : 'text-gray-400'
+                    } ${albumOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
+                  >
+                    {currentSong.assets.large_text}
+                  </p>
+                )}
+              </div>
+
+              {/* Progress Bar - always show but dim when paused */}
+              <div className="mb-4">
+                <Progress 
+                  value={progress} 
+                  className={`h-3 mb-3 transition-opacity ${
+                    !isPlaying ? 'opacity-50' : 'opacity-100'
+                  }`} 
+                />
+                <div className={`flex justify-between text-sm transition-opacity ${
+                  !isPlaying ? 'text-gray-500' : 'text-gray-300'
+                }`}>
+                  <span>{formatTime(currentTime)}</span>
+                  <span>{formatTime(duration)}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </Card>
-    </div>
-  );
+        </Card>
+      </div>
+    );
+  } catch (error) {
+    console.error('NowPlaying: Render error:', error);
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-red-500">Error rendering music component</div>
+      </div>
+    );
+  }
 };
