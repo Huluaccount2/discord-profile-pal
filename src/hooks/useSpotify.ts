@@ -8,7 +8,7 @@ export const useSpotify = (userId: string | undefined) => {
   console.log('useSpotify: Hook initialized with userId:', userId);
 
   const { loading, connectSpotify } = useSpotifyAuth(userId);
-  const { spotifyData, isConnected, fetchCurrentTrack } = useSpotifyData(userId);
+  const { spotifyData, isConnected, connectionError, fetchCurrentTrack } = useSpotifyData(userId);
   const { play, pause, nextTrack, previousTrack } = useSpotifyControls(userId, isConnected, fetchCurrentTrack);
   
   useSpotifyPolling(userId, isConnected, fetchCurrentTrack);
@@ -17,6 +17,7 @@ export const useSpotify = (userId: string | undefined) => {
     spotifyData,
     loading,
     isConnected,
+    connectionError,
     connectSpotify,
     fetchCurrentTrack,
     play,
