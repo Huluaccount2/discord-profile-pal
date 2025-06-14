@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, forwardRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -36,33 +35,29 @@ export const PlayerNotification = forwardRef<HTMLDivElement, PlayerNotificationP
     const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // When `open` changes, trigger the appropriate animation state.
+    // When notification is mounted & open, start visible (in), then auto-close in 5s.
     useEffect(() => {
       if (open) {
         setVisible(true);
-        // Start auto-close timer (but clear any existing)
+        // Start auto-close timer (reset if already set)
         if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
         closeTimeoutRef.current = setTimeout(() => {
           setVisible(false);
         }, 5000);
-      } else {
-        // If parent requests close, ensure out anim plays
-        setVisible(false);
       }
-      // Cleanup timers when component unmounts
+      // Clean up timers on unmount or open change
       return () => {
         if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
         if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
       };
     }, [open]);
 
-    // When visible goes false (i.e. beginning OUT animation), call parent onClose after anim
+    // When visible goes false and open is true, play reverse animation, then fully close after 400ms
     useEffect(() => {
       if (!visible && open) {
-        // Wait for the exit animation (400ms) before actually closing
         animationTimeoutRef.current = setTimeout(() => {
           onClose();
-        }, 400); // Should match the duration in animation CSS
+        }, 400);
       }
     }, [visible, open, onClose]);
 
@@ -85,6 +80,9 @@ export const PlayerNotification = forwardRef<HTMLDivElement, PlayerNotificationP
         </span>
       );
     }
+
+    // Only render when open is true
+    if (!open) return null;
 
     return (
       <div

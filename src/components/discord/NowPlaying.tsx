@@ -80,6 +80,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     setNotificationOpen(true);
   };
 
+  // The notification now closes itself. We just listen for onClose.
   const handleNotificationClose = () => setNotificationOpen(false);
 
   const handleProgressUpdate = useCallback((time: number, playing: boolean) => {
