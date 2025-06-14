@@ -9,8 +9,8 @@ interface MusicProgressTrackerProps {
 
 /**
  * Ensures music progress properly FREEZES when paused (for both Spotify/OAuth and Discord fallback):
- * - When paused (Spotify isPlaying = false, or Discord 'stall'), always emit the exact frozen progress,
- *   never let the timer advance until play resumes.
+ * - When paused, always emit the exact frozen progress, never let the timer advance until play resumes.
+ * - When paused, forcibly re-emit at this value every 500ms to keep UI "snapped" to true last progress.
  */
 export const useMusicProgressTracker = ({
   currentSong,
@@ -26,7 +26,7 @@ export const useMusicProgressTracker = ({
 
   const lastRawProgressRef = useRef<number | null>(null);
   const progressUnchangedCountRef = useRef<number>(0);
-  // NEW: When paused, freeze progress at this value
+  // When paused, freeze progress at this value
   const frozenProgressRef = useRef<number>(0);
 
   useEffect(() => {
@@ -66,17 +66,27 @@ export const useMusicProgressTracker = ({
         // If NOT playing, freeze at last progress (do NOT advance)
         const effectiveTime = isPlaying ? currentTime : frozenProgressRef.current ?? currentTime;
 
-        // Only emit to parent if value or state changed
-        if (effectiveTime !== cachedProgress || isPlaying !== cachedIsPlaying) {
-          setCachedProgress(effectiveTime);
-          setCachedIsPlaying(isPlaying);
-          setLastUpdateTime(now);
-          setSongHasEnded(false);
-          onProgressUpdate(effectiveTime, isPlaying);
-        }
-        // Always cache the frozen progress the moment it is paused
+        // Always emit the frozen value if paused (every 500ms)
         if (!isPlaying) {
-          frozenProgressRef.current = currentTime;
+          if (effectiveTime !== cachedProgress || isPlaying !== cachedIsPlaying) {
+            setCachedProgress(effectiveTime);
+            setCachedIsPlaying(false);
+            setLastUpdateTime(now);
+            setSongHasEnded(false);
+            onProgressUpdate(effectiveTime, false);
+          } else {
+            // Forced emit same frozen value to parent every interval (so progress never jitters or drifts)
+            onProgressUpdate(frozenProgressRef.current ?? cachedProgress, false);
+          }
+        } else {
+          // Playing: only emit to parent if value or playing state changed
+          if (effectiveTime !== cachedProgress || isPlaying !== cachedIsPlaying) {
+            setCachedProgress(effectiveTime);
+            setCachedIsPlaying(isPlaying);
+            setLastUpdateTime(now);
+            setSongHasEnded(false);
+            onProgressUpdate(effectiveTime, isPlaying);
+          }
         }
         progressUnchangedCountRef.current = 0;
         lastRawProgressRef.current = currentTime;
@@ -107,35 +117,42 @@ export const useMusicProgressTracker = ({
           }
           lastRawProgressRef.current = currentTime;
 
-          // If progress hasn't advanced for >2 intervals (~2s), treat as paused and freeze time at last known
+          // If progress hasn't advanced for >2 intervals (~1s), treat as paused and freeze at last known
           if (progressUnchangedCountRef.current > 2) {
             isPlaying = false;
-            // FREEZE: don't let currentTime increment, just return frozen
             currentTime = frozenProgressRef.current ?? cachedProgress;
             frozenProgressRef.current = currentTime;
+            // Always emit the frozen value if paused (every 500ms)
+            if (currentTime !== cachedProgress || isPlaying !== cachedIsPlaying) {
+              setCachedIsPlaying(false);
+              setSongHasEnded(false);
+              setCachedProgress(currentTime);
+              onProgressUpdate(currentTime, false);
+            } else {
+              // Forced emit same frozen value to parent every interval
+              onProgressUpdate(frozenProgressRef.current ?? cachedProgress, false);
+            }
           } else {
             // In playing state, update frozenProgressRef every time
             frozenProgressRef.current = currentTime;
             setCachedProgress(currentTime);
             setLastUpdateTime(now);
-          }
 
-          // Only emit to parent if changed
-          if (currentTime !== cachedProgress || isPlaying !== cachedIsPlaying) {
-            setCachedIsPlaying(isPlaying);
-            setSongHasEnded(false);
-            setCachedProgress(currentTime);
-            onProgressUpdate(currentTime, isPlaying);
-          } else if (!isPlaying) {
-            // Forced: When paused, keep emitting frozen
-            onProgressUpdate(frozenProgressRef.current ?? cachedProgress, false);
+            // Only emit to parent if changed
+            if (currentTime !== cachedProgress || isPlaying !== cachedIsPlaying) {
+              setCachedIsPlaying(isPlaying);
+              setSongHasEnded(false);
+              setCachedProgress(currentTime);
+              onProgressUpdate(currentTime, isPlaying);
+            }
           }
         }
       }
     };
 
     updateProgress();
-    const interval = setInterval(updateProgress, 1000);
+    // INTERVAL: Every 500ms, to keep UI snapped to paused/frozen value while paused
+    const interval = setInterval(updateProgress, 500);
 
     return () => clearInterval(interval);
   }, [
