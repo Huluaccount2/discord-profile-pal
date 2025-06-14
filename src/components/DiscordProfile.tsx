@@ -12,6 +12,7 @@ import { useSpotify } from "@/hooks/useSpotify";
 
 export const DiscordProfile = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [lastKnownSong, setLastKnownSong] = useState(null);
   const { user } = useAuth();
   const { profile, loading } = useProfile(user?.id);
   const { discordData, refreshing, fetchDiscordData } = useDiscordData(user?.id, profile?.discord_id);
@@ -61,8 +62,8 @@ export const DiscordProfile = () => {
     discordActivities: discordData?.activities 
   });
 
-  if (isConnected && spotifyData?.isPlaying && spotifyData.track) {
-    // Use our own Spotify integration first
+  if (isConnected && spotifyData?.track) {
+    // Use our own Spotify integration first (even if paused)
     const track = spotifyData.track;
     const startTime = Date.now() - track.progress;
     
@@ -90,7 +91,17 @@ export const DiscordProfile = () => {
     }
   }
 
-  console.log('DiscordProfile: Final currentSong:', currentSong);
+  // Store the last known song to keep displaying it even when stopped
+  useEffect(() => {
+    if (currentSong) {
+      setLastKnownSong(currentSong);
+    }
+  }, [currentSong]);
+
+  // Use current song if available, otherwise show last known song
+  const songToDisplay = currentSong || lastKnownSong;
+
+  console.log('DiscordProfile: Final songToDisplay:', songToDisplay);
 
   return (
     <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 shadow-2xl h-full flex flex-col rounded-none border-0">
@@ -112,9 +123,9 @@ export const DiscordProfile = () => {
 
         {/* Right side - Prominent Music Display for Car Thing */}
         <div className="flex-1 flex items-center min-w-0">
-          {currentSong ? (
+          {songToDisplay ? (
             <NowPlaying 
-              currentSong={currentSong}
+              currentSong={songToDisplay}
               isSpotifyConnected={isConnected}
               spotifyData={spotifyData}
             />

@@ -36,6 +36,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   useEffect(() => {
     if (!currentSong?.timestamps?.start || !currentSong?.timestamps?.end) {
       console.log('NowPlaying: No valid timestamps found');
+      // Keep the last known time if no timestamps
       return;
     }
 
@@ -53,7 +54,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
       if (isSpotifyConnected && currentSong.name === "Spotify" && spotifyData) {
         console.log('NowPlaying: Using Spotify OAuth state:', spotifyData.isPlaying);
         setIsPlaying(spotifyData.isPlaying);
-        if (spotifyData.isPlaying && spotifyData.track) {
+        if (spotifyData.track) {
           // Use Spotify's actual progress
           setCurrentTime(spotifyData.track.progress);
         }
@@ -67,9 +68,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 
     updateProgress();
     
-    // Only update progress if:
-    // 1. For Spotify OAuth: when actually playing
-    // 2. For Discord activities: always update (we don't have real-time state)
+    // Only update progress if playing
     const shouldUpdateProgress = 
       (isSpotifyConnected && currentSong.name === "Spotify" && spotifyData?.isPlaying) ||
       (!isSpotifyConnected || currentSong.name !== "Spotify");
@@ -154,55 +153,72 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
       {/* Content overlay with more transparency */}
       <Card className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-8 w-full h-full flex items-center">
         <div className="flex items-center space-x-8 w-full">
-          {/* Large Album Art */}
-          <div className="flex-shrink-0">
+          {/* Large Album Art with play state indicator */}
+          <div className="flex-shrink-0 relative">
             <img
               src={currentSong.assets?.large_image || '/placeholder.svg'}
               alt={currentSong.assets?.large_text || 'Album Art'}
-              className="w-32 h-32 rounded-xl object-cover shadow-2xl"
+              className={`w-32 h-32 rounded-xl object-cover shadow-2xl transition-opacity ${
+                !isPlaying ? 'opacity-60' : 'opacity-100'
+              }`}
             />
+            {/* Show paused indicator when not playing */}
+            {!isPlaying && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="bg-black/50 rounded-full p-2">
+                  <div className="text-white text-xs font-medium">PAUSED</div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Song Info */}
           <div className="flex-1 min-w-0">
             <div className="mb-6">
-              {/* Song Title - with overflow handling */}
+              {/* Song Title - with overflow handling and play state styling */}
               <h3 
                 ref={titleRef}
-                className={`text-white font-bold text-3xl mb-2 ${
-                  titleOverflows ? 'whitespace-normal break-words' : 'truncate'
-                }`}
+                className={`font-bold text-3xl mb-2 transition-opacity ${
+                  !isPlaying ? 'text-gray-300' : 'text-white'
+                } ${titleOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
               >
                 {currentSong.details || 'Unknown Track'}
               </h3>
               
-              {/* Artist - with overflow handling, cleaned of "by" prefix */}
+              {/* Artist - with overflow handling, cleaned of "by" prefix, and play state styling */}
               <p 
                 ref={artistRef}
-                className={`text-gray-300 text-xl mb-2 ${
-                  artistOverflows ? 'whitespace-normal break-words' : 'truncate'
-                }`}
+                className={`text-xl mb-2 transition-opacity ${
+                  !isPlaying ? 'text-gray-400' : 'text-gray-300'
+                } ${artistOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
               >
                 {cleanArtistName(currentSong.state)}
               </p>
               
-              {/* Album - with overflow handling */}
+              {/* Album - with overflow handling and play state styling */}
               {currentSong.assets?.large_text && (
                 <p 
                   ref={albumRef}
-                  className={`text-gray-400 text-lg ${
-                    albumOverflows ? 'whitespace-normal break-words' : 'truncate'
-                  }`}
+                  className={`text-lg transition-opacity ${
+                    !isPlaying ? 'text-gray-500' : 'text-gray-400'
+                  } ${albumOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
                 >
                   {currentSong.assets.large_text}
                 </p>
               )}
             </div>
 
-            {/* Progress Bar */}
+            {/* Progress Bar - always show but dim when paused */}
             <div className="mb-4">
-              <Progress value={progress} className="h-3 mb-3" />
-              <div className="flex justify-between text-sm text-gray-300">
+              <Progress 
+                value={progress} 
+                className={`h-3 mb-3 transition-opacity ${
+                  !isPlaying ? 'opacity-50' : 'opacity-100'
+                }`} 
+              />
+              <div className={`flex justify-between text-sm transition-opacity ${
+                !isPlaying ? 'text-gray-500' : 'text-gray-300'
+              }`}>
                 <span>{formatTime(currentTime)}</span>
                 <span>{formatTime(duration)}</span>
               </div>
