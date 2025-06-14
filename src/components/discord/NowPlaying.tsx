@@ -1,9 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Play, Pause, SkipForward, SkipBack } from 'lucide-react';
 
 interface NowPlayingProps {
   currentSong: any;
@@ -16,10 +14,6 @@ interface NowPlayingProps {
 
 export const NowPlaying: React.FC<NowPlayingProps> = ({
   currentSong,
-  onPlay,
-  onPause,
-  onNext,
-  onPrevious,
   isSpotifyConnected = false
 }) => {
   const [currentTime, setCurrentTime] = useState(0);
@@ -27,11 +21,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 
   console.log('NowPlaying: Props received:', {
     currentSong: currentSong ? 'present' : 'null',
-    isSpotifyConnected,
-    hasOnPlay: !!onPlay,
-    hasOnPause: !!onPause,
-    hasOnNext: !!onNext,
-    hasOnPrevious: !!onPrevious
+    isSpotifyConnected
   });
 
   useEffect(() => {
@@ -66,39 +56,6 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const handlePlayPause = () => {
-    console.log('NowPlaying: Play/Pause clicked, isPlaying:', isPlaying, 'isSpotifyConnected:', isSpotifyConnected);
-    
-    if (!isSpotifyConnected) {
-      console.log('NowPlaying: Spotify not connected, ignoring click');
-      return;
-    }
-
-    if (isPlaying && onPause) {
-      console.log('NowPlaying: Calling onPause');
-      onPause();
-    } else if (!isPlaying && onPlay) {
-      console.log('NowPlaying: Calling onPlay');
-      onPlay();
-    }
-  };
-
-  const handleNext = () => {
-    console.log('NowPlaying: Next clicked, isSpotifyConnected:', isSpotifyConnected);
-    if (isSpotifyConnected && onNext) {
-      console.log('NowPlaying: Calling onNext');
-      onNext();
-    }
-  };
-
-  const handlePrevious = () => {
-    console.log('NowPlaying: Previous clicked, isSpotifyConnected:', isSpotifyConnected);
-    if (isSpotifyConnected && onPrevious) {
-      console.log('NowPlaying: Calling onPrevious');
-      onPrevious();
-    }
-  };
-
   if (!currentSong) {
     console.log('NowPlaying: No current song, not rendering');
     return null;
@@ -121,7 +78,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
           />
         </div>
 
-        {/* Song Info and Controls */}
+        {/* Song Info */}
         <div className="flex-1 min-w-0">
           <div className="mb-2">
             <h3 className="text-white font-semibold text-lg truncate">
@@ -138,58 +95,13 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
           </div>
 
           {/* Progress Bar */}
-          <div className="mb-3">
+          <div className="mb-2">
             <Progress value={progress} className="h-2" />
             <div className="flex justify-between text-xs text-gray-400 mt-1">
               <span>{formatTime(currentTime)}</span>
               <span>{formatTime(duration)}</span>
             </div>
           </div>
-
-          {/* Controls */}
-          <div className="flex items-center justify-center space-x-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handlePrevious}
-              disabled={!isSpotifyConnected}
-              className={`text-white hover:text-green-400 ${
-                !isSpotifyConnected ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700/50'
-              }`}
-            >
-              <SkipBack className="h-4 w-4" />
-            </Button>
-
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handlePlayPause}
-              disabled={!isSpotifyConnected}
-              className={`text-white hover:text-green-400 ${
-                !isSpotifyConnected ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700/50'
-              }`}
-            >
-              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-            </Button>
-
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleNext}
-              disabled={!isSpotifyConnected}
-              className={`text-white hover:text-green-400 ${
-                !isSpotifyConnected ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700/50'
-              }`}
-            >
-              <SkipForward className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {!isSpotifyConnected && (
-            <p className="text-xs text-gray-500 text-center mt-2">
-              Connect Spotify to control playback
-            </p>
-          )}
         </div>
       </div>
     </Card>

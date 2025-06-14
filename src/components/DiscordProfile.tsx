@@ -19,11 +19,7 @@ export const DiscordProfile = () => {
   const { 
     spotifyData, 
     isConnected, 
-    connectSpotify, 
-    play, 
-    pause, 
-    nextTrack, 
-    previousTrack 
+    connectSpotify
   } = useSpotify(user?.id);
 
   useEffect(() => {
@@ -120,10 +116,6 @@ export const DiscordProfile = () => {
           {currentSong ? (
             <NowPlaying 
               currentSong={currentSong}
-              onPlay={play}
-              onPause={pause}
-              onNext={nextTrack}
-              onPrevious={previousTrack}
               isSpotifyConnected={isConnected}
             />
           ) : (
