@@ -66,6 +66,26 @@ export const DiscordProfile = () => {
         },
       };
       console.log('DiscordProfile: Using Spotify OAuth integration data');
+    } else if (isConnected && spotifyData?.lastPlayed) {
+      // New: Use the last recently played song if nothing currently playing
+      const track = spotifyData.lastPlayed;
+      // Start progress at end (as it's not playing, but show song details)
+      const now = Date.now();
+      currentSong = {
+        name: "Spotify",
+        type: 2,
+        details: track.name,
+        state: track.artist,
+        timestamps: {
+          start: now - track.duration,
+          end: now,
+        },
+        assets: {
+          large_image: track.albumCover,
+          large_text: track.album,
+        },
+      };
+      console.log('DiscordProfile: Using Spotify recently played song as fallback');
     } else {
       // Fall back to Discord activities if no Spotify OAuth connection
       const discordSong = discordData?.activities?.find(activity => activity.type === 2);
