@@ -1,6 +1,8 @@
 
 import { User } from "lucide-react";
 import { ConnectionsList } from "./ConnectionsList";
+import { CustomStatus } from "./CustomStatus";
+import { StatusIndicator } from "./StatusIndicator";
 
 interface Connection {
   type: string;
@@ -83,30 +85,10 @@ export const ProfileHeader = ({
           </div>
         </div>
         
-        {/* Compact Status Row with proper spacing */}
-        <div className="flex items-start gap-2 mb-6 flex-shrink-0">
-          <div className={`w-2 h-2 ${getStatusColor()} rounded-full mt-1 flex-shrink-0`}></div>
-          
-          {/* Custom Status with proper text wrapping */}
-          {customStatus?.text && (
-            <div className="inline-flex items-start gap-1 bg-gray-800 backdrop-blur-sm rounded-lg px-3 py-2 border border-gray-600 shadow-md flex-1 min-w-0">
-              {customStatus.emoji?.name && (
-                <span className="text-xs flex-shrink-0 mt-0.5">
-                  {customStatus.emoji.id ? 
-                    <img 
-                      src={`https://cdn.discordapp.com/emojis/${customStatus.emoji.id}.png`} 
-                      alt={customStatus.emoji.name} 
-                      className="w-3 h-3 inline"
-                    /> : 
-                    customStatus.emoji.name
-                  }
-                </span>
-              )}
-              <span className="text-xs text-gray-200 font-medium break-words leading-relaxed">
-                {customStatus.text}
-              </span>
-            </div>
-          )}
+        {/* Fixed height status container to prevent shifting */}
+        <div className="flex items-start gap-2 mb-6 flex-shrink-0 h-[2.5rem]">
+          <StatusIndicator status={status} />
+          <CustomStatus customStatus={customStatus} />
         </div>
         
         {/* Connections Section - now takes up remaining space */}
