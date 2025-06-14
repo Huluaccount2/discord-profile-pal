@@ -66,7 +66,7 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
       } catch (error) {
         console.error('Error checking custom status:', error);
       }
-    }, 5000); // Check every 5 seconds for status changes
+    }, 2000); // Check every 2 seconds for status changes
 
     return () => clearInterval(statusInterval);
   }, [userId, discordId]);
