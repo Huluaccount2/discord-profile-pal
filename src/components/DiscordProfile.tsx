@@ -25,6 +25,18 @@ export const DiscordProfile = () => {
   console.log('DiscordProfile: Rendering with user:', user?.id, 'profile:', profile, 'loading:', loading);
   console.log('DiscordProfile: Spotify connection status:', { isConnected, connectionError });
 
+  // Load last known song from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedSong = window.localStorage.getItem('discordpal:lastKnownSong');
+      if (savedSong) {
+        setLastKnownSong(JSON.parse(savedSong));
+      }
+    } catch (e) {
+      console.warn("Unable to load last known song from localStorage", e);
+    }
+  }, []);
+
   // Timer effect - must be at top level
   useEffect(() => {
     const timer = setInterval(() => {
@@ -73,11 +85,15 @@ export const DiscordProfile = () => {
     }
   }
 
-  // Store last known song effect - must be at top level
+  // Whenever a 'currentSong' is picked up, write it to both local state and localStorage
   useEffect(() => {
     if (currentSong) {
-      console.log('DiscordProfile: Storing last known song:', currentSong);
       setLastKnownSong(currentSong);
+      try {
+        window.localStorage.setItem('discordpal:lastKnownSong', JSON.stringify(currentSong));
+      } catch (e) {
+        console.warn("Unable to save last known song to localStorage", e);
+      }
     }
   }, [currentSong]);
 
@@ -109,14 +125,8 @@ export const DiscordProfile = () => {
     const customStatus = discordData?.custom_status || null;
     const connections = discordData?.connections || [];
 
-    // New logic for song display and fallback:
-    // If connected, always show the last known song if available, even if paused.
-    // Only show the EmptyMusicState "connect" UI if NOT connected and NO last known song.
-    let songToDisplay = currentSong;
-    if (!songToDisplay && lastKnownSong) {
-      // Prefer to always display the last known song if available (even if paused)
-      songToDisplay = lastKnownSong;
-    }
+    // Final logic: always display the most recently detected song, checking both session and localStorage
+    let songToDisplay = currentSong || lastKnownSong;
 
     const shouldShowConnectPrompt = !isConnected && !songToDisplay;
 
