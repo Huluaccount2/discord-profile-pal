@@ -164,37 +164,21 @@ const handler = async (req: Request): Promise<Response> => {
               } else {
                 console.log('Spotify not currently playing or no track data');
               }
+            } else if (spotifyResponse.status === 401) {
+              console.log('Spotify token expired, need refresh');
+              // Don't create fallback activity if token is expired
             } else {
               console.log('Spotify API response not ok or empty:', spotifyResponse.status);
             }
           } catch (spotifyError) {
             console.log('Error fetching Spotify data:', spotifyError);
           }
+        } else {
+          console.log('No Spotify connection with valid access token found');
         }
         
-        // Fallback: If no real Spotify data but connection exists
-        if (activitiesData.length === 0) {
-          const musicConnections = connections.filter((conn: any) => 
-            ['spotify', 'youtube', 'soundcloud'].includes(conn.type) && conn.show_activity
-          );
-          
-          if (musicConnections.length > 0) {
-            const now = Date.now();
-            const startTime = now - (Math.random() * 180000);
-            
-            activitiesData = [
-              {
-                name: musicConnections[0].type.charAt(0).toUpperCase() + musicConnections[0].type.slice(1),
-                type: 2, // Listening
-                details: "Currently listening to music",
-                state: "Music streaming",
-                timestamps: {
-                  start: Math.floor(startTime),
-                },
-              }
-            ];
-          }
-        }
+        // Only create fallback if we have music connections but no real data
+        // Remove the fallback that was causing "Currently listening to music"
       }
     } catch (error) {
       console.log('Could not fetch connections or settings:', error);
@@ -238,11 +222,11 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Failed to update profile');
     }
 
-    // Return the user data with only music activities and custom status
+    // Return the user data with only real music activities and custom status
     const responseData = {
       user: userData,
       status: userStatus,
-      activities: activitiesData, // Only music activities now
+      activities: activitiesData, // Only real Spotify data, no fallbacks
       avatar_url: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png?size=256` : null,
       custom_status: customStatus,
     };
