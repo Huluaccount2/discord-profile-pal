@@ -23,6 +23,9 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
     }
   };
 
+  console.log('NowPlaying component received currentSong:', currentSong);
+  console.log('Album cover URL:', currentSong.assets?.large_image);
+
   return (
     <div className="bg-gradient-to-r from-green-900/20 to-green-800/20 border border-green-700/30 rounded-lg p-4">
       <div className="flex items-start gap-4">
@@ -34,7 +37,7 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
               alt={currentSong.assets.large_text || 'Album cover'}
               className="w-20 h-20 rounded-lg shadow-lg object-cover"
               onError={(e) => {
-                console.log('Failed to load album cover:', currentSong.assets?.large_image);
+                console.error('Failed to load album cover:', currentSong.assets?.large_image);
                 e.currentTarget.style.display = 'none';
               }}
               onLoad={() => {
