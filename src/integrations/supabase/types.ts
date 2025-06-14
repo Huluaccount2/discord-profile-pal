@@ -18,6 +18,9 @@ export type Database = {
           discord_id: string | null
           discord_username: string | null
           id: string
+          spotify_access_token: string | null
+          spotify_refresh_token: string | null
+          spotify_token_expires_at: string | null
           updated_at: string
           username: string | null
         }
@@ -29,6 +32,9 @@ export type Database = {
           discord_id?: string | null
           discord_username?: string | null
           id: string
+          spotify_access_token?: string | null
+          spotify_refresh_token?: string | null
+          spotify_token_expires_at?: string | null
           updated_at?: string
           username?: string | null
         }
@@ -40,6 +46,9 @@ export type Database = {
           discord_id?: string | null
           discord_username?: string | null
           id?: string
+          spotify_access_token?: string | null
+          spotify_refresh_token?: string | null
+          spotify_token_expires_at?: string | null
           updated_at?: string
           username?: string | null
         }

@@ -34,9 +34,6 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const url = new URL(req.url);
-    const action = url.searchParams.get('action');
-
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -55,14 +52,18 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Invalid user token');
     }
 
-    if (action === 'authorize') {
-      // Step 1: Generate authorization URL
+    // Parse request body to get action
+    const body = await req.json().catch(() => ({}));
+    const action = body.action;
+
+    if (!action) {
+      // Default action - generate authorization URL
       const clientId = Deno.env.get('SPOTIFY_CLIENT_ID');
       if (!clientId) {
         throw new Error('Spotify client ID not configured');
       }
 
-      const redirectUri = `${url.origin}/api/spotify-callback`;
+      const redirectUri = `${new URL(req.url).origin}/auth`;
       const scopes = 'user-read-currently-playing user-read-playback-state';
       const state = user.id; // Use user ID as state for security
 
@@ -79,66 +80,8 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    if (action === 'callback') {
-      // Step 2: Handle OAuth callback
-      const code = url.searchParams.get('code');
-      const state = url.searchParams.get('state');
-
-      if (!code || state !== user.id) {
-        throw new Error('Invalid OAuth callback');
-      }
-
-      const clientId = Deno.env.get('SPOTIFY_CLIENT_ID');
-      const clientSecret = Deno.env.get('SPOTIFY_CLIENT_SECRET');
-      
-      if (!clientId || !clientSecret) {
-        throw new Error('Spotify credentials not configured');
-      }
-
-      // Exchange code for tokens
-      const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
-        },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          code,
-          redirect_uri: `${url.origin}/api/spotify-callback`,
-        }),
-      });
-
-      if (!tokenResponse.ok) {
-        throw new Error('Failed to exchange code for tokens');
-      }
-
-      const tokens: SpotifyTokenResponse = await tokenResponse.json();
-
-      // Store tokens in user profile
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          spotify_access_token: tokens.access_token,
-          spotify_refresh_token: tokens.refresh_token,
-          spotify_token_expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-
-      if (updateError) {
-        console.error('Error storing Spotify tokens:', updateError);
-        throw new Error('Failed to store tokens');
-      }
-
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
-    }
-
     if (action === 'current-track') {
-      // Step 3: Get current playing track with token refresh
+      // Get current playing track with token refresh
       const { data: profile } = await supabase
         .from('profiles')
         .select('spotify_access_token, spotify_refresh_token, spotify_token_expires_at')
