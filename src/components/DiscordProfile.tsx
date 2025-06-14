@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -118,6 +117,10 @@ export const DiscordProfile = () => {
     `https://cdn.discordapp.com/banners/${discordData.user.id}/${discordData.user.banner}.png?size=600` : 
     null;
 
+  // Get bio and custom status from Discord data
+  const bio = discordData?.user?.bio || null;
+  const customStatus = discordData?.custom_status || null;
+
   // Only show listening activities (type 2)
   const currentSong = activities.find(activity => activity.type === 2);
 
@@ -135,6 +138,8 @@ export const DiscordProfile = () => {
         avatarUrl={avatarUrl}
         status={status}
         bannerUrl={bannerUrl}
+        bio={bio}
+        customStatus={customStatus}
       />
 
       {currentSong ? (

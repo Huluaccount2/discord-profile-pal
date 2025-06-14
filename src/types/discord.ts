@@ -32,8 +32,16 @@ export interface DiscordData {
     discriminator: string;
     avatar: string | null;
     banner?: string | null;
+    bio?: string | null;
   };
   status: 'online' | 'idle' | 'dnd' | 'offline';
   activities: DiscordActivity[];
   avatar_url: string | null;
+  custom_status?: {
+    text?: string;
+    emoji?: {
+      name?: string;
+      id?: string;
+    };
+  };
 }

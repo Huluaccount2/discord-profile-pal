@@ -13,6 +13,8 @@ interface DiscordUser {
   discriminator: string;
   avatar: string | null;
   global_name?: string;
+  banner?: string | null;
+  bio?: string | null;
 }
 
 interface DiscordActivity {
@@ -79,11 +81,28 @@ const handler = async (req: Request): Promise<Response> => {
     const userData: DiscordUser = await userResponse.json();
     console.log('User data fetched:', userData);
 
-    // Get user connections to find Spotify access token
+    // Get user connections to find Spotify access token and custom status
     let activitiesData: DiscordActivity[] = [];
     let userStatus: 'online' | 'idle' | 'dnd' | 'offline' = 'online';
+    let customStatus: any = null;
     
     try {
+      // Fetch user settings to get custom status
+      const settingsResponse = await fetch(`https://discord.com/api/v10/users/@me/settings`, {
+        headers: {
+          'Authorization': userToken,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (settingsResponse.ok) {
+        const settings = await settingsResponse.json();
+        if (settings.custom_status) {
+          customStatus = settings.custom_status;
+          console.log('Custom status fetched:', customStatus);
+        }
+      }
+
       const connectionsResponse = await fetch(`https://discord.com/api/v10/users/@me/connections`, {
         headers: {
           'Authorization': userToken,
@@ -178,7 +197,7 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
     } catch (error) {
-      console.log('Could not fetch connections:', error);
+      console.log('Could not fetch connections or settings:', error);
     }
 
     // Since the user is making this request, we know they're online
@@ -219,12 +238,13 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Failed to update profile');
     }
 
-    // Return the user data with only music activities
+    // Return the user data with only music activities and custom status
     const responseData = {
       user: userData,
       status: userStatus,
       activities: activitiesData, // Only music activities now
       avatar_url: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png?size=256` : null,
+      custom_status: customStatus,
     };
 
     console.log('Discord data processed successfully');

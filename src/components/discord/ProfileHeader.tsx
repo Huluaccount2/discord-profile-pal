@@ -8,9 +8,17 @@ interface ProfileHeaderProps {
   avatarUrl: string | null;
   status: 'online' | 'idle' | 'dnd' | 'offline';
   bannerUrl?: string | null;
+  bio?: string | null;
+  customStatus?: {
+    text?: string;
+    emoji?: {
+      name?: string;
+      id?: string;
+    };
+  };
 }
 
-export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, bannerUrl }: ProfileHeaderProps) => {
+export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, bannerUrl, bio, customStatus }: ProfileHeaderProps) => {
   const getStatusColor = () => {
     switch (status) {
       case 'online': return 'bg-green-500';
@@ -64,10 +72,37 @@ export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, b
             {displayName}
             <span className="text-gray-400 text-sm font-normal">#{discriminator}</span>
           </h2>
-          <Badge variant="secondary" className="bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors">
+          
+          {/* Custom Status */}
+          {customStatus?.text && (
+            <div className="flex items-center gap-2 mb-2">
+              {customStatus.emoji?.name && (
+                <span className="text-sm">
+                  {customStatus.emoji.id ? 
+                    <img 
+                      src={`https://cdn.discordapp.com/emojis/${customStatus.emoji.id}.png`} 
+                      alt={customStatus.emoji.name} 
+                      className="w-4 h-4 inline"
+                    /> : 
+                    customStatus.emoji.name
+                  }
+                </span>
+              )}
+              <span className="text-sm text-gray-300">{customStatus.text}</span>
+            </div>
+          )}
+          
+          <Badge variant="secondary" className="bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors mb-2">
             <div className={`w-2 h-2 ${getStatusColor()} rounded-full mr-2`}></div>
             {getStatusText()}
           </Badge>
+          
+          {/* Bio */}
+          {bio && (
+            <div className="mt-2">
+              <p className="text-sm text-gray-400 whitespace-pre-line">{bio}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
