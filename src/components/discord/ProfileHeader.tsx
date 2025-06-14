@@ -60,50 +60,57 @@ export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, b
   };
 
   return (
-    <div className="relative mb-6">
-      {/* Banner Background - Much Brighter */}
+    <div className="relative mb-6 h-full">
+      {/* Banner Background - Much Larger */}
       {bannerUrl && (
         <div 
-          className="absolute inset-0 h-24 rounded-lg bg-cover bg-center bg-no-repeat opacity-90"
+          className="absolute inset-0 h-40 rounded-lg bg-cover bg-center bg-no-repeat opacity-90"
           style={{ backgroundImage: `url(${bannerUrl})` }}
         />
       )}
       
       {/* Lighter gradient overlay for better text readability */}
-      <div className="absolute inset-0 h-24 rounded-lg bg-gradient-to-b from-transparent to-gray-900/30" />
+      <div className="absolute inset-0 h-40 rounded-lg bg-gradient-to-b from-transparent to-gray-900/30" />
       
       {/* Profile Content */}
-      <div className="relative flex items-start gap-4 pt-8">
-        <div className="relative">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={`${displayName}'s avatar`}
-              className="w-16 h-16 rounded-full ring-2 ring-gray-700 transition-transform hover:scale-105"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-full ring-2 ring-gray-700 bg-gray-600 flex items-center justify-center">
-              <User className="w-8 h-8 text-gray-400" />
-            </div>
-          )}
-          <div className={`absolute -bottom-1 -right-1 w-5 h-5 ${getStatusColor()} rounded-full border-2 border-gray-900`}></div>
+      <div className="relative flex flex-col pt-8">
+        {/* Avatar and Username Row */}
+        <div className="flex items-start gap-4 mb-6">
+          <div className="relative">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={`${displayName}'s avatar`}
+                className="w-20 h-20 rounded-full ring-2 ring-gray-700 transition-transform hover:scale-105"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full ring-2 ring-gray-700 bg-gray-600 flex items-center justify-center">
+                <User className="w-10 h-10 text-gray-400" />
+              </div>
+            )}
+            <div className={`absolute -bottom-1 -right-1 w-6 h-6 ${getStatusColor()} rounded-full border-2 border-gray-900`}></div>
+          </div>
+          
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-white mb-2">
+              {displayName}
+            </h2>
+          </div>
         </div>
         
-        <div className="flex-1">
-          {/* Username next to profile picture */}
-          <h2 className="text-xl font-bold text-white mb-2">
-            {displayName}
-          </h2>
+        {/* Status and Bio Section - Pushed to Left */}
+        <div className="space-y-4">
+          <div className="flex justify-start">
+            <Badge variant="secondary" className="bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors">
+              <div className={`w-2 h-2 ${getStatusColor()} rounded-full mr-2`}></div>
+              {getStatusText()}
+            </Badge>
+          </div>
           
-          <Badge variant="secondary" className="bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors mb-3">
-            <div className={`w-2 h-2 ${getStatusColor()} rounded-full mr-2`}></div>
-            {getStatusText()}
-          </Badge>
-          
-          {/* Custom Status - Discord-style bubble with improved visibility */}
+          {/* Custom Status - Left aligned */}
           {customStatus?.text && (
-            <div className="mb-3">
-              <div className="inline-flex items-center gap-2 bg-gray-800 backdrop-blur-sm rounded-full px-3 py-2 border border-gray-600 shadow-md">
+            <div className="flex justify-start">
+              <div className="inline-flex items-center gap-2 bg-gray-800 backdrop-blur-sm rounded-full px-4 py-2 border border-gray-600 shadow-md">
                 {customStatus.emoji?.name && (
                   <span className="text-sm">
                     {customStatus.emoji.id ? 
@@ -121,9 +128,9 @@ export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, b
             </div>
           )}
           
-          {/* Bio with clickable links */}
+          {/* Bio - Left aligned */}
           {bio && (
-            <div className="mt-2">
+            <div className="text-left max-w-md">
               <p className="text-sm text-gray-400 whitespace-pre-line">
                 {renderBioWithLinks(bio)}
               </p>

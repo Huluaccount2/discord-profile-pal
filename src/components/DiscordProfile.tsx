@@ -84,10 +84,10 @@ export const DiscordProfile = () => {
         hideRefreshButton={true}
       />
 
-      {/* Horizontal layout for Car Thing */}
-      <div className="flex-1 flex gap-4">
-        {/* Left side - Profile */}
-        <div className="flex-shrink-0 w-80">
+      {/* Horizontal layout for Car Thing - larger profile, smaller music */}
+      <div className="flex-1 flex gap-6">
+        {/* Left side - Profile (expanded) */}
+        <div className="flex-shrink-0 w-[500px]">
           <ProfileHeader 
             displayName={displayName}
             discriminator={discriminator}
@@ -99,8 +99,8 @@ export const DiscordProfile = () => {
           />
         </div>
 
-        {/* Right side - Music */}
-        <div className="flex-1 flex items-center">
+        {/* Right side - Music (compressed) */}
+        <div className="flex-1 flex items-center min-w-0">
           {currentSong ? (
             <NowPlaying currentSong={currentSong} />
           ) : (
