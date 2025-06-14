@@ -31,6 +31,7 @@ export interface DiscordData {
     username: string;
     discriminator: string;
     avatar: string | null;
+    banner?: string | null;
   };
   status: 'online' | 'idle' | 'dnd' | 'offline';
   activities: DiscordActivity[];

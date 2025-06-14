@@ -113,6 +113,11 @@ export const DiscordProfile = () => {
   const status = discordData?.status || 'offline';
   const activities = discordData?.activities || [];
 
+  // Get banner URL from Discord data
+  const bannerUrl = discordData?.user?.banner ? 
+    `https://cdn.discordapp.com/banners/${discordData.user.id}/${discordData.user.banner}.png?size=600` : 
+    null;
+
   // Only show listening activities (type 2)
   const currentSong = activities.find(activity => activity.type === 2);
 
@@ -129,6 +134,7 @@ export const DiscordProfile = () => {
         discriminator={discriminator}
         avatarUrl={avatarUrl}
         status={status}
+        bannerUrl={bannerUrl}
       />
 
       {currentSong ? (
