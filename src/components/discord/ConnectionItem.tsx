@@ -48,7 +48,7 @@ export const ConnectionItem = ({ connection }: ConnectionItemProps) => {
       epicgames: 'bg-gray-900',
       riotgames: 'bg-red-700',
       playstation: 'bg-blue-700',
-      roblox: 'bg-green-500'
+      roblox: 'bg-black'
     };
     return colors[type.toLowerCase()] || 'bg-gray-700';
   };
