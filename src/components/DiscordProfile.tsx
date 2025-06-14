@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -94,13 +93,6 @@ export const DiscordProfile = () => {
         
         // Update custom status tracking
         lastCustomStatusRef.current = data?.custom_status?.text || null;
-        
-        if (showToast) {
-          toast({
-            title: "Discord data updated",
-            description: "Successfully fetched your Discord activity!",
-          });
-        }
       }
     } catch (error) {
       console.error('Error calling Discord function:', error);
