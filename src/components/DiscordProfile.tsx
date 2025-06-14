@@ -8,10 +8,10 @@ import { WidgetFooter } from "@/components/discord/WidgetFooter";
 import { useProfile } from "@/hooks/useProfile";
 import { useDiscordData } from "@/hooks/useDiscordData";
 import { useSpotify } from "@/hooks/useSpotify";
+import { useLastKnownSong } from "@/hooks/useLastKnownSong";
 
 export const DiscordProfile = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [lastKnownSong, setLastKnownSong] = useState<any>(null);
   const { user } = useAuth();
   const { profile, loading } = useProfile(user?.id);
   const { discordData, refreshing, fetchDiscordData } = useDiscordData(user?.id, profile?.discord_id);
@@ -22,20 +22,11 @@ export const DiscordProfile = () => {
     connectionError
   } = useSpotify(user?.id);
 
+  // Use refactored hook for localStorage song
+  const [lastKnownSong, setLastKnownSong] = useLastKnownSong();
+
   console.log('DiscordProfile: Rendering with user:', user?.id, 'profile:', profile, 'loading:', loading);
   console.log('DiscordProfile: Spotify connection status:', { isConnected, connectionError });
-
-  // Load last known song from localStorage on mount
-  useEffect(() => {
-    try {
-      const savedSong = window.localStorage.getItem('discordpal:lastKnownSong');
-      if (savedSong) {
-        setLastKnownSong(JSON.parse(savedSong));
-      }
-    } catch (e) {
-      console.warn("Unable to load last known song from localStorage", e);
-    }
-  }, []);
 
   // Timer effect - must be at top level
   useEffect(() => {
@@ -89,13 +80,8 @@ export const DiscordProfile = () => {
   useEffect(() => {
     if (currentSong) {
       setLastKnownSong(currentSong);
-      try {
-        window.localStorage.setItem('discordpal:lastKnownSong', JSON.stringify(currentSong));
-      } catch (e) {
-        console.warn("Unable to save last known song to localStorage", e);
-      }
     }
-  }, [currentSong]);
+  }, [currentSong, setLastKnownSong]);
 
   if (loading) {
     console.log('DiscordProfile: Still loading profile...');
