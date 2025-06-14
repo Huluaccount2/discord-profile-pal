@@ -30,6 +30,22 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
     }
   }, [currentSong]);
 
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
+    console.log(isPlaying ? 'Pausing' : 'Playing');
+    // In a real implementation, this would control the actual playback
+  };
+
+  const handlePrevious = () => {
+    console.log('Previous track');
+    // In a real implementation, this would skip to previous track
+  };
+
+  const handleNext = () => {
+    console.log('Next track');
+    // In a real implementation, this would skip to next track
+  };
+
   console.log('NowPlaying component received currentSong:', currentSong);
   console.log('Album cover URL:', currentSong.assets?.large_image);
 
@@ -38,10 +54,10 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
       {/* Blurred background */}
       {currentSong.assets?.large_image && (
         <div 
-          className="absolute inset-0 bg-cover bg-center rounded-lg opacity-10 blur-sm"
+          className="absolute inset-0 bg-cover bg-center rounded-lg opacity-20 blur-sm"
           style={{ 
             backgroundImage: `url(${currentSong.assets.large_image})`,
-            filter: 'blur(8px) opacity(0.9)'
+            filter: 'blur(8px) brightness(0.4)'
           }}
         />
       )}
@@ -98,7 +114,8 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="text-green-400 hover:text-green-300 hover:bg-green-900/20"
+            className="text-green-400 hover:text-green-300 hover:bg-green-900/20 transition-all duration-200 hover:scale-110"
+            onClick={handlePrevious}
           >
             <SkipBack className="w-5 h-5" />
           </Button>
@@ -106,8 +123,8 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="text-green-400 hover:text-green-300 hover:bg-green-900/20"
-            onClick={() => setIsPlaying(!isPlaying)}
+            className="text-green-400 hover:text-green-300 hover:bg-green-900/20 transition-all duration-200 hover:scale-110"
+            onClick={handlePlayPause}
           >
             {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
           </Button>
@@ -115,7 +132,8 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="text-green-400 hover:text-green-300 hover:bg-green-900/20"
+            className="text-green-400 hover:text-green-300 hover:bg-green-900/20 transition-all duration-200 hover:scale-110"
+            onClick={handleNext}
           >
             <SkipForward className="w-5 h-5" />
           </Button>

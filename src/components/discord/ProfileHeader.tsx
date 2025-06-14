@@ -45,7 +45,7 @@ export const ProfileHeader = ({
   };
 
   return (
-    <div className="relative h-full overflow-hidden">
+    <div className="relative h-full overflow-hidden flex flex-col">
       {/* Compact banner for Car Thing */}
       {bannerUrl && (
         <div 
@@ -58,9 +58,9 @@ export const ProfileHeader = ({
       <div className="absolute inset-0 h-20 rounded-lg bg-gradient-to-b from-transparent to-gray-900/30" />
       
       {/* Compact Profile Content for Car Thing */}
-      <div className="relative flex flex-col pt-8">
+      <div className="relative flex flex-col pt-8 flex-1 min-h-0">
         {/* Compact Avatar and Username Row */}
-        <div className="flex items-start gap-3 mb-3">
+        <div className="flex items-start gap-3 mb-3 flex-shrink-0">
           <div className="relative -mt-4">
             {avatarUrl ? (
               <img
@@ -83,15 +83,15 @@ export const ProfileHeader = ({
           </div>
         </div>
         
-        {/* Compact Status Row */}
-        <div className="flex items-center gap-2 mb-3">
-          <div className={`w-2 h-2 ${getStatusColor()} rounded-full`}></div>
+        {/* Compact Status Row with proper spacing */}
+        <div className="flex items-start gap-2 mb-3 flex-shrink-0">
+          <div className={`w-2 h-2 ${getStatusColor()} rounded-full mt-1 flex-shrink-0`}></div>
           
-          {/* Compact Custom Status */}
+          {/* Custom Status with proper text wrapping */}
           {customStatus?.text && (
-            <div className="inline-flex items-center gap-1 bg-gray-800 backdrop-blur-sm rounded-full px-2 py-1 border border-gray-600 shadow-md">
+            <div className="inline-flex items-start gap-1 bg-gray-800 backdrop-blur-sm rounded-lg px-3 py-2 border border-gray-600 shadow-md flex-1 min-w-0">
               {customStatus.emoji?.name && (
-                <span className="text-xs">
+                <span className="text-xs flex-shrink-0 mt-0.5">
                   {customStatus.emoji.id ? 
                     <img 
                       src={`https://cdn.discordapp.com/emojis/${customStatus.emoji.id}.png`} 
@@ -102,13 +102,15 @@ export const ProfileHeader = ({
                   }
                 </span>
               )}
-              <span className="text-xs text-gray-200 font-medium truncate max-w-[120px]">{customStatus.text}</span>
+              <span className="text-xs text-gray-200 font-medium break-words leading-relaxed">
+                {customStatus.text}
+              </span>
             </div>
           )}
         </div>
         
-        {/* Compact Connections Section */}
-        <div className="flex-1 overflow-hidden">
+        {/* Connections Section with flexible height */}
+        <div className="flex-1 min-h-0 overflow-hidden">
           <ConnectionsList connections={connections} />
         </div>
       </div>
