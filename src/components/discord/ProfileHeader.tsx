@@ -37,12 +37,34 @@ export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, b
     }
   };
 
+  const renderBioWithLinks = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    
+    return parts.map((part, index) => {
+      if (urlRegex.test(part)) {
+        return (
+          <a 
+            key={index} 
+            href={part} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 underline"
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   return (
     <div className="relative mb-6">
-      {/* Banner Background */}
+      {/* Banner Background - Brighter */}
       {bannerUrl && (
         <div 
-          className="absolute inset-0 h-24 rounded-lg bg-cover bg-center bg-no-repeat opacity-30"
+          className="absolute inset-0 h-24 rounded-lg bg-cover bg-center bg-no-repeat opacity-60"
           style={{ backgroundImage: `url(${bannerUrl})` }}
         />
       )}
@@ -51,7 +73,7 @@ export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, b
       <div className="absolute inset-0 h-24 rounded-lg bg-gradient-to-b from-transparent to-gray-900/50" />
       
       {/* Profile Content */}
-      <div className="relative flex items-center gap-4 pt-8">
+      <div className="relative flex items-start gap-4 pt-8">
         <div className="relative">
           {avatarUrl ? (
             <img
@@ -68,14 +90,19 @@ export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, b
         </div>
         
         <div className="flex-1">
-          <h2 className="text-xl font-bold text-white mb-1">
+          {/* Username next to profile picture */}
+          <h2 className="text-xl font-bold text-white mb-2">
             {displayName}
-            <span className="text-gray-400 text-sm font-normal">#{discriminator}</span>
           </h2>
           
-          {/* Custom Status */}
+          <Badge variant="secondary" className="bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors mb-3">
+            <div className={`w-2 h-2 ${getStatusColor()} rounded-full mr-2`}></div>
+            {getStatusText()}
+          </Badge>
+          
+          {/* Custom Status - Own spot between name and bio */}
           {customStatus?.text && (
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-3">
               {customStatus.emoji?.name && (
                 <span className="text-sm">
                   {customStatus.emoji.id ? 
@@ -92,15 +119,12 @@ export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, b
             </div>
           )}
           
-          <Badge variant="secondary" className="bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors mb-2">
-            <div className={`w-2 h-2 ${getStatusColor()} rounded-full mr-2`}></div>
-            {getStatusText()}
-          </Badge>
-          
-          {/* Bio */}
+          {/* Bio with clickable links */}
           {bio && (
             <div className="mt-2">
-              <p className="text-sm text-gray-400 whitespace-pre-line">{bio}</p>
+              <p className="text-sm text-gray-400 whitespace-pre-line">
+                {renderBioWithLinks(bio)}
+              </p>
             </div>
           )}
         </div>
