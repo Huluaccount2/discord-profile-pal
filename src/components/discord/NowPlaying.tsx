@@ -1,6 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { MusicArtwork } from './music/MusicArtwork';
+import { MusicInfo } from './music/MusicInfo';
+import { MusicProgressBar } from './music/MusicProgressBar';
+import { useMusicProgressTracker } from './music/MusicProgressTracker';
 
 interface NowPlayingProps {
   currentSong: any;
@@ -19,13 +23,6 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [titleOverflows, setTitleOverflows] = useState(false);
-  const [artistOverflows, setArtistOverflows] = useState(false);
-  const [albumOverflows, setAlbumOverflows] = useState(false);
-  
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const artistRef = useRef<HTMLParagraphElement>(null);
-  const albumRef = useRef<HTMLParagraphElement>(null);
 
   console.log('NowPlaying: Rendering with props:', {
     currentSong: currentSong ? 'present' : 'null',
@@ -33,107 +30,17 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     spotifyData: spotifyData ? 'present' : 'null'
   });
 
-  // Helper function to clean artist name
-  const cleanArtistName = (artistName: string) => {
-    if (!artistName) return 'Unknown Artist';
-    // Remove "by " prefix if it exists (case insensitive)
-    return artistName.replace(/^by\s+/i, '');
-  };
+  const handleProgressUpdate = useCallback((time: number, playing: boolean) => {
+    setCurrentTime(time);
+    setIsPlaying(playing);
+  }, []);
 
-  const formatTime = (ms: number) => {
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  useEffect(() => {
-    console.log('NowPlaying: Setting up progress tracking effect');
-    
-    if (!currentSong?.timestamps?.start || !currentSong?.timestamps?.end) {
-      console.log('NowPlaying: No valid timestamps found, using current state');
-      return;
-    }
-
-    const startTime = currentSong.timestamps.start;
-    const endTime = currentSong.timestamps.end;
-    const duration = endTime - startTime;
-    
-    console.log('NowPlaying: Setting up progress tracking:', { startTime, endTime, duration });
-
-    const updateProgress = () => {
-      const now = Date.now();
-      const elapsed = now - startTime;
-      
-      // For Spotify OAuth integration, prioritize Spotify's state
-      if (isSpotifyConnected && currentSong.name === "Spotify" && spotifyData) {
-        console.log('NowPlaying: Using Spotify OAuth state:', {
-          isPlaying: spotifyData.isPlaying,
-          progress: spotifyData.track?.progress
-        });
-        
-        // Always update playing state from Spotify
-        setIsPlaying(spotifyData.isPlaying);
-        
-        if (spotifyData.track) {
-          // Use Spotify's actual progress - always update this
-          setCurrentTime(spotifyData.track.progress);
-        }
-      } else {
-        // For Discord activities, calculate based on timestamps
-        const currentPlayingState = elapsed >= 0 && elapsed <= duration;
-        console.log('NowPlaying: Using Discord activity state:', {
-          elapsed,
-          duration,
-          isPlaying: currentPlayingState
-        });
-        
-        setCurrentTime(Math.max(0, Math.min(elapsed, duration)));
-        setIsPlaying(currentPlayingState);
-      }
-    };
-
-    // Always update progress and state, regardless of playing status
-    updateProgress();
-    
-    // Continue updating every second to keep UI responsive
-    const interval = setInterval(updateProgress, 1000);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [currentSong, isSpotifyConnected, spotifyData]);
-
-  // Check for text overflow and determine if we need multiple lines
-  useEffect(() => {
-    const checkOverflow = () => {
-      if (titleRef.current) {
-        const isOverflowing = titleRef.current.scrollWidth > titleRef.current.clientWidth;
-        setTitleOverflows(isOverflowing);
-      }
-      
-      if (artistRef.current) {
-        const isOverflowing = artistRef.current.scrollWidth > artistRef.current.clientWidth;
-        setArtistOverflows(isOverflowing);
-      }
-      
-      if (albumRef.current) {
-        const isOverflowing = albumRef.current.scrollWidth > albumRef.current.clientWidth;
-        setAlbumOverflows(isOverflowing);
-      }
-    };
-
-    // Check after a short delay to ensure DOM has rendered
-    const timeoutId = setTimeout(checkOverflow, 100);
-    
-    // Also check on window resize
-    window.addEventListener('resize', checkOverflow);
-    
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener('resize', checkOverflow);
-    };
-  }, [currentSong?.details, currentSong?.state, currentSong?.assets?.large_text]);
+  useMusicProgressTracker({
+    currentSong,
+    isSpotifyConnected,
+    spotifyData,
+    onProgressUpdate: handleProgressUpdate
+  });
 
   if (!currentSong) {
     console.log('NowPlaying: No current song, not rendering');
@@ -154,7 +61,6 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   try {
     return (
       <div className="relative w-full h-full rounded-lg overflow-hidden">
-        {/* Lighter Blurred Background */}
         <div 
           className="absolute inset-0 bg-cover bg-center filter blur-sm"
           style={{ 
@@ -163,79 +69,28 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
           }}
         />
         
-        {/* Content overlay with more transparency */}
         <Card className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-8 w-full h-full flex items-center">
           <div className="flex items-center space-x-8 w-full">
-            {/* Large Album Art with play state indicator */}
-            <div className="flex-shrink-0 relative">
-              <img
-                src={currentSong.assets?.large_image || '/placeholder.svg'}
-                alt={currentSong.assets?.large_text || 'Album Art'}
-                className={`w-32 h-32 rounded-xl object-cover shadow-2xl transition-opacity ${
-                  !isPlaying ? 'opacity-60' : 'opacity-100'
-                }`}
-              />
-              {/* Show paused indicator when not playing */}
-              {!isPlaying && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="bg-black/50 rounded-full p-2">
-                    <div className="text-white text-xs font-medium">PAUSED</div>
-                  </div>
-                </div>
-              )}
-            </div>
+            <MusicArtwork 
+              imageUrl={currentSong.assets?.large_image}
+              altText={currentSong.assets?.large_text}
+              isPlaying={isPlaying}
+            />
 
-            {/* Song Info */}
             <div className="flex-1 min-w-0">
-              <div className="mb-6">
-                {/* Song Title - with overflow handling and play state styling */}
-                <h3 
-                  ref={titleRef}
-                  className={`font-bold text-3xl mb-2 transition-opacity ${
-                    !isPlaying ? 'text-gray-300' : 'text-white'
-                  } ${titleOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
-                >
-                  {currentSong.details || 'Unknown Track'}
-                </h3>
-                
-                {/* Artist - with overflow handling, cleaned of "by" prefix, and play state styling */}
-                <p 
-                  ref={artistRef}
-                  className={`text-xl mb-2 transition-opacity ${
-                    !isPlaying ? 'text-gray-400' : 'text-gray-300'
-                  } ${artistOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
-                >
-                  {cleanArtistName(currentSong.state)}
-                </p>
-                
-                {/* Album - with overflow handling and play state styling */}
-                {currentSong.assets?.large_text && (
-                  <p 
-                    ref={albumRef}
-                    className={`text-lg transition-opacity ${
-                      !isPlaying ? 'text-gray-500' : 'text-gray-400'
-                    } ${albumOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
-                  >
-                    {currentSong.assets.large_text}
-                  </p>
-                )}
-              </div>
+              <MusicInfo 
+                title={currentSong.details}
+                artist={currentSong.state}
+                album={currentSong.assets?.large_text}
+                isPlaying={isPlaying}
+              />
 
-              {/* Progress Bar - always show but dim when paused */}
-              <div className="mb-4">
-                <Progress 
-                  value={progress} 
-                  className={`h-3 mb-3 transition-opacity ${
-                    !isPlaying ? 'opacity-50' : 'opacity-100'
-                  }`} 
-                />
-                <div className={`flex justify-between text-sm transition-opacity ${
-                  !isPlaying ? 'text-gray-500' : 'text-gray-300'
-                }`}>
-                  <span>{formatTime(currentTime)}</span>
-                  <span>{formatTime(duration)}</span>
-                </div>
-              </div>
+              <MusicProgressBar 
+                currentTime={currentTime}
+                duration={duration}
+                progress={progress}
+                isPlaying={isPlaying}
+              />
             </div>
           </div>
         </Card>
