@@ -1,14 +1,23 @@
 
 import { DiscordProfile } from "@/components/DiscordProfile";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDeskThing } from "@/contexts/DeskThingContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { User } from "lucide-react";
+import { useEffect } from "react";
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const { isRunningOnDeskThing, sendLog } = useDeskThing();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isRunningOnDeskThing) {
+      sendLog('info', 'Discord Profile Pal loaded on DeskThing', { userId: user?.id });
+    }
+  }, [user, isRunningOnDeskThing, sendLog]);
 
   if (loading) {
     return (
@@ -25,7 +34,12 @@ const Index = () => {
           <div className="space-y-4">
             <User className="h-16 w-16 text-blue-400 mx-auto" />
             <h1 className="text-2xl font-bold text-white">Welcome</h1>
-            <p className="text-gray-400">Sign in to view your Discord profile and status</p>
+            <p className="text-gray-400">
+              {isRunningOnDeskThing ? 
+                "Sign in to view your Discord profile on your Car Thing" : 
+                "Sign in to view your Discord profile and status"
+              }
+            </p>
             <Button 
               onClick={() => navigate('/auth')}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"

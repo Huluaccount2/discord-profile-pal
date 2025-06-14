@@ -1,0 +1,18 @@
+
+{
+  "name": "Discord Profile Pal",
+  "id": "discord-profile-pal",
+  "short_name": "DiscordPal",
+  "description": "Display your Discord profile with real-time Spotify integration on your Car Thing",
+  "builtFor": "0.9.0",
+  "version": "1.0.0",
+  "author": "Lovable",
+  "homepage": "https://lovable.dev",
+  "repository": "https://github.com/lovable-dev/discord-profile-pal",
+  "compatible": ["0.8.0", "0.9.0"],
+  "platforms": ["web"],
+  "type": ["webapp"],
+  "requires": ["web"],
+  "zip_url": "",
+  "zip_sha256": ""
+}

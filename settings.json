@@ -1,0 +1,34 @@
+
+{
+  "refresh_interval": {
+    "label": "Refresh Interval",
+    "description": "How often to refresh Discord and Spotify data (in seconds)",
+    "type": "number",
+    "default": 10,
+    "min": 5,
+    "max": 300
+  },
+  "show_custom_status": {
+    "label": "Show Custom Status",
+    "description": "Display Discord custom status messages",
+    "type": "boolean",
+    "default": true
+  },
+  "show_connections": {
+    "label": "Show Connections",
+    "description": "Display linked social accounts",
+    "type": "boolean",
+    "default": true
+  },
+  "theme": {
+    "label": "Theme",
+    "description": "Color theme for the interface",
+    "type": "select",
+    "options": [
+      { "value": "dark", "label": "Dark" },
+      { "value": "light", "label": "Light" },
+      { "value": "auto", "label": "Auto" }
+    ],
+    "default": "dark"
+  }
+}
