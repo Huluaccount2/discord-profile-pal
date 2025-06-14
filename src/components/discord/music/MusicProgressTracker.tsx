@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 
 interface MusicProgressTrackerProps {
@@ -14,11 +13,16 @@ export const useMusicProgressTracker = ({
   spotifyData,
   onProgressUpdate
 }: MusicProgressTrackerProps) => {
+  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+  const [cachedProgress, setCachedProgress] = useState(0);
+  const [cachedIsPlaying, setCachedIsPlaying] = useState(false);
+
   useEffect(() => {
     console.log('MusicProgressTracker: Setting up progress tracking effect');
     
     if (!currentSong?.timestamps?.start || !currentSong?.timestamps?.end) {
-      console.log('MusicProgressTracker: No valid timestamps found, using current state');
+      console.log('MusicProgressTracker: No valid timestamps found');
+      onProgressUpdate(0, false);
       return;
     }
 
@@ -30,27 +34,55 @@ export const useMusicProgressTracker = ({
 
     const updateProgress = () => {
       const now = Date.now();
-      const elapsed = now - startTime;
       
-      if (isSpotifyConnected && currentSong.name === "Spotify" && spotifyData) {
+      if (isSpotifyConnected && currentSong.name === "Spotify" && spotifyData?.track) {
         console.log('MusicProgressTracker: Using Spotify OAuth state:', {
           isPlaying: spotifyData.isPlaying,
-          progress: spotifyData.track?.progress
+          progress: spotifyData.track.progress
         });
         
-        if (spotifyData.track) {
-          onProgressUpdate(spotifyData.track.progress, spotifyData.isPlaying);
-        }
+        const isPlaying = spotifyData.isPlaying;
+        const currentTime = spotifyData.track.progress;
+        
+        // Update our cached values
+        setCachedProgress(currentTime);
+        setCachedIsPlaying(isPlaying);
+        setLastUpdateTime(now);
+        
+        onProgressUpdate(currentTime, isPlaying);
       } else {
-        const currentPlayingState = elapsed >= 0 && elapsed <= duration;
+        // Fallback to Discord activity with improved pause detection
+        const elapsed = now - startTime;
+        const songEnded = elapsed >= duration;
+        
+        // If we have cached data and it was paused, keep it paused unless song ended
+        let isPlaying = !songEnded && elapsed >= 0;
+        let currentTime = Math.max(0, Math.min(elapsed, duration));
+        
+        // Check if this looks like a pause based on Discord Rich Presence patterns
+        // Discord activities that don't update timestamps often indicate pause
+        const timeSinceLastKnownUpdate = now - lastUpdateTime;
+        if (timeSinceLastKnownUpdate > 5000 && !songEnded) {
+          // If we haven't seen an update in 5+ seconds and song hasn't ended, likely paused
+          isPlaying = false;
+          currentTime = cachedProgress; // Keep the last known position
+        } else if (!songEnded) {
+          // Update cached progress for future pause detection
+          setCachedProgress(currentTime);
+          setLastUpdateTime(now);
+        }
+        
         console.log('MusicProgressTracker: Using Discord activity state:', {
           elapsed,
           duration,
-          isPlaying: currentPlayingState
+          isPlaying,
+          currentTime,
+          songEnded,
+          timeSinceLastKnownUpdate
         });
         
-        const currentTime = Math.max(0, Math.min(elapsed, duration));
-        onProgressUpdate(currentTime, currentPlayingState);
+        setCachedIsPlaying(isPlaying);
+        onProgressUpdate(currentTime, isPlaying);
       }
     };
 
@@ -60,5 +92,5 @@ export const useMusicProgressTracker = ({
     return () => {
       clearInterval(interval);
     };
-  }, [currentSong, isSpotifyConnected, spotifyData, onProgressUpdate]);
+  }, [currentSong, isSpotifyConnected, spotifyData, onProgressUpdate, lastUpdateTime, cachedProgress]);
 };

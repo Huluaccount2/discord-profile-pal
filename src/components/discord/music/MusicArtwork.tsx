@@ -17,14 +17,14 @@ export const MusicArtwork: React.FC<MusicArtworkProps> = ({
       <img
         src={imageUrl || '/placeholder.svg'}
         alt={altText || 'Album Art'}
-        className={`w-32 h-32 rounded-xl object-cover shadow-2xl transition-opacity ${
-          !isPlaying ? 'opacity-60' : 'opacity-100'
+        className={`w-32 h-32 rounded-xl object-cover shadow-2xl transition-all duration-300 ${
+          !isPlaying ? 'opacity-60 grayscale' : 'opacity-100'
         }`}
       />
       {!isPlaying && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="bg-black/50 rounded-full p-2">
-            <div className="text-white text-xs font-medium">PAUSED</div>
+          <div className="bg-black/70 rounded-full p-3 backdrop-blur-sm">
+            <div className="text-white text-xs font-bold">PAUSED</div>
           </div>
         </div>
       )}

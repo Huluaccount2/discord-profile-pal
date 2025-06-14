@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,10 +18,12 @@ export const DiscordProfile = () => {
   const { 
     spotifyData, 
     isConnected, 
-    connectSpotify
+    connectSpotify,
+    connectionError
   } = useSpotify(user?.id);
 
   console.log('DiscordProfile: Rendering with user:', user?.id, 'profile:', profile, 'loading:', loading);
+  console.log('DiscordProfile: Spotify connection status:', { isConnected, connectionError });
 
   // Timer effect - must be at top level
   useEffect(() => {
@@ -32,12 +33,13 @@ export const DiscordProfile = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Calculate current song data - moved outside try block
+  // Calculate current song data with improved Spotify integration
   let currentSong = null;
   if (profile && discordData) {
     console.log('DiscordProfile: Spotify integration status:', { 
       isConnected, 
       spotifyData,
+      connectionError,
       discordActivities: discordData?.activities 
     });
 
@@ -62,7 +64,7 @@ export const DiscordProfile = () => {
       };
       console.log('DiscordProfile: Using Spotify OAuth integration data');
     } else {
-      // Fall back to Discord activities only if no Spotify OAuth connection
+      // Fall back to Discord activities if no Spotify OAuth connection
       const discordSong = discordData?.activities?.find(activity => activity.type === 2);
       if (discordSong) {
         currentSong = discordSong;

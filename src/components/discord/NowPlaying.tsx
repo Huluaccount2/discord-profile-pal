@@ -27,10 +27,12 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   console.log('NowPlaying: Rendering with props:', {
     currentSong: currentSong ? 'present' : 'null',
     isSpotifyConnected,
-    spotifyData: spotifyData ? 'present' : 'null'
+    spotifyData: spotifyData ? 'present' : 'null',
+    spotifyIsPlaying: spotifyData?.isPlaying
   });
 
   const handleProgressUpdate = useCallback((time: number, playing: boolean) => {
+    console.log('NowPlaying: Progress update:', { time, playing });
     setCurrentTime(time);
     setIsPlaying(playing);
   }, []);
@@ -91,6 +93,13 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
                 progress={progress}
                 isPlaying={isPlaying}
               />
+              
+              {/* Debug info - remove in production */}
+              {!isSpotifyConnected && (
+                <div className="mt-2 text-xs text-gray-500">
+                  Using Discord activity tracking
+                </div>
+              )}
             </div>
           </div>
         </Card>
