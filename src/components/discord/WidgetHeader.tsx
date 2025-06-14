@@ -11,11 +11,7 @@ interface WidgetHeaderProps {
 
 export const WidgetHeader = ({ currentTime, refreshing, onRefresh, hideRefreshButton = false }: WidgetHeaderProps) => {
   return (
-    <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center gap-2">
-        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-        <span className="text-sm font-medium text-gray-300">Now Playing</span>
-      </div>
+    <div className="flex items-center justify-end mb-6">
       <div className="flex items-center gap-2">
         {!hideRefreshButton && (
           <Button
