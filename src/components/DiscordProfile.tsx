@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,6 +10,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useDiscordData } from "@/hooks/useDiscordData";
 import { useSpotify } from "@/hooks/useSpotify";
 import { useLastKnownSong } from "@/hooks/useLastKnownSong";
+import { NotificationBanner } from "@/components/NotificationBanner";
 
 export const DiscordProfile = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -24,6 +26,19 @@ export const DiscordProfile = () => {
 
   // Use refactored hook for localStorage song
   const [lastKnownSong, setLastKnownSong] = useLastKnownSong();
+
+  // --- Notification state START ---
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  // Example/placeholder notification
+  const sampleNotif = {
+    avatarUrl: "https://cdn.discordapp.com/embed/avatars/0.png",
+    username: "Alice",
+    message: "Hey <@you>! Can you check the latest updates?",
+    server: "LoFi Chill Zone",
+    channel: "#general",
+  };
+  // --- Notification state END ---
 
   console.log('DiscordProfile: Rendering with user:', user?.id, 'profile:', profile, 'loading:', loading);
   console.log('DiscordProfile: Spotify connection status:', { isConnected, connectionError });
@@ -141,7 +156,6 @@ export const DiscordProfile = () => {
 
     return (
       <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 shadow-2xl h-full flex flex-col rounded-none border-0">
-        {/* Car Thing optimized horizontal layout - compact profile, prominent music */}
         <div className="flex-1 flex gap-3 min-h-0 p-3">
           {/* Left side - Compact Profile */}
           <div className="flex-shrink-0 w-[280px] min-h-0 overflow-hidden">
@@ -158,12 +172,17 @@ export const DiscordProfile = () => {
           </div>
 
           {/* Right side - Music or prompt based on state */}
-          <div className="flex-1 flex items-center min-w-0">
+          <div className="flex-1 flex items-center min-w-0 relative">
             {songToDisplay ? (
               <NowPlaying 
                 currentSong={songToDisplay}
                 isSpotifyConnected={isConnected}
                 spotifyData={spotifyData}
+                // Notification props:
+                notificationOpen={notifOpen}
+                onNotificationClose={() => setNotifOpen(false)}
+                notificationData={sampleNotif}
+                onShowDemoNotification={() => setNotifOpen(true)}
               />
             ) : shouldShowConnectPrompt ? (
               <EmptyMusicState 
