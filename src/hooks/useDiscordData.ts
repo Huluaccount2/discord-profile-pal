@@ -8,6 +8,9 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
   const [discordData, setDiscordData] = useState<DiscordData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const lastCustomStatusRef = useRef<string | null>(null);
+
+  // NEW: Also track the last detected song/activity (by type 2 for Spotify)
+  const lastSongKeyRef = useRef<string | null>(null);
   const { isRunningOnDeskThing } = useDeskThing();
 
   const fetchDiscordData = async () => {
@@ -15,8 +18,6 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
     try {
       if (isRunningOnDeskThing) {
         console.log('useDiscordData: Running on DeskThing, calling Discord function without auth');
-        // For DeskThing, call the function without authentication
-        // The server will handle Discord tokens via its own configuration
         const { data, error } = await supabase.functions.invoke('discord-bot');
         
         if (error) {
@@ -25,14 +26,15 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
           console.log('useDiscordData: Discord data received on DeskThing:', data);
           setDiscordData(data);
           lastCustomStatusRef.current = data?.custom_status?.text || null;
+          // Update the last song/activity key as well
+          const latestSong = data?.activities?.find((a: any) => a.type === 2);
+          lastSongKeyRef.current = latestSong ? makeSongKey(latestSong) : null;
         }
       } else {
-        // Regular web usage with authentication
         if (!userId) {
           console.log('useDiscordData: No userId provided for web usage');
           return;
         }
-
         console.log('useDiscordData: Fetching Discord data for userId:', userId);
         const { data, error } = await supabase.functions.invoke('discord-bot', {
           headers: {
@@ -46,6 +48,9 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
           console.log('useDiscordData: Discord data received:', data);
           setDiscordData(data);
           lastCustomStatusRef.current = data?.custom_status?.text || null;
+          // Update the last song/activity key as well
+          const latestSong = data?.activities?.find((a: any) => a.type === 2);
+          lastSongKeyRef.current = latestSong ? makeSongKey(latestSong) : null;
         }
       }
     } catch (error) {
@@ -55,6 +60,18 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
     }
   };
 
+  // Utility: build a unique identifier for the currently playing song/activity
+  const makeSongKey = (song: any) => {
+    if (!song) return "";
+    return [
+      song.details,
+      song.state,
+      song.timestamps?.start,
+      song.timestamps?.end,
+      song.assets?.large_image
+    ].join("|");
+  };
+
   useEffect(() => {
     if (isRunningOnDeskThing || (userId && discordId)) {
       console.log('useDiscordData: Initial fetch triggered');
@@ -62,16 +79,14 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
     }
   }, [userId, discordId, isRunningOnDeskThing]);
 
-  // Custom status refresh - check for status changes only
+  // Custom status & activity refresh - check for changes in either custom status or music activity
   useEffect(() => {
     if (!isRunningOnDeskThing && (!userId || !discordId)) return;
     if (isRunningOnDeskThing || (userId && discordId)) {
-      console.log('useDiscordData: Setting up status check interval');
+      console.log('useDiscordData: Setting up status/song check interval');
       const statusInterval = setInterval(async () => {
-        // Quick check for custom status changes only
         try {
           let data, error;
-          
           if (isRunningOnDeskThing) {
             ({ data, error } = await supabase.functions.invoke('discord-bot'));
           } else {
@@ -84,19 +99,31 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
 
           if (!error && data) {
             const currentCustomStatus = data.custom_status?.text || null;
-            if (currentCustomStatus !== lastCustomStatusRef.current) {
-              console.log('useDiscordData: Custom status changed from', lastCustomStatusRef.current, 'to', currentCustomStatus);
+            const currentSong = data?.activities?.find((a: any) => a.type === 2);
+            const currentSongKey = currentSong ? makeSongKey(currentSong) : null;
+
+            // Detect: EITHER custom status OR song key change
+            if (
+              currentCustomStatus !== lastCustomStatusRef.current ||
+              currentSongKey !== lastSongKeyRef.current
+            ) {
+              console.log(
+                'useDiscordData: Detected state change. Previous status/song: ',
+                lastCustomStatusRef.current, lastSongKeyRef.current,
+                '→ Now:', currentCustomStatus, currentSongKey
+              );
               setDiscordData(data);
               lastCustomStatusRef.current = currentCustomStatus;
+              lastSongKeyRef.current = currentSongKey;
             }
           }
         } catch (error) {
-          console.error('useDiscordData: Error checking custom status:', error);
+          console.error('useDiscordData: Error checking custom status/song:', error);
         }
-      }, 100); // Check every 100ms for status changes
+      }, 100); // 100ms interval
 
       return () => {
-        console.log('useDiscordData: Cleaning up status check interval');
+        console.log('useDiscordData: Cleaning up status/song check interval');
         clearInterval(statusInterval);
       };
     }
