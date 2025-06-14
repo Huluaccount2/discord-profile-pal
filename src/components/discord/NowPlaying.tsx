@@ -51,8 +51,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     console.log('NowPlaying: Setting up progress tracking effect');
     
     if (!currentSong?.timestamps?.start || !currentSong?.timestamps?.end) {
-      console.log('NowPlaying: No valid timestamps found, keeping last known state');
-      // Keep the last known time if no timestamps
+      console.log('NowPlaying: No valid timestamps found, using current state');
       return;
     }
 
@@ -66,37 +65,42 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
       const now = Date.now();
       const elapsed = now - startTime;
       
-      // For Spotify OAuth integration, use the actual playing state
+      // For Spotify OAuth integration, prioritize Spotify's state
       if (isSpotifyConnected && currentSong.name === "Spotify" && spotifyData) {
-        console.log('NowPlaying: Using Spotify OAuth state:', spotifyData.isPlaying);
+        console.log('NowPlaying: Using Spotify OAuth state:', {
+          isPlaying: spotifyData.isPlaying,
+          progress: spotifyData.track?.progress
+        });
+        
+        // Always update playing state from Spotify
         setIsPlaying(spotifyData.isPlaying);
+        
         if (spotifyData.track) {
-          // Use Spotify's actual progress
+          // Use Spotify's actual progress - always update this
           setCurrentTime(spotifyData.track.progress);
         }
       } else {
         // For Discord activities, calculate based on timestamps
         const currentPlayingState = elapsed >= 0 && elapsed <= duration;
+        console.log('NowPlaying: Using Discord activity state:', {
+          elapsed,
+          duration,
+          isPlaying: currentPlayingState
+        });
+        
         setCurrentTime(Math.max(0, Math.min(elapsed, duration)));
         setIsPlaying(currentPlayingState);
       }
     };
 
+    // Always update progress and state, regardless of playing status
     updateProgress();
     
-    // Only update progress if playing
-    const shouldUpdateProgress = 
-      (isSpotifyConnected && currentSong.name === "Spotify" && spotifyData?.isPlaying) ||
-      (!isSpotifyConnected || currentSong.name !== "Spotify");
-    
-    console.log('NowPlaying: Should update progress:', shouldUpdateProgress);
-    
-    const interval = shouldUpdateProgress ? setInterval(updateProgress, 1000) : null;
+    // Continue updating every second to keep UI responsive
+    const interval = setInterval(updateProgress, 1000);
 
     return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
+      clearInterval(interval);
     };
   }, [currentSong, isSpotifyConnected, spotifyData]);
 
@@ -139,7 +143,13 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
-  console.log('NowPlaying: Final render state:', { progress, isPlaying, isSpotifyConnected });
+  console.log('NowPlaying: Final render state:', { 
+    progress, 
+    isPlaying, 
+    isSpotifyConnected,
+    currentTime,
+    duration 
+  });
 
   try {
     return (

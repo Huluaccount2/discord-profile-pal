@@ -169,18 +169,18 @@ export const useSpotify = (userId: string | undefined) => {
     }
   }, [userId]);
 
-  // Poll for current track every 10 seconds when connected
+  // Poll for current track every 3 seconds when connected for better responsiveness
   useEffect(() => {
     if (!userId || !isConnected) {
       console.log('useSpotify: Skipping polling - userId:', userId, 'isConnected:', isConnected);
       return;
     }
 
-    console.log('useSpotify: Setting up polling interval');
+    console.log('useSpotify: Setting up polling interval (3s for better responsiveness)');
     const interval = setInterval(() => {
       console.log('useSpotify: Polling for track updates');
       fetchCurrentTrack();
-    }, 10000);
+    }, 3000); // Reduced from 10s to 3s for better pause detection
     
     return () => {
       console.log('useSpotify: Cleaning up polling interval');
