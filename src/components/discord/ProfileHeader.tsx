@@ -84,7 +84,7 @@ export const ProfileHeader = ({
         </div>
         
         {/* Compact Status Row with proper spacing */}
-        <div className="flex items-start gap-2 mb-3 flex-shrink-0">
+        <div className="flex items-start gap-2 mb-4 flex-shrink-0">
           <div className={`w-2 h-2 ${getStatusColor()} rounded-full mt-1 flex-shrink-0`}></div>
           
           {/* Custom Status with proper text wrapping */}
@@ -109,8 +109,11 @@ export const ProfileHeader = ({
           )}
         </div>
         
-        {/* Connections Section with flexible height */}
-        <div className="flex-1 min-h-0 overflow-hidden">
+        {/* Spacer to push connections to bottom */}
+        <div className="flex-1"></div>
+        
+        {/* Connections Section at bottom */}
+        <div className="flex-shrink-0 mt-auto">
           <ConnectionsList connections={connections} />
         </div>
       </div>

@@ -57,8 +57,8 @@ export const ConnectionItem = ({ connection }: ConnectionItemProps) => {
   const colorClass = getConnectionColor(connection.type);
 
   return (
-    <div className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg">
-      <div className={`w-8 h-8 ${colorClass} rounded-lg flex items-center justify-center p-1.5`}>
+    <div className="flex flex-col items-center gap-1 p-2 bg-gray-800/50 rounded-lg min-w-[60px] max-w-[80px]">
+      <div className={`w-6 h-6 ${colorClass} rounded-lg flex items-center justify-center p-1`}>
         {logoUrl ? (
           <img
             src={logoUrl}
@@ -71,17 +71,14 @@ export const ConnectionItem = ({ connection }: ConnectionItemProps) => {
             {connection.type.charAt(0).toUpperCase()}
           </span>
         )}
+        {connection.verified && (
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+            <span className="text-xs text-white">✓</span>
+          </div>
+        )}
       </div>
-      <div className="flex-1 space-y-0.5 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-white capitalize truncate">{connection.type}</span>
-          {connection.verified && (
-            <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-xs text-white">✓</span>
-            </div>
-          )}
-        </div>
-        <span className="text-sm text-gray-300 font-medium block truncate">{connection.name}</span>
+      <div className="text-center">
+        <span className="text-xs text-gray-300 font-medium block truncate max-w-[70px]">{connection.name}</span>
       </div>
     </div>
   );

@@ -18,18 +18,18 @@ export const ConnectionsList = ({ connections }: ConnectionsListProps) => {
   }
 
   // Limit connections for Car Thing display
-  const displayConnections = connections.slice(0, 4);
+  const displayConnections = connections.slice(0, 6);
 
   return (
     <div className="text-left">
       <h3 className="text-xs font-semibold text-gray-300 mb-2">CONNECTIONS</h3>
-      <div className="space-y-2 overflow-y-auto max-h-[200px]">
+      <div className="flex flex-wrap gap-2 overflow-hidden">
         {displayConnections.map((connection, index) => (
           <ConnectionItem key={index} connection={connection} />
         ))}
-        {connections.length > 4 && (
-          <div className="text-xs text-gray-500 px-2">
-            +{connections.length - 4} more
+        {connections.length > 6 && (
+          <div className="text-xs text-gray-500 px-2 py-1 bg-gray-800/50 rounded-lg">
+            +{connections.length - 6}
           </div>
         )}
       </div>
