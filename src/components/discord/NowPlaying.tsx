@@ -68,17 +68,17 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 
   return (
     <div className="relative w-full h-full rounded-lg overflow-hidden">
-      {/* 90% Blurred Background */}
+      {/* Lighter Blurred Background */}
       <div 
         className="absolute inset-0 bg-cover bg-center filter blur-sm"
         style={{ 
           backgroundImage: `url(${currentSong.assets?.large_image || '/placeholder.svg'})`,
-          filter: 'blur(20px) brightness(0.3)'
+          filter: 'blur(20px) brightness(0.6)'
         }}
       />
       
-      {/* Content overlay */}
-      <Card className="relative bg-black/50 backdrop-blur-sm border-gray-700/50 p-8 w-full h-full flex items-center">
+      {/* Content overlay with more transparency */}
+      <Card className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-8 w-full h-full flex items-center">
         <div className="flex items-center space-x-8 w-full">
           {/* Large Album Art */}
           <div className="flex-shrink-0">
