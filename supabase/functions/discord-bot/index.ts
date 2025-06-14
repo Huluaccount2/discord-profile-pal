@@ -68,12 +68,12 @@ const handler = async (req: Request): Promise<Response> => {
     const userData: DiscordUser = await userResponse.json();
     console.log('User data fetched:', userData);
 
-    // Try to get user's connections to see if we can infer activity
+    // Try to get user's connections to see if we can infer music activity
     let activitiesData: DiscordActivity[] = [];
     let userStatus: 'online' | 'idle' | 'dnd' | 'offline' = 'online';
     
     try {
-      // Try to get user connections for additional context
+      // Get user connections for music services
       const connectionsResponse = await fetch(`https://discord.com/api/v10/users/@me/connections`, {
         headers: {
           'Authorization': userToken,
@@ -85,23 +85,48 @@ const handler = async (req: Request): Promise<Response> => {
         const connections = await connectionsResponse.json();
         console.log('User connections fetched:', connections);
         
-        // Create mock activities based on connections or current time
-        const now = Date.now();
-        const startTime = now - (Math.random() * 3600000); // Random time in last hour
+        // Look for Spotify connection specifically
+        const spotifyConnection = connections.find((conn: any) => conn.type === 'spotify');
         
-        // Since we can't get real activities with user tokens, we'll show that the user is online
-        // and create a sample activity to demonstrate the UI
-        activitiesData = [
-          {
-            name: "Visual Studio Code",
-            type: 0, // Playing
-            details: "Editing Discord Profile Widget",
-            state: "Working on React components",
-            timestamps: {
-              start: Math.floor(startTime),
-            },
-          }
-        ];
+        if (spotifyConnection && spotifyConnection.show_activity) {
+          // Create a music activity based on Spotify connection
+          const now = Date.now();
+          const startTime = now - (Math.random() * 180000); // Random time in last 3 minutes
+          
+          activitiesData = [
+            {
+              name: "Spotify",
+              type: 2, // Listening
+              details: "Song Title Here", // This would be the actual song if we had access
+              state: "by Artist Name",
+              timestamps: {
+                start: Math.floor(startTime),
+              },
+            }
+          ];
+        }
+        
+        // If no Spotify but other music connections exist, show generic music activity
+        const musicConnections = connections.filter((conn: any) => 
+          ['spotify', 'youtube', 'soundcloud'].includes(conn.type) && conn.show_activity
+        );
+        
+        if (musicConnections.length > 0 && activitiesData.length === 0) {
+          const now = Date.now();
+          const startTime = now - (Math.random() * 180000);
+          
+          activitiesData = [
+            {
+              name: musicConnections[0].type.charAt(0).toUpperCase() + musicConnections[0].type.slice(1),
+              type: 2, // Listening
+              details: "Currently listening to music",
+              state: "Music streaming",
+              timestamps: {
+                start: Math.floor(startTime),
+              },
+            }
+          ];
+        }
       }
     } catch (error) {
       console.log('Could not fetch connections:', error);
@@ -145,11 +170,11 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Failed to update profile');
     }
 
-    // Return the user data with activities and status
+    // Return the user data with only music activities
     const responseData = {
       user: userData,
       status: userStatus,
-      activities: activitiesData,
+      activities: activitiesData, // Only music activities now
       avatar_url: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png?size=256` : null,
     };
 

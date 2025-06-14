@@ -1,7 +1,6 @@
-
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Music, Users, Headphones, User, RefreshCw } from "lucide-react";
+import { Music, User, RefreshCw, Headphones } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -167,7 +166,8 @@ export const DiscordProfile = () => {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const currentActivity = activities.find(activity => activity.type === 2) || activities[0]; // Prioritize listening activities
+  // Only show listening activities (type 2)
+  const currentSong = activities.find(activity => activity.type === 2);
 
   return (
     <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-6 shadow-2xl">
@@ -175,7 +175,7 @@ export const DiscordProfile = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-          <span className="text-sm font-medium text-gray-300">DesktThing</span>
+          <span className="text-sm font-medium text-gray-300">Now Playing</span>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -222,25 +222,14 @@ export const DiscordProfile = () => {
         </div>
       </div>
 
-      {/* Discord Connection Status */}
-      {profile?.discord_username ? (
-        <div className="mb-6 p-3 bg-gray-800/50 rounded-lg border border-gray-700/30">
-          <p className="text-sm text-green-400">✅ Connected to Discord</p>
-        </div>
-      ) : (
-        <div className="mb-6 p-3 bg-gray-800/50 rounded-lg border border-yellow-700/30">
-          <p className="text-sm text-yellow-400">⚠️ Discord not connected - Click refresh to connect</p>
-        </div>
-      )}
-
-      {/* Current Activity */}
-      {currentActivity ? (
+      {/* Currently Playing Song */}
+      {currentSong ? (
         <div className="bg-gradient-to-r from-green-900/20 to-green-800/20 border border-green-700/30 rounded-lg p-4">
           <div className="flex items-center gap-3 mb-3">
             <div className="flex items-center gap-2">
               <Music className="w-4 h-4 text-green-400" />
               <span className="text-sm font-medium text-green-400">
-                {currentActivity.type === 2 ? 'Listening to' : 'Playing'} {currentActivity.name}
+                Listening to {currentSong.name}
               </span>
             </div>
             <div className="flex-1"></div>
@@ -248,17 +237,17 @@ export const DiscordProfile = () => {
           </div>
           
           <div className="space-y-1">
-            {currentActivity.details && (
-              <p className="text-white font-medium">{currentActivity.details}</p>
+            {currentSong.details && (
+              <p className="text-white font-medium">{currentSong.details}</p>
             )}
-            {currentActivity.state && (
-              <p className="text-gray-400 text-sm">by {currentActivity.state}</p>
+            {currentSong.state && (
+              <p className="text-gray-400 text-sm">{currentSong.state}</p>
             )}
-            {currentActivity.timestamps?.start && (
+            {currentSong.timestamps?.start && (
               <div className="flex items-center gap-2 mt-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 <span className="text-xs text-gray-400 font-mono">
-                  {formatDuration(currentActivity.timestamps.start)} elapsed
+                  {formatDuration(currentSong.timestamps.start)} elapsed
                 </span>
               </div>
             )}
@@ -268,7 +257,8 @@ export const DiscordProfile = () => {
         <div className="bg-gray-800/20 border border-gray-700/30 rounded-lg p-4">
           <div className="text-center text-gray-400">
             <Music className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No current activity detected</p>
+            <p className="text-sm">No music currently playing</p>
+            <p className="text-xs text-gray-500 mt-1">Connect Spotify to Discord to see what you're listening to</p>
           </div>
         </div>
       )}
@@ -276,8 +266,8 @@ export const DiscordProfile = () => {
       {/* Footer */}
       <div className="mt-6 pt-4 border-t border-gray-700/30 flex items-center justify-between text-xs text-gray-500">
         <div className="flex items-center gap-1">
-          <Users className="w-3 h-3" />
-          <span>Discord Profile Widget</span>
+          <Music className="w-3 h-3" />
+          <span>Music Widget</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>
