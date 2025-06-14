@@ -28,6 +28,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   useEffect(() => {
     if (!currentSong?.timestamps?.start || !currentSong?.timestamps?.end) {
       console.log('NowPlaying: No valid timestamps found');
+      setIsPlaying(false);
       return;
     }
 
@@ -40,8 +41,14 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     const updateProgress = () => {
       const now = Date.now();
       const elapsed = now - startTime;
-      setCurrentTime(Math.max(0, Math.min(elapsed, duration)));
-      setIsPlaying(elapsed >= 0 && elapsed <= duration);
+      const songIsCurrentlyPlaying = elapsed >= 0 && elapsed <= duration;
+      
+      setIsPlaying(songIsCurrentlyPlaying);
+      
+      // Only update progress if the song is currently playing
+      if (songIsCurrentlyPlaying) {
+        setCurrentTime(Math.max(0, Math.min(elapsed, duration)));
+      }
     };
 
     updateProgress();
@@ -63,9 +70,9 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   }
 
   const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const progress = duration > 0 && isPlaying ? (currentTime / duration) * 100 : 0;
 
-  console.log('NowPlaying: Rendering with progress:', progress, 'isSpotifyConnected:', isSpotifyConnected);
+  console.log('NowPlaying: Rendering with progress:', progress, 'isPlaying:', isPlaying, 'isSpotifyConnected:', isSpotifyConnected);
 
   return (
     <div className="relative w-full h-full rounded-lg overflow-hidden">
