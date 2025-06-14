@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -151,7 +152,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
                 {currentSong.details || 'Unknown Track'}
               </h3>
               
-              {/* Artist - with overflow handling */}
+              {/* Artist - with overflow handling, removed "by" prefix */}
               <p 
                 ref={artistRef}
                 className={`text-gray-300 text-xl mb-2 ${
