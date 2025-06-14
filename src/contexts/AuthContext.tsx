@@ -21,14 +21,22 @@ export const useAuth = () => {
   return context;
 };
 
-// Mock user for DeskThing
-const DESKTHING_USER = {
+// Mock user for DeskThing - properly typed to match Supabase User interface
+const DESKTHING_USER: User = {
   id: 'deskthing-user',
   email: 'deskthing@local.app',
+  aud: 'authenticated',
+  role: 'authenticated',
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  email_confirmed_at: new Date().toISOString(),
+  last_sign_in_at: new Date().toISOString(),
+  app_metadata: {},
   user_metadata: {
     username: 'DeskThing User'
-  }
-} as User;
+  },
+  identities: []
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
