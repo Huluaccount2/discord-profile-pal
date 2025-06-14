@@ -2,12 +2,12 @@ import { DeskThing } from 'deskthing-client';
 
 export class DeskThingIntegration {
   private static instance: DeskThingIntegration;
-  private deskThing: DeskThing;
+  private deskThing: typeof DeskThing;
   private isConnected = false;
 
   private constructor() {
-    // Initialize DeskThing using the constructor
-    this.deskThing = new DeskThing();
+    // Initialize DeskThing - it's likely a singleton or static object
+    this.deskThing = DeskThing;
     this.setupEventListeners();
   }
 
