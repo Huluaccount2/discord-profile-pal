@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -52,7 +53,7 @@ export const DiscordProfile = () => {
     fetchProfile();
   }, [user]);
 
-  const fetchDiscordData = async () => {
+  const fetchDiscordData = async (showToast = true) => {
     if (!user) return;
 
     setRefreshing(true);
@@ -66,26 +67,32 @@ export const DiscordProfile = () => {
 
       if (error) {
         console.error('Discord function error:', error);
-        toast({
-          title: "Error fetching Discord data",
-          description: "Failed to connect to Discord. Please try again.",
-          variant: "destructive",
-        });
+        if (showToast) {
+          toast({
+            title: "Error fetching Discord data",
+            description: "Failed to connect to Discord. Please try again.",
+            variant: "destructive",
+          });
+        }
       } else {
         console.log('Discord data received:', data);
         setDiscordData(data);
-        toast({
-          title: "Discord data updated",
-          description: "Successfully fetched your Discord activity!",
-        });
+        if (showToast) {
+          toast({
+            title: "Discord data updated",
+            description: "Successfully fetched your Discord activity!",
+          });
+        }
       }
     } catch (error) {
       console.error('Error calling Discord function:', error);
-      toast({
-        title: "Connection error",
-        description: "Failed to fetch Discord data. Please try again.",
-        variant: "destructive",
-      });
+      if (showToast) {
+        toast({
+          title: "Connection error",
+          description: "Failed to fetch Discord data. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setRefreshing(false);
     }
@@ -95,6 +102,17 @@ export const DiscordProfile = () => {
     if (user && profile?.discord_id) {
       fetchDiscordData();
     }
+  }, [user, profile?.discord_id]);
+
+  // Auto-refresh Discord data every 30 seconds
+  useEffect(() => {
+    if (!user || !profile?.discord_id) return;
+
+    const autoRefreshInterval = setInterval(() => {
+      fetchDiscordData(false); // Don't show toast for auto-refresh
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(autoRefreshInterval);
   }, [user, profile?.discord_id]);
 
   if (loading) {
@@ -129,7 +147,7 @@ export const DiscordProfile = () => {
       <WidgetHeader 
         currentTime={currentTime}
         refreshing={refreshing}
-        onRefresh={fetchDiscordData}
+        onRefresh={() => fetchDiscordData(true)}
       />
 
       <ProfileHeader 
