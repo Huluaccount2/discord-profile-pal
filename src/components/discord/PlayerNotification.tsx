@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, forwardRef } from "react";
+import React, { useEffect, useRef, forwardRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface PlayerNotificationProps {
@@ -16,29 +16,57 @@ interface PlayerNotificationProps {
 }
 
 export const PlayerNotification = forwardRef<HTMLDivElement, PlayerNotificationProps>(
-  ({
-    avatarUrl,
-    username,
-    message,
-    server,
-    channel,
-    open,
-    onClose,
-    hasImage,
-    hasGif,
-    hasVoiceMessage
-  }, ref) => {
+  (
+    {
+      avatarUrl,
+      username,
+      message,
+      server,
+      channel,
+      open,
+      onClose,
+      hasImage,
+      hasGif,
+      hasVoiceMessage
+    },
+    ref
+  ) => {
+    // Animation state to handle reverse (exit) animation
+    const [visible, setVisible] = useState(false);
     const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    // When `open` changes, trigger the appropriate animation state.
     useEffect(() => {
-      if (!open) return;
-      closeTimeoutRef.current = setTimeout(onClose, 5000);
+      if (open) {
+        setVisible(true);
+        // Start auto-close timer (but clear any existing)
+        if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = setTimeout(() => {
+          setVisible(false);
+        }, 5000);
+      } else {
+        // If parent requests close, ensure out anim plays
+        setVisible(false);
+      }
+      // Cleanup timers when component unmounts
       return () => {
         if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+        if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
       };
-    }, [open, onClose]);
+    }, [open]);
 
-    // Render message, ellipsis for >3 lines, and "contains {type}" logic.
+    // When visible goes false (i.e. beginning OUT animation), call parent onClose after anim
+    useEffect(() => {
+      if (!visible && open) {
+        // Wait for the exit animation (400ms) before actually closing
+        animationTimeoutRef.current = setTimeout(() => {
+          onClose();
+        }, 400); // Should match the duration in animation CSS
+      }
+    }, [visible, open, onClose]);
+
+    // Which text to render depending on type
     let displayMessage: React.ReactNode = null;
     if (hasImage) {
       displayMessage = <span className="italic text-blue-200">contains image</span>;
@@ -47,7 +75,7 @@ export const PlayerNotification = forwardRef<HTMLDivElement, PlayerNotificationP
     } else if (hasVoiceMessage) {
       displayMessage = <span className="italic text-violet-200">contains voice message</span>;
     } else if (message) {
-      // Display first 3 lines, then ...
+      // Display only first 3 lines, with "..." if it's longer
       const lines = message.split("\n");
       const displayLines = lines.slice(0, 3).join("\n");
       displayMessage = (
@@ -62,22 +90,22 @@ export const PlayerNotification = forwardRef<HTMLDivElement, PlayerNotificationP
       <div
         ref={ref as React.RefObject<HTMLDivElement>}
         className={cn(
-          "absolute left-1/2 z-20 w-[93%] max-w-[370px] -translate-x-1/2 pointer-events-auto select-none drop-shadow-lg transition-all",
-          open
-            ? "animate-player-notification-in opacity-100"
-            : "animate-player-notification-out opacity-0 pointer-events-none",
+          "absolute left-1/2 z-20 w-[88%] max-w-[345px] -translate-x-1/2 pointer-events-auto select-none drop-shadow-lg transition-all",
+          visible
+            ? "animate-slide-in-down opacity-100"
+            : "animate-slide-out-up opacity-0 pointer-events-none"
         )}
         style={{
           top: 12,
-          borderRadius: "15px",
+          borderRadius: "13px",
           background: "linear-gradient(90deg, rgba(34,34,39,0.97) 70%, rgba(48,48,52,0.90) 100%)",
           boxShadow: "0 2px 14px rgba(0,0,0,0.16)",
           border: "1px solid rgba(255,255,255,0.05)",
-          padding: "12px 8px 12px 13px",
+          padding: "10px 8px 10px 13px",
           alignItems: "center",
           display: "flex",
           gap: "9px",
-          minHeight: 44,
+          minHeight: 38,
           fontSize: 15
         }}
         role="alert"
@@ -86,7 +114,7 @@ export const PlayerNotification = forwardRef<HTMLDivElement, PlayerNotificationP
         <img
           src={avatarUrl}
           alt={username}
-          className="w-9 h-9 rounded-full object-cover border border-gray-700 shadow"
+          className="w-8 h-8 rounded-full object-cover border border-gray-700 shadow"
           style={{ flexShrink: 0 }}
         />
         <div className="flex-1 min-w-0">
@@ -110,12 +138,21 @@ export const PlayerNotification = forwardRef<HTMLDivElement, PlayerNotificationP
 
 PlayerNotification.displayName = "PlayerNotification";
 
-// Tailwind anim keyframes (add to global CSS or tailwind config):
-// @keyframes player-notification-in {
-//   0% { opacity:0; transform:translate(-50%,-38px); }
-//   100% { opacity:1; transform:translate(-50%,0); }
-// }
-// @keyframes player-notification-out {
-//   0% { opacity:1; transform:translate(-50%,0); }
-//   100% { opacity:0; transform:translate(-50%,-38px); }
-// }
+/*
+Add these keyframes to your Tailwind config (tailwind.config.ts) under `extend.keyframes`:
+
+      'slide-in-down': {
+        '0%': { opacity: 0, transform: 'translateY(-38px) translateX(-50%)' },
+        '100%': { opacity: 1, transform: 'translateY(0) translateX(-50%)' },
+      },
+      'slide-out-up': {
+        '0%': { opacity: 1, transform: 'translateY(0) translateX(-50%)' },
+        '100%': { opacity: 0, transform: 'translateY(-38px) translateX(-50%)' },
+      },
+And in `extend.animation`:
+
+      'slide-in-down': 'slide-in-down 0.38s cubic-bezier(0.34,1.56,0.64,1) both',
+      'slide-out-up': 'slide-out-up 0.4s cubic-bezier(0.34,1.56,0.64,1) both',
+
+---
+*/
