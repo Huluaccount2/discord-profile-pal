@@ -41,7 +41,7 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: "-100%", opacity: 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 34 }}
-          className="relative w-full max-w-md mx-auto pointer-events-auto"
+          className="fixed top-2 left-1/2 z-[200] -translate-x-1/2 w-full max-w-md px-3"
         >
           <div className="relative bg-background text-foreground border shadow-lg rounded-2xl flex gap-3 items-center p-4 pr-10 animate-slide-in-right">
             <img
@@ -65,7 +65,6 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
               onClick={onClose}
               aria-label="Dismiss"
               tabIndex={0}
-              type="button"
             >
               <X className="h-5 w-5" />
             </button>
