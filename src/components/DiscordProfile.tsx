@@ -1,6 +1,6 @@
 
 import { Card } from "@/components/ui/card";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +17,8 @@ export const DiscordProfile = () => {
   const [discordData, setDiscordData] = useState<DiscordData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const lastSongRef = useRef<string | null>(null);
+  const lastSongEndRef = useRef<number | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -77,6 +79,18 @@ export const DiscordProfile = () => {
       } else {
         console.log('Discord data received:', data);
         setDiscordData(data);
+        
+        // Update song tracking
+        const currentSong = data?.activities?.find((activity: any) => activity.type === 2);
+        if (currentSong) {
+          const songId = `${currentSong.details}-${currentSong.state}`;
+          lastSongRef.current = songId;
+          lastSongEndRef.current = currentSong.timestamps?.end || null;
+        } else {
+          lastSongRef.current = null;
+          lastSongEndRef.current = null;
+        }
+        
         if (showToast) {
           toast({
             title: "Discord data updated",
@@ -98,22 +112,54 @@ export const DiscordProfile = () => {
     }
   };
 
+  const shouldRefreshMusic = () => {
+    if (!discordData) return true;
+    
+    const currentSong = discordData.activities?.find(activity => activity.type === 2);
+    
+    // If there's no current song but we had one before, refresh
+    if (!currentSong && lastSongRef.current) return true;
+    
+    // If there's a current song
+    if (currentSong) {
+      const songId = `${currentSong.details}-${currentSong.state}`;
+      
+      // If it's a different song, refresh
+      if (songId !== lastSongRef.current) return true;
+      
+      // If the song has an end time and we've passed it, refresh
+      if (currentSong.timestamps?.end && Date.now() >= currentSong.timestamps.end) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
+
   useEffect(() => {
     if (user && profile?.discord_id) {
       fetchDiscordData();
     }
   }, [user, profile?.discord_id]);
 
-  // Auto-refresh Discord data every 100 milliseconds
+  // Smart auto-refresh - fast for custom status, smart for music
   useEffect(() => {
     if (!user || !profile?.discord_id) return;
 
-    const autoRefreshInterval = setInterval(() => {
-      fetchDiscordData(false); // Don't show toast for auto-refresh
-    }, 100); // 100 milliseconds
+    const smartRefreshInterval = setInterval(() => {
+      // Always refresh for custom status updates (fast refresh)
+      // But only refresh music when needed
+      if (shouldRefreshMusic()) {
+        console.log('Refreshing due to music change or end');
+        fetchDiscordData(false);
+      } else {
+        // Just refresh for custom status and other non-music data
+        fetchDiscordData(false);
+      }
+    }, 100); // 100 milliseconds for custom status updates
 
-    return () => clearInterval(autoRefreshInterval);
-  }, [user, profile?.discord_id]);
+    return () => clearInterval(smartRefreshInterval);
+  }, [user, profile?.discord_id, discordData]);
 
   if (loading) {
     return (

@@ -100,22 +100,24 @@ export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, b
             {getStatusText()}
           </Badge>
           
-          {/* Custom Status - Own spot between name and bio */}
+          {/* Custom Status - Discord-style bubble */}
           {customStatus?.text && (
-            <div className="flex items-center gap-2 mb-3">
-              {customStatus.emoji?.name && (
-                <span className="text-sm">
-                  {customStatus.emoji.id ? 
-                    <img 
-                      src={`https://cdn.discordapp.com/emojis/${customStatus.emoji.id}.png`} 
-                      alt={customStatus.emoji.name} 
-                      className="w-4 h-4 inline"
-                    /> : 
-                    customStatus.emoji.name
-                  }
-                </span>
-              )}
-              <span className="text-sm text-gray-300">{customStatus.text}</span>
+            <div className="mb-3">
+              <div className="inline-flex items-center gap-2 bg-gray-800/80 backdrop-blur-sm rounded-full px-3 py-1.5 border border-gray-700/50 shadow-lg">
+                {customStatus.emoji?.name && (
+                  <span className="text-sm">
+                    {customStatus.emoji.id ? 
+                      <img 
+                        src={`https://cdn.discordapp.com/emojis/${customStatus.emoji.id}.png`} 
+                        alt={customStatus.emoji.name} 
+                        className="w-4 h-4 inline"
+                      /> : 
+                      customStatus.emoji.name
+                    }
+                  </span>
+                )}
+                <span className="text-sm text-gray-200 font-medium">{customStatus.text}</span>
+              </div>
             </div>
           )}
           
