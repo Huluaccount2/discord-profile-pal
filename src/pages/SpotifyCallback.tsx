@@ -9,25 +9,40 @@ const SpotifyCallback = () => {
 
   useEffect(() => {
     const handleCallback = async () => {
+      console.log('SpotifyCallback: Current URL:', window.location.href);
+      console.log('SpotifyCallback: Search params:', window.location.search);
+      
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
       const state = urlParams.get('state');
       const error = urlParams.get('error');
 
+      console.log('SpotifyCallback: Extracted params:', { code: code?.substring(0, 10) + '...', state, error });
+
       if (error) {
-        console.error('Spotify authorization error:', error);
+        console.error('SpotifyCallback: Spotify authorization error:', error);
         navigate('/', { replace: true });
         return;
       }
 
       if (!code || !state) {
-        console.error('Missing code or state parameter');
+        console.error('SpotifyCallback: Missing code or state parameter');
+        console.log('SpotifyCallback: Available URL params:', Array.from(urlParams.entries()));
         navigate('/', { replace: true });
         return;
       }
 
       try {
-        // Exchange the authorization code for tokens
+        console.log('SpotifyCallback: Attempting to exchange code for tokens');
+        const session = await supabase.auth.getSession();
+        console.log('SpotifyCallback: Current session:', session.data.session ? 'exists' : 'none');
+
+        if (!session.data.session) {
+          console.error('SpotifyCallback: No authenticated session found');
+          navigate('/auth', { replace: true });
+          return;
+        }
+
         const { data, error: exchangeError } = await supabase.functions.invoke('spotify-auth', {
           body: { 
             action: 'exchange-code',
@@ -35,20 +50,20 @@ const SpotifyCallback = () => {
             state
           },
           headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            Authorization: `Bearer ${session.data.session.access_token}`,
           },
         });
 
         if (exchangeError) {
-          console.error('Error exchanging code for tokens:', exchangeError);
+          console.error('SpotifyCallback: Error exchanging code for tokens:', exchangeError);
         } else {
-          console.log('Spotify tokens exchanged successfully');
+          console.log('SpotifyCallback: Spotify tokens exchanged successfully');
         }
       } catch (error) {
-        console.error('Error during token exchange:', error);
+        console.error('SpotifyCallback: Error during token exchange:', error);
       }
 
-      // Redirect back to home page
+      // Always redirect back to home page
       navigate('/', { replace: true });
     };
 

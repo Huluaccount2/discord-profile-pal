@@ -29,11 +29,20 @@ export const useSpotify = (userId: string | undefined) => {
 
     try {
       setLoading(true);
-      console.log('useSpotify: Initiating Spotify connection');
+      console.log('useSpotify: Initiating Spotify connection for userId:', userId);
+      
+      const session = await supabase.auth.getSession();
+      console.log('useSpotify: Current session status:', session.data.session ? 'authenticated' : 'not authenticated');
+      
+      if (!session.data.session) {
+        console.error('useSpotify: No authenticated session found');
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('spotify-auth', {
         body: {},
         headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          Authorization: `Bearer ${session.data.session.access_token}`,
         },
       });
 
@@ -42,7 +51,7 @@ export const useSpotify = (userId: string | undefined) => {
         return;
       }
 
-      console.log('useSpotify: Redirecting to Spotify auth URL');
+      console.log('useSpotify: Redirecting to Spotify auth URL:', data.authUrl);
       // Redirect to Spotify authorization
       window.location.href = data.authUrl;
     } catch (error) {
@@ -59,11 +68,18 @@ export const useSpotify = (userId: string | undefined) => {
     }
 
     try {
-      console.log('useSpotify: Fetching current track');
+      console.log('useSpotify: Fetching current track for userId:', userId);
+      
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        console.log('useSpotify: No authenticated session, skipping track fetch');
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('spotify-auth', {
         body: { action: 'current-track' },
         headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          Authorization: `Bearer ${session.data.session.access_token}`,
         },
       });
 
@@ -95,10 +111,17 @@ export const useSpotify = (userId: string | undefined) => {
 
     try {
       console.log('useSpotify: Controlling playback:', action);
+      const session = await supabase.auth.getSession();
+      
+      if (!session.data.session) {
+        console.error('useSpotify: No authenticated session for playback control');
+        return;
+      }
+
       const { error } = await supabase.functions.invoke('spotify-auth', {
         body: { action },
         headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          Authorization: `Bearer ${session.data.session.access_token}`,
         },
       });
 
@@ -107,6 +130,7 @@ export const useSpotify = (userId: string | undefined) => {
         return;
       }
 
+      console.log(`useSpotify: Playback control (${action}) successful`);
       // Refresh track data after control action
       setTimeout(fetchCurrentTrack, 500);
     } catch (error) {
@@ -123,12 +147,17 @@ export const useSpotify = (userId: string | undefined) => {
     if (userId) {
       console.log('useSpotify: Initial setup for userId:', userId);
       fetchCurrentTrack();
+    } else {
+      console.log('useSpotify: No userId provided, skipping initial setup');
     }
   }, [userId]);
 
   // Poll for current track every 10 seconds when connected
   useEffect(() => {
-    if (!userId || !isConnected) return;
+    if (!userId || !isConnected) {
+      console.log('useSpotify: Skipping polling - userId:', userId, 'isConnected:', isConnected);
+      return;
+    }
 
     console.log('useSpotify: Setting up polling interval');
     const interval = setInterval(() => {
