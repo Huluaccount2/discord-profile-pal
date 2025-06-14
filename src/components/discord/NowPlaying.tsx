@@ -5,6 +5,7 @@ import { MusicInfo } from './music/MusicInfo';
 import { MusicProgressBar } from './music/MusicProgressBar';
 import { useMusicProgressTracker } from './music/MusicProgressTracker';
 import { PlayerNotification } from './PlayerNotification';
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface NowPlayingProps {
   currentSong: any;
@@ -59,6 +60,30 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 
   // Bump the player content by notifHeight + 12px if open
   const playerSectionPaddingTop = notificationOpen ? notifHeight + 12 : 0;
+
+  // ------------ Notifications integration ---------------
+  const { notifications } = useNotifications();
+
+  // If there's a new notification, display it as a PlayerNotification
+  // We'll just show the latest notification if present, falling back to the demo buttons if not.
+  React.useEffect(() => {
+    if (notifications.length > 0) {
+      const notif = notifications[0];
+      setNotificationData({
+        avatarUrl: notif.source_user_avatar || "",
+        username: notif.source_username || "Unknown",
+        message: notif.message || "",
+        server: notif.server || "",
+        channel: notif.channel || "",
+        hasImage: notif.has_image,
+        hasGif: notif.has_gif,
+        hasVoiceMessage: notif.has_voice_message,
+      });
+      setNotificationOpen(true);
+    }
+    // eslint-disable-next-line
+  }, [notifications.length > 0 ? notifications[0].id : null]);
+  // ------------ end new logic ------------
 
   // DEMO ONLY: Simple test button to launch a sample notification. Remove for production.
   const handleShowDemoNotification = (
