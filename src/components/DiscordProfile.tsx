@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Music, User, RefreshCw, Headphones } from "lucide-react";
@@ -24,6 +25,12 @@ interface DiscordActivity {
   timestamps?: {
     start?: number;
     end?: number;
+  };
+  assets?: {
+    large_image?: string;
+    large_text?: string;
+    small_image?: string;
+    small_text?: string;
   };
 }
 
@@ -159,11 +166,20 @@ export const DiscordProfile = () => {
     }
   };
 
-  const formatDuration = (startTime: number) => {
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    const minutes = Math.floor(elapsed / 60);
-    const seconds = elapsed % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  const formatDuration = (startTime: number, endTime?: number) => {
+    if (endTime) {
+      const total = Math.floor((endTime - startTime) / 1000);
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const remaining = Math.max(0, total - elapsed);
+      const minutes = Math.floor(remaining / 60);
+      const seconds = remaining % 60;
+      return `${minutes}:${seconds.toString().padStart(2, '0')} remaining`;
+    } else {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = elapsed % 60;
+      return `${minutes}:${seconds.toString().padStart(2, '0')} elapsed`;
+    }
   };
 
   // Only show listening activities (type 2)
@@ -174,7 +190,7 @@ export const DiscordProfile = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
           <span className="text-sm font-medium text-gray-300">Now Playing</span>
         </div>
         <div className="flex items-center gap-2">
@@ -225,32 +241,51 @@ export const DiscordProfile = () => {
       {/* Currently Playing Song */}
       {currentSong ? (
         <div className="bg-gradient-to-r from-green-900/20 to-green-800/20 border border-green-700/30 rounded-lg p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex items-center gap-2">
-              <Music className="w-4 h-4 text-green-400" />
-              <span className="text-sm font-medium text-green-400">
-                Listening to {currentSong.name}
-              </span>
-            </div>
-            <div className="flex-1"></div>
-            <Headphones className="w-4 h-4 text-green-400 animate-pulse" />
-          </div>
-          
-          <div className="space-y-1">
-            {currentSong.details && (
-              <p className="text-white font-medium">{currentSong.details}</p>
-            )}
-            {currentSong.state && (
-              <p className="text-gray-400 text-sm">{currentSong.state}</p>
-            )}
-            {currentSong.timestamps?.start && (
-              <div className="flex items-center gap-2 mt-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-xs text-gray-400 font-mono">
-                  {formatDuration(currentSong.timestamps.start)} elapsed
-                </span>
+          <div className="flex items-start gap-4">
+            {/* Album Cover */}
+            {currentSong.assets?.large_image && (
+              <div className="flex-shrink-0">
+                <img
+                  src={currentSong.assets.large_image}
+                  alt={currentSong.assets.large_text || 'Album cover'}
+                  className="w-20 h-20 rounded-lg shadow-lg"
+                />
               </div>
             )}
+            
+            {/* Song Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center gap-2">
+                  <Music className="w-4 h-4 text-green-400" />
+                  <span className="text-sm font-medium text-green-400">
+                    Listening to {currentSong.name}
+                  </span>
+                </div>
+                <div className="flex-1"></div>
+                <Headphones className="w-4 h-4 text-green-400 animate-pulse" />
+              </div>
+              
+              <div className="space-y-1">
+                {currentSong.details && (
+                  <p className="text-white font-semibold text-lg truncate">{currentSong.details}</p>
+                )}
+                {currentSong.state && (
+                  <p className="text-gray-400 text-sm truncate">{currentSong.state}</p>
+                )}
+                {currentSong.assets?.large_text && (
+                  <p className="text-gray-500 text-xs truncate">on {currentSong.assets.large_text}</p>
+                )}
+                {currentSong.timestamps?.start && (
+                  <div className="flex items-center gap-2 mt-3">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="text-xs text-gray-400 font-mono">
+                      {formatDuration(currentSong.timestamps.start, currentSong.timestamps.end)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       ) : (

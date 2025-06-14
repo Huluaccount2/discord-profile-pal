@@ -32,10 +32,21 @@ interface DiscordActivity {
   };
 }
 
-interface DiscordPresence {
-  user: DiscordUser;
-  status: 'online' | 'idle' | 'dnd' | 'offline';
-  activities: DiscordActivity[];
+interface SpotifyTrack {
+  name: string;
+  artists: { name: string }[];
+  album: {
+    name: string;
+    images: { url: string; height: number; width: number }[];
+  };
+  duration_ms: number;
+  progress_ms: number;
+}
+
+interface SpotifyCurrentlyPlaying {
+  is_playing: boolean;
+  item: SpotifyTrack;
+  progress_ms: number;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -68,12 +79,11 @@ const handler = async (req: Request): Promise<Response> => {
     const userData: DiscordUser = await userResponse.json();
     console.log('User data fetched:', userData);
 
-    // Try to get user's connections to see if we can infer music activity
+    // Get user connections to find Spotify access token
     let activitiesData: DiscordActivity[] = [];
     let userStatus: 'online' | 'idle' | 'dnd' | 'offline' = 'online';
     
     try {
-      // Get user connections for music services
       const connectionsResponse = await fetch(`https://discord.com/api/v10/users/@me/connections`, {
         headers: {
           'Authorization': userToken,
@@ -85,47 +95,86 @@ const handler = async (req: Request): Promise<Response> => {
         const connections = await connectionsResponse.json();
         console.log('User connections fetched:', connections);
         
-        // Look for Spotify connection specifically
-        const spotifyConnection = connections.find((conn: any) => conn.type === 'spotify');
-        
-        if (spotifyConnection && spotifyConnection.show_activity) {
-          // Create a music activity based on Spotify connection
-          const now = Date.now();
-          const startTime = now - (Math.random() * 180000); // Random time in last 3 minutes
-          
-          activitiesData = [
-            {
-              name: "Spotify",
-              type: 2, // Listening
-              details: "Song Title Here", // This would be the actual song if we had access
-              state: "by Artist Name",
-              timestamps: {
-                start: Math.floor(startTime),
-              },
-            }
-          ];
-        }
-        
-        // If no Spotify but other music connections exist, show generic music activity
-        const musicConnections = connections.filter((conn: any) => 
-          ['spotify', 'youtube', 'soundcloud'].includes(conn.type) && conn.show_activity
+        // Find Spotify connection with access token
+        const spotifyConnection = connections.find((conn: any) => 
+          conn.type === 'spotify' && conn.show_activity && conn.access_token
         );
         
-        if (musicConnections.length > 0 && activitiesData.length === 0) {
-          const now = Date.now();
-          const startTime = now - (Math.random() * 180000);
+        if (spotifyConnection && spotifyConnection.access_token) {
+          console.log('Found Spotify connection with access token');
           
-          activitiesData = [
-            {
-              name: musicConnections[0].type.charAt(0).toUpperCase() + musicConnections[0].type.slice(1),
-              type: 2, // Listening
-              details: "Currently listening to music",
-              state: "Music streaming",
-              timestamps: {
-                start: Math.floor(startTime),
+          try {
+            // Fetch currently playing track from Spotify
+            const spotifyResponse = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+              headers: {
+                'Authorization': `Bearer ${spotifyConnection.access_token}`,
+                'Content-Type': 'application/json',
               },
+            });
+
+            if (spotifyResponse.ok && spotifyResponse.status !== 204) {
+              const spotifyData: SpotifyCurrentlyPlaying = await spotifyResponse.json();
+              console.log('Spotify currently playing:', spotifyData);
+              
+              if (spotifyData.is_playing && spotifyData.item) {
+                const track = spotifyData.item;
+                const artists = track.artists.map(artist => artist.name).join(', ');
+                const albumCover = track.album.images.find(img => img.height >= 300)?.url || 
+                                 track.album.images[0]?.url;
+                
+                const startTime = Date.now() - spotifyData.progress_ms;
+                
+                activitiesData = [
+                  {
+                    name: "Spotify",
+                    type: 2, // Listening
+                    details: track.name,
+                    state: `by ${artists}`,
+                    timestamps: {
+                      start: Math.floor(startTime),
+                      end: Math.floor(startTime + track.duration_ms),
+                    },
+                    assets: {
+                      large_image: albumCover,
+                      large_text: track.album.name,
+                    },
+                  }
+                ];
+                
+                console.log('Created Spotify activity from real data');
+              } else {
+                console.log('Spotify not currently playing or no track data');
+              }
+            } else {
+              console.log('Spotify API response not ok or empty:', spotifyResponse.status);
             }
-          ];
+          } catch (spotifyError) {
+            console.log('Error fetching Spotify data:', spotifyError);
+          }
+        }
+        
+        // Fallback: If no real Spotify data but connection exists
+        if (activitiesData.length === 0) {
+          const musicConnections = connections.filter((conn: any) => 
+            ['spotify', 'youtube', 'soundcloud'].includes(conn.type) && conn.show_activity
+          );
+          
+          if (musicConnections.length > 0) {
+            const now = Date.now();
+            const startTime = now - (Math.random() * 180000);
+            
+            activitiesData = [
+              {
+                name: musicConnections[0].type.charAt(0).toUpperCase() + musicConnections[0].type.slice(1),
+                type: 2, // Listening
+                details: "Currently listening to music",
+                state: "Music streaming",
+                timestamps: {
+                  start: Math.floor(startTime),
+                },
+              }
+            ];
+          }
         }
       }
     } catch (error) {
