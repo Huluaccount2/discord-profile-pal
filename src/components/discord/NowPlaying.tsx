@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { MusicArtwork } from './music/MusicArtwork';
@@ -45,17 +44,21 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   });
 
   // DEMO ONLY: Simple test button to launch a sample notification. Remove for production.
-  const handleShowDemoNotification = (variant: "text" | "image" | "gif" | "voice" = "text") => {
+  const handleShowDemoNotification = (
+    variant: "text" | "image" | "gif" | "voice" = "text"
+  ) => {
     setNotificationData({
       avatarUrl: "https://randomuser.me/api/portraits/men/32.jpg",
       username: "Alex McLean",
-      message: variant === "text"
-        ? "Hey @you! Let's finish the playlist collab soon. Did you check all 4 songs I posted in #music-collab? DM me 😁\nExtra: with\nNewlines\nto test.",
-        server: "Chill Hub",
-        channel: "music-chat",
-        hasImage: variant === "image",
-        hasGif: variant === "gif",
-        hasVoiceMessage: variant === "voice",
+      message:
+        variant === "text"
+          ? "Hey @you! Let's finish the playlist collab soon. Did you check all 4 songs I posted in #music-collab? DM me 😁\nExtra: with\nNewlines\nto test."
+          : "",
+      server: "Chill Hub",
+      channel: "music-chat",
+      hasImage: variant === "image" ? true : undefined,
+      hasGif: variant === "gif" ? true : undefined,
+      hasVoiceMessage: variant === "voice" ? true : undefined,
     });
     setNotificationOpen(true);
   };
@@ -103,33 +106,44 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
             onClick={() => handleShowDemoNotification("text")}
             className="px-2 py-1 text-xs rounded bg-white bg-opacity-20 text-black font-bold shadow hover:bg-opacity-30 select-none"
             aria-label="Show mention popup (text)"
-          >Demo Text</button>
+          >
+            Demo Text
+          </button>
           <button
             onClick={() => handleShowDemoNotification("image")}
             className="px-2 py-1 text-xs rounded bg-green-100/70 text-green-950 font-bold shadow hover:bg-green-100 select-none"
             aria-label="Show mention popup (image)"
-          >Demo Image</button>
+          >
+            Demo Image
+          </button>
           <button
             onClick={() => handleShowDemoNotification("gif")}
             className="px-2 py-1 text-xs rounded bg-blue-100/80 text-blue-950 font-bold shadow hover:bg-blue-100 select-none"
             aria-label="Show mention popup (gif)"
-          >Demo GIF</button>
+          >
+            Demo GIF
+          </button>
           <button
             onClick={() => handleShowDemoNotification("voice")}
             className="px-2 py-1 text-xs rounded bg-violet-100/80 text-violet-950 font-bold shadow hover:bg-violet-100 select-none"
             aria-label="Show mention popup (voice)"
-          >Demo Voice</button>
+          >
+            Demo Voice
+          </button>
         </div>
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center filter blur-sm"
           style={{
-            backgroundImage: `url(${currentSong.assets?.large_image || '/placeholder.svg'})`,
-            filter: 'blur(20px) brightness(0.6)'
+            backgroundImage: `url(${currentSong.assets?.large_image || "/placeholder.svg"})`,
+            filter: "blur(20px) brightness(0.6)",
           }}
         />
         <Card
           className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-8 w-full h-full flex items-center"
-          style={{ paddingTop: playerSectionPaddingTop, transition: 'padding-top 0.33s cubic-bezier(0.34,1.56,0.64,1)' }}
+          style={{
+            paddingTop: playerSectionPaddingTop,
+            transition: "padding-top 0.33s cubic-bezier(0.34,1.56,0.64,1)",
+          }}
         >
           <div className="flex items-center space-x-8 w-full">
             <MusicArtwork
@@ -156,7 +170,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
       </div>
     );
   } catch (error) {
-    console.error('NowPlaying: Render error:', error);
+    console.error("NowPlaying: Render error:", error);
     return (
       <div className="w-full h-full flex items-center justify-center">
         <div className="text-red-500">Error rendering music component</div>
