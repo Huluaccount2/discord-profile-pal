@@ -35,7 +35,8 @@ const ScrollingText = ({ text, className }: { text: string; className?: string }
       >
         {text}
       </div>
-      <style jsx>{`
+      <style>
+        {`
         @keyframes scroll {
           0% { transform: translateX(100%); }
           100% { transform: translateX(-100%); }
@@ -43,7 +44,8 @@ const ScrollingText = ({ text, className }: { text: string; className?: string }
         .animate-scroll {
           animation: scroll 15s linear infinite;
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };
