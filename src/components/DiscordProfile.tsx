@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,7 +56,7 @@ export const DiscordProfile = () => {
     fetchProfile();
   }, [user]);
 
-  const fetchDiscordData = async (showToast = true) => {
+  const fetchDiscordData = async (showToast = false) => {
     if (!user) return;
 
     setRefreshing(true);
@@ -154,7 +155,7 @@ export const DiscordProfile = () => {
         console.log('Refreshing due to custom status change');
         fetchDiscordData(false);
       }
-    }, 100); // 100ms for custom status
+    }, 1000); // 1 second for custom status changes
 
     return () => clearInterval(customStatusInterval);
   }, [user, profile?.discord_id, discordData]);
@@ -205,7 +206,7 @@ export const DiscordProfile = () => {
       <WidgetHeader 
         currentTime={currentTime}
         refreshing={refreshing}
-        onRefresh={() => fetchDiscordData(true)}
+        onRefresh={() => fetchDiscordData(false)}
         hideRefreshButton={true}
       />
 
