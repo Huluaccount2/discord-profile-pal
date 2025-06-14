@@ -6,9 +6,10 @@ interface WidgetHeaderProps {
   currentTime: Date;
   refreshing: boolean;
   onRefresh: () => void;
+  hideRefreshButton?: boolean;
 }
 
-export const WidgetHeader = ({ currentTime, refreshing, onRefresh }: WidgetHeaderProps) => {
+export const WidgetHeader = ({ currentTime, refreshing, onRefresh, hideRefreshButton = false }: WidgetHeaderProps) => {
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-2">
@@ -16,15 +17,17 @@ export const WidgetHeader = ({ currentTime, refreshing, onRefresh }: WidgetHeade
         <span className="text-sm font-medium text-gray-300">Now Playing</span>
       </div>
       <div className="flex items-center gap-2">
-        <Button
-          onClick={onRefresh}
-          disabled={refreshing}
-          variant="ghost"
-          size="sm"
-          className="text-gray-400 hover:text-white p-2 h-auto"
-        >
-          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-        </Button>
+        {!hideRefreshButton && (
+          <Button
+            onClick={onRefresh}
+            disabled={refreshing}
+            variant="ghost"
+            size="sm"
+            className="text-gray-400 hover:text-white p-2 h-auto"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </Button>
+        )}
         <div className="text-xs text-gray-500 font-mono">
           {currentTime.toLocaleTimeString()}
         </div>
