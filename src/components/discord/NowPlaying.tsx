@@ -3,52 +3,11 @@ import { Music, Headphones, Play, Pause, SkipBack, SkipForward } from "lucide-re
 import { DiscordActivity } from "@/types/discord";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 interface NowPlayingProps {
   currentSong: DiscordActivity;
 }
-
-const ScrollingText = ({ text, className }: { text: string; className?: string }) => {
-  const textRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [shouldScroll, setShouldScroll] = useState(false);
-
-  useEffect(() => {
-    if (textRef.current && containerRef.current) {
-      const textWidth = textRef.current.scrollWidth;
-      const containerWidth = containerRef.current.clientWidth;
-      setShouldScroll(textWidth > containerWidth);
-    }
-  }, [text]);
-
-  return (
-    <div ref={containerRef} className={`overflow-hidden ${className}`}>
-      <div
-        ref={textRef}
-        className={`whitespace-nowrap ${
-          shouldScroll ? 'animate-scroll' : ''
-        }`}
-        style={{
-          animation: shouldScroll ? 'scroll 15s linear infinite' : 'none',
-        }}
-      >
-        {text}
-      </div>
-      <style>
-        {`
-        @keyframes scroll {
-          0% { transform: translateX(100%); }
-          100% { transform: translateX(-100%); }
-        }
-        .animate-scroll {
-          animation: scroll 15s linear infinite;
-        }
-        `}
-      </style>
-    </div>
-  );
-};
 
 export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
   const [progress, setProgress] = useState(0);
@@ -135,22 +94,13 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
           
           <div className="space-y-2">
             {currentSong.details && (
-              <ScrollingText 
-                text={currentSong.details}
-                className="text-white font-semibold text-2xl"
-              />
+              <p className="text-white font-semibold text-2xl truncate">{currentSong.details}</p>
             )}
             {currentSong.state && (
-              <ScrollingText 
-                text={currentSong.state}
-                className="text-gray-400 text-xl"
-              />
+              <p className="text-gray-400 text-xl truncate">{currentSong.state}</p>
             )}
             {currentSong.assets?.large_text && (
-              <ScrollingText 
-                text={currentSong.assets.large_text}
-                className="text-gray-500 text-lg"
-              />
+              <p className="text-gray-500 text-lg truncate">{currentSong.assets.large_text}</p>
             )}
           </div>
         </div>
