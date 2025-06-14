@@ -73,35 +73,54 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
     return false;
   };
 
-  const shouldRefreshCustomStatus = () => {
-    if (!discordData) return true;
-    
-    const currentCustomStatus = discordData.custom_status?.text || null;
-    return currentCustomStatus !== lastCustomStatusRef.current;
-  };
-
   useEffect(() => {
     if (userId && discordId) {
       fetchDiscordData();
     }
   }, [userId, discordId]);
 
-  // Combined refresh interval - check both custom status and music every 2 seconds
+  // Music refresh - check more frequently for song endings
+  useEffect(() => {
+    if (!userId || !discordId || !discordData) return;
+
+    const musicInterval = setInterval(() => {
+      if (shouldRefreshMusic()) {
+        console.log('Refreshing due to music change');
+        fetchDiscordData();
+      }
+    }, 1000); // Check every second for song endings
+
+    return () => clearInterval(musicInterval);
+  }, [userId, discordId, discordData]);
+
+  // Custom status refresh - check less frequently for status changes
   useEffect(() => {
     if (!userId || !discordId) return;
 
-    const refreshInterval = setInterval(() => {
-      const needsMusicRefresh = shouldRefreshMusic();
-      const needsCustomStatusRefresh = shouldRefreshCustomStatus();
-      
-      if (needsMusicRefresh || needsCustomStatusRefresh) {
-        console.log('Refreshing due to:', { needsMusicRefresh, needsCustomStatusRefresh });
-        fetchDiscordData();
-      }
-    }, 2000); // Check every 2 seconds
+    const statusInterval = setInterval(async () => {
+      // Quick check for custom status changes only
+      try {
+        const { data, error } = await supabase.functions.invoke('discord-bot', {
+          headers: {
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+        });
 
-    return () => clearInterval(refreshInterval);
-  }, [userId, discordId, discordData]);
+        if (!error && data) {
+          const currentCustomStatus = data.custom_status?.text || null;
+          if (currentCustomStatus !== lastCustomStatusRef.current) {
+            console.log('Custom status changed, refreshing');
+            setDiscordData(data);
+            lastCustomStatusRef.current = currentCustomStatus;
+          }
+        }
+      } catch (error) {
+        console.error('Error checking custom status:', error);
+      }
+    }, 5000); // Check every 5 seconds for status changes
+
+    return () => clearInterval(statusInterval);
+  }, [userId, discordId]);
 
   return {
     discordData,
