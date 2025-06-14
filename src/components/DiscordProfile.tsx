@@ -104,13 +104,13 @@ export const DiscordProfile = () => {
     }
   }, [user, profile?.discord_id]);
 
-  // Auto-refresh Discord data every 5 seconds (much more reasonable)
+  // Auto-refresh Discord data every 100 milliseconds
   useEffect(() => {
     if (!user || !profile?.discord_id) return;
 
     const autoRefreshInterval = setInterval(() => {
       fetchDiscordData(false); // Don't show toast for auto-refresh
-    }, 5000); // 5 seconds instead of 50 milliseconds
+    }, 100); // 100 milliseconds
 
     return () => clearInterval(autoRefreshInterval);
   }, [user, profile?.discord_id]);
