@@ -93,13 +93,6 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
                 progress={progress}
                 isPlaying={isPlaying}
               />
-              
-              {/* Debug info - remove in production */}
-              {!isSpotifyConnected && (
-                <div className="mt-2 text-xs text-gray-500">
-                  Using Discord activity tracking
-                </div>
-              )}
             </div>
           </div>
         </Card>

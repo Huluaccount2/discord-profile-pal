@@ -6,7 +6,7 @@ import { DiscordData } from "@/types/discord";
 export const useDiscordData = (userId: string | undefined, discordId: string | null) => {
   const [discordData, setDiscordData] = useState<DiscordData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const lastCustomStatusRef = useRef<string | null>(null);
+  const lastActivityRef = useRef<any>(null);
 
   const fetchDiscordData = async () => {
     if (!userId) {
@@ -29,9 +29,10 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
         console.log('useDiscordData: Discord data received:', data);
         setDiscordData(data);
         
-        // Update custom status tracking
-        lastCustomStatusRef.current = data?.custom_status?.text || null;
-        console.log('useDiscordData: Custom status updated:', lastCustomStatusRef.current);
+        // Update activity tracking
+        const currentActivity = data?.activities?.find((activity: any) => activity.type === 2);
+        lastActivityRef.current = currentActivity;
+        console.log('useDiscordData: Music activity updated:', currentActivity);
       }
     } catch (error) {
       console.error('useDiscordData: Error calling Discord function:', error);
@@ -47,13 +48,13 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
     }
   }, [userId, discordId]);
 
-  // Custom status refresh - check for status changes only
+  // More frequent updates for music activity changes
   useEffect(() => {
     if (!userId || !discordId) return;
 
-    console.log('useDiscordData: Setting up status check interval');
-    const statusInterval = setInterval(async () => {
-      // Quick check for custom status changes only
+    console.log('useDiscordData: Setting up activity check interval');
+    const activityInterval = setInterval(async () => {
+      // Check for music activity changes more frequently
       try {
         const { data, error } = await supabase.functions.invoke('discord-bot', {
           headers: {
@@ -62,21 +63,24 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
         });
 
         if (!error && data) {
-          const currentCustomStatus = data.custom_status?.text || null;
-          if (currentCustomStatus !== lastCustomStatusRef.current) {
-            console.log('useDiscordData: Custom status changed from', lastCustomStatusRef.current, 'to', currentCustomStatus);
+          const currentActivity = data.activities?.find((activity: any) => activity.type === 2);
+          const lastActivity = lastActivityRef.current;
+          
+          // Check if music activity has changed
+          if (JSON.stringify(currentActivity) !== JSON.stringify(lastActivity)) {
+            console.log('useDiscordData: Music activity changed, updating data');
             setDiscordData(data);
-            lastCustomStatusRef.current = currentCustomStatus;
+            lastActivityRef.current = currentActivity;
           }
         }
       } catch (error) {
-        console.error('useDiscordData: Error checking custom status:', error);
+        console.error('useDiscordData: Error checking activity:', error);
       }
-    }, 100); // Check every 100ms for status changes
+    }, 2000); // Check every 2 seconds for music activity changes
 
     return () => {
-      console.log('useDiscordData: Cleaning up status check interval');
-      clearInterval(statusInterval);
+      console.log('useDiscordData: Cleaning up activity check interval');
+      clearInterval(activityInterval);
     };
   }, [userId, discordId]);
 
