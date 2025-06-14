@@ -80,7 +80,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     setNotificationOpen(true);
   };
 
-  // The notification now closes itself. We just listen for onClose.
+  // Listen ONLY for the notification's onClose – parent doesn't forcibly unset notificationOpen except here.
   const handleNotificationClose = () => setNotificationOpen(false);
 
   const handleProgressUpdate = useCallback((time: number, playing: boolean) => {
@@ -103,19 +103,21 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   try {
     return (
       <div className="relative w-full h-full rounded-lg overflow-hidden">
-        <PlayerNotification
-          ref={notificationRef}
-          avatarUrl={notificationData.avatarUrl}
-          username={notificationData.username}
-          message={notificationData.message}
-          server={notificationData.server}
-          channel={notificationData.channel}
-          hasImage={notificationData.hasImage}
-          hasGif={notificationData.hasGif}
-          hasVoiceMessage={notificationData.hasVoiceMessage}
-          open={notificationOpen}
-          onClose={handleNotificationClose}
-        />
+        {notificationOpen && (
+          <PlayerNotification
+            ref={notificationRef}
+            avatarUrl={notificationData.avatarUrl}
+            username={notificationData.username}
+            message={notificationData.message}
+            server={notificationData.server}
+            channel={notificationData.channel}
+            hasImage={notificationData.hasImage}
+            hasGif={notificationData.hasGif}
+            hasVoiceMessage={notificationData.hasVoiceMessage}
+            open={notificationOpen}
+            onClose={handleNotificationClose}
+          />
+        )}
         {/* Demo Notification Buttons below - REMOVE in production */}
         <div className="absolute top-2 left-1/2 z-30 -translate-x-1/2 flex gap-1 pointer-events-auto">
           <button

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, forwardRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -30,38 +31,50 @@ export const PlayerNotification = forwardRef<HTMLDivElement, PlayerNotificationP
     },
     ref
   ) => {
-    // Animation state to handle reverse (exit) animation
+    // Set up internal show/hide state which ignores parent open after mount
+    const [internalOpen, setInternalOpen] = useState(false);
     const [visible, setVisible] = useState(false);
+
     const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // When notification is mounted & open, start visible (in), then auto-close in 5s.
+    // When the component is initially opened, run show logic and timer once.
     useEffect(() => {
       if (open) {
-        setVisible(true);
-        // Start auto-close timer (reset if already set)
+        setInternalOpen(true); // Mount the notification
+        setVisible(true);      // Trigger slide-in animation
+
+        // Setup a 5s dismiss timer only once per open cycle
         if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
         closeTimeoutRef.current = setTimeout(() => {
-          setVisible(false);
+          setVisible(false);  // Trigger exit animation
         }, 5000);
+      } else {
+        // if parent forcibly closes, immediately begin close animation
+        setVisible(false);
       }
-      // Clean up timers on unmount or open change
+
+      // Cleanup on unmount/change
       return () => {
         if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
         if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
       };
     }, [open]);
 
-    // When visible goes false and open is true, play reverse animation, then fully close after 400ms
+    // When slide-out animation ends, unmount component and notify parent
     useEffect(() => {
-      if (!visible && open) {
+      if (!visible && internalOpen) {
         animationTimeoutRef.current = setTimeout(() => {
-          onClose();
-        }, 400);
+          setInternalOpen(false); // Actually remove from DOM
+          onClose?.();
+        }, 400); // Match animation duration
       }
-    }, [visible, open, onClose]);
+    }, [visible, internalOpen, onClose]);
 
-    // Which text to render depending on type
+    // Only render if internalOpen is true
+    if (!internalOpen) return null;
+
+    // Render message type
     let displayMessage: React.ReactNode = null;
     if (hasImage) {
       displayMessage = <span className="italic text-blue-200">contains image</span>;
@@ -70,7 +83,6 @@ export const PlayerNotification = forwardRef<HTMLDivElement, PlayerNotificationP
     } else if (hasVoiceMessage) {
       displayMessage = <span className="italic text-violet-200">contains voice message</span>;
     } else if (message) {
-      // Display only first 3 lines, with "..." if it's longer
       const lines = message.split("\n");
       const displayLines = lines.slice(0, 3).join("\n");
       displayMessage = (
@@ -80,9 +92,6 @@ export const PlayerNotification = forwardRef<HTMLDivElement, PlayerNotificationP
         </span>
       );
     }
-
-    // Only render when open is true
-    if (!open) return null;
 
     return (
       <div
@@ -135,22 +144,3 @@ export const PlayerNotification = forwardRef<HTMLDivElement, PlayerNotificationP
 );
 
 PlayerNotification.displayName = "PlayerNotification";
-
-/*
-Add these keyframes to your Tailwind config (tailwind.config.ts) under `extend.keyframes`:
-
-      'slide-in-down': {
-        '0%': { opacity: 0, transform: 'translateY(-38px) translateX(-50%)' },
-        '100%': { opacity: 1, transform: 'translateY(0) translateX(-50%)' },
-      },
-      'slide-out-up': {
-        '0%': { opacity: 1, transform: 'translateY(0) translateX(-50%)' },
-        '100%': { opacity: 0, transform: 'translateY(-38px) translateX(-50%)' },
-      },
-And in `extend.animation`:
-
-      'slide-in-down': 'slide-in-down 0.38s cubic-bezier(0.34,1.56,0.64,1) both',
-      'slide-out-up': 'slide-out-up 0.4s cubic-bezier(0.34,1.56,0.64,1) both',
-
----
-*/
