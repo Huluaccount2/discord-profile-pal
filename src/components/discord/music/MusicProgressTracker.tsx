@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 
 interface MusicProgressTrackerProps {
@@ -72,7 +71,7 @@ export const useMusicProgressTracker = ({
         progressUnchangedCountRef.current = 0;
         lastRawProgressRef.current = currentTime;
       } else {
-        // Discord fallback: calculate progress from timestamps or detect stall for pause
+        // Discord fallback: calculate progress or detect stall for pause
         const elapsed = now - startTime;
         const songEnded = elapsed >= duration;
         const rawCurrentTime = Math.max(0, Math.min(elapsed, duration));
@@ -98,10 +97,10 @@ export const useMusicProgressTracker = ({
           }
           lastRawProgressRef.current = currentTime;
 
-          // If progress hasn't advanced for >2 intervals (~2s), treat as paused
+          // If progress hasn't advanced for >2 intervals (~2s), treat as paused and freeze time
           if (progressUnchangedCountRef.current > 2) {
             isPlaying = false;
-            currentTime = cachedProgress; // Hold at last known
+            currentTime = cachedProgress; // Freeze at last known progress
           } else {
             setCachedProgress(currentTime);
             setLastUpdateTime(now);
