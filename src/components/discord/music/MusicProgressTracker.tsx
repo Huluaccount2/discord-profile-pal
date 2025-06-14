@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 
 interface MusicProgressTrackerProps {
@@ -18,6 +17,7 @@ export const useMusicProgressTracker = ({
   const [cachedProgress, setCachedProgress] = useState(0);
   const [cachedIsPlaying, setCachedIsPlaying] = useState(false);
   const [lastSongId, setLastSongId] = useState<string | null>(null);
+  const [songHasEnded, setSongHasEnded] = useState(false);
 
   useEffect(() => {
     console.log('MusicProgressTracker: Setting up progress tracking effect');
@@ -36,11 +36,12 @@ export const useMusicProgressTracker = ({
     const songId = `${currentSong.details}-${currentSong.state}-${startTime}`;
     
     // If this is a new song, reset our cached state
-    if (lastSongId && lastSongId !== songId) {
+    if (lastSongId !== songId) {
       console.log('MusicProgressTracker: New song detected, resetting state');
       setCachedProgress(0);
       setCachedIsPlaying(true);
       setLastUpdateTime(Date.now());
+      setSongHasEnded(false);
     }
     setLastSongId(songId);
     
@@ -62,6 +63,7 @@ export const useMusicProgressTracker = ({
         setCachedProgress(currentTime);
         setCachedIsPlaying(isPlaying);
         setLastUpdateTime(now);
+        setSongHasEnded(false);
         
         onProgressUpdate(currentTime, isPlaying);
       } else {
@@ -69,12 +71,17 @@ export const useMusicProgressTracker = ({
         const elapsed = now - startTime;
         const songEnded = elapsed >= duration;
         
-        if (songEnded) {
-          // Song has completely finished - show as not playing and reset progress
-          console.log('MusicProgressTracker: Song ended, resetting state');
-          setCachedProgress(0);
+        if (songEnded && !songHasEnded) {
+          // Song just ended - mark it as ended
+          console.log('MusicProgressTracker: Song ended');
+          setSongHasEnded(true);
+          setCachedProgress(duration);
           setCachedIsPlaying(false);
-          onProgressUpdate(0, false);
+          onProgressUpdate(duration, false);
+        } else if (songEnded && songHasEnded) {
+          // Song has already ended - keep showing end state
+          console.log('MusicProgressTracker: Song still ended, maintaining end state');
+          onProgressUpdate(duration, false);
         } else {
           // Song is still playing - calculate current progress
           let isPlaying = true;
@@ -103,6 +110,7 @@ export const useMusicProgressTracker = ({
           });
           
           setCachedIsPlaying(isPlaying);
+          setSongHasEnded(false);
           onProgressUpdate(currentTime, isPlaying);
         }
       }
@@ -114,5 +122,5 @@ export const useMusicProgressTracker = ({
     return () => {
       clearInterval(interval);
     };
-  }, [currentSong, isSpotifyConnected, spotifyData, onProgressUpdate, lastUpdateTime, cachedProgress, lastSongId]);
+  }, [currentSong, isSpotifyConnected, spotifyData, onProgressUpdate, lastUpdateTime, cachedProgress, lastSongId, songHasEnded]);
 };
