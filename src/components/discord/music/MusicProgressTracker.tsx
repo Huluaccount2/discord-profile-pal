@@ -17,6 +17,7 @@ export const useMusicProgressTracker = ({
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
   const [cachedProgress, setCachedProgress] = useState(0);
   const [cachedIsPlaying, setCachedIsPlaying] = useState(false);
+  const [lastSongId, setLastSongId] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('MusicProgressTracker: Setting up progress tracking effect');
@@ -31,7 +32,19 @@ export const useMusicProgressTracker = ({
     const endTime = currentSong.timestamps.end;
     const duration = endTime - startTime;
     
-    console.log('MusicProgressTracker: Setting up progress tracking:', { startTime, endTime, duration });
+    // Create a unique identifier for this song to detect song changes
+    const songId = `${currentSong.details}-${currentSong.state}-${startTime}`;
+    
+    // If this is a new song, reset our cached state
+    if (lastSongId && lastSongId !== songId) {
+      console.log('MusicProgressTracker: New song detected, resetting state');
+      setCachedProgress(0);
+      setCachedIsPlaying(true);
+      setLastUpdateTime(Date.now());
+    }
+    setLastSongId(songId);
+    
+    console.log('MusicProgressTracker: Setting up progress tracking:', { startTime, endTime, duration, songId });
 
     const updateProgress = () => {
       const now = Date.now();
@@ -101,5 +114,5 @@ export const useMusicProgressTracker = ({
     return () => {
       clearInterval(interval);
     };
-  }, [currentSong, isSpotifyConnected, spotifyData, onProgressUpdate, lastUpdateTime, cachedProgress]);
+  }, [currentSong, isSpotifyConnected, spotifyData, onProgressUpdate, lastUpdateTime, cachedProgress, lastSongId]);
 };
