@@ -1,14 +1,13 @@
-
 import { DeskThing } from 'deskthing-client';
 
 export class DeskThingIntegration {
   private static instance: DeskThingIntegration;
-  private deskThing: any; // Use any for now since the exact type structure is unclear
+  private deskThing: DeskThing;
   private isConnected = false;
 
   private constructor() {
-    // Initialize DeskThing using the static getInstance method
-    this.deskThing = DeskThing.getInstance();
+    // Initialize DeskThing using the constructor
+    this.deskThing = new DeskThing();
     this.setupEventListeners();
   }
 
