@@ -85,6 +85,7 @@ const handler = async (req: Request): Promise<Response> => {
     let activitiesData: DiscordActivity[] = [];
     let userStatus: 'online' | 'idle' | 'dnd' | 'offline' = 'online';
     let customStatus: any = null;
+    let connectionsData: any[] = [];
     
     try {
       // Fetch user settings to get custom status
@@ -113,6 +114,16 @@ const handler = async (req: Request): Promise<Response> => {
       if (connectionsResponse.ok) {
         const connections = await connectionsResponse.json();
         console.log('User connections fetched:', connections);
+        
+        // Filter and format connections for display
+        connectionsData = connections
+          .filter((conn: any) => conn.visibility === 1) // Only show public connections
+          .map((conn: any) => ({
+            type: conn.type,
+            name: conn.name,
+            id: conn.id,
+            verified: conn.verified
+          }));
         
         // Find Spotify connection with access token
         const spotifyConnection = connections.find((conn: any) => 
@@ -176,9 +187,6 @@ const handler = async (req: Request): Promise<Response> => {
         } else {
           console.log('No Spotify connection with valid access token found');
         }
-        
-        // Only create fallback if we have music connections but no real data
-        // Remove the fallback that was causing "Currently listening to music"
       }
     } catch (error) {
       console.log('Could not fetch connections or settings:', error);
@@ -222,13 +230,14 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Failed to update profile');
     }
 
-    // Return the user data with only real music activities and custom status
+    // Return the user data with only real music activities, custom status, and connections
     const responseData = {
       user: userData,
       status: userStatus,
       activities: activitiesData, // Only real Spotify data, no fallbacks
       avatar_url: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png?size=256` : null,
       custom_status: customStatus,
+      connections: connectionsData,
     };
 
     console.log('Discord data processed successfully');

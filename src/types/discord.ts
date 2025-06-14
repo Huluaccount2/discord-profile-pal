@@ -25,6 +25,13 @@ export interface DiscordActivity {
   };
 }
 
+export interface DiscordConnection {
+  type: string;
+  name: string;
+  id: string;
+  verified: boolean;
+}
+
 export interface DiscordData {
   user: {
     id: string;
@@ -44,4 +51,5 @@ export interface DiscordData {
       id?: string;
     };
   };
+  connections?: DiscordConnection[];
 }

@@ -44,9 +44,10 @@ export const DiscordProfile = () => {
     `https://cdn.discordapp.com/banners/${discordData.user.id}/${discordData.user.banner}.png?size=600` : 
     null;
 
-  // Get bio and custom status from Discord data
+  // Get bio, custom status, and connections from Discord data
   const bio = discordData?.user?.bio || null;
   const customStatus = discordData?.custom_status || null;
+  const connections = discordData?.connections || [];
 
   // Check for current song - prioritize Spotify integration, fall back to Discord activities
   const discordSong = discordData?.activities?.find(activity => activity.type === 2);
@@ -96,6 +97,7 @@ export const DiscordProfile = () => {
             bannerUrl={bannerUrl}
             bio={bio}
             customStatus={customStatus}
+            connections={connections}
           />
         </div>
 
