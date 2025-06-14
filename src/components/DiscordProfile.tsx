@@ -19,6 +19,7 @@ export const DiscordProfile = () => {
   const [refreshing, setRefreshing] = useState(false);
   const lastSongRef = useRef<string | null>(null);
   const lastSongEndRef = useRef<number | null>(null);
+  const lastCustomStatusRef = useRef<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -91,6 +92,9 @@ export const DiscordProfile = () => {
           lastSongEndRef.current = null;
         }
         
+        // Update custom status tracking
+        lastCustomStatusRef.current = data?.custom_status?.text || null;
+        
         if (showToast) {
           toast({
             title: "Discord data updated",
@@ -136,29 +140,45 @@ export const DiscordProfile = () => {
     return false;
   };
 
+  const shouldRefreshCustomStatus = () => {
+    if (!discordData) return true;
+    
+    const currentCustomStatus = discordData.custom_status?.text || null;
+    return currentCustomStatus !== lastCustomStatusRef.current;
+  };
+
   useEffect(() => {
     if (user && profile?.discord_id) {
       fetchDiscordData();
     }
   }, [user, profile?.discord_id]);
 
-  // Smart auto-refresh - fast for custom status, smart for music
+  // Fast refresh for custom status only
   useEffect(() => {
     if (!user || !profile?.discord_id) return;
 
-    const smartRefreshInterval = setInterval(() => {
-      // Always refresh for custom status updates (fast refresh)
-      // But only refresh music when needed
+    const customStatusInterval = setInterval(() => {
+      if (shouldRefreshCustomStatus()) {
+        console.log('Refreshing due to custom status change');
+        fetchDiscordData(false);
+      }
+    }, 100); // 100ms for custom status
+
+    return () => clearInterval(customStatusInterval);
+  }, [user, profile?.discord_id, discordData]);
+
+  // Slower refresh for music changes
+  useEffect(() => {
+    if (!user || !profile?.discord_id) return;
+
+    const musicRefreshInterval = setInterval(() => {
       if (shouldRefreshMusic()) {
         console.log('Refreshing due to music change or end');
         fetchDiscordData(false);
-      } else {
-        // Just refresh for custom status and other non-music data
-        fetchDiscordData(false);
       }
-    }, 100); // 100 milliseconds for custom status updates
+    }, 5000); // 5 seconds for music changes
 
-    return () => clearInterval(smartRefreshInterval);
+    return () => clearInterval(musicRefreshInterval);
   }, [user, profile?.discord_id, discordData]);
 
   if (loading) {

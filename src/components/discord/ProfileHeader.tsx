@@ -61,16 +61,16 @@ export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, b
 
   return (
     <div className="relative mb-6">
-      {/* Banner Background - Brighter */}
+      {/* Banner Background - Much Brighter */}
       {bannerUrl && (
         <div 
-          className="absolute inset-0 h-24 rounded-lg bg-cover bg-center bg-no-repeat opacity-60"
+          className="absolute inset-0 h-24 rounded-lg bg-cover bg-center bg-no-repeat opacity-90"
           style={{ backgroundImage: `url(${bannerUrl})` }}
         />
       )}
       
-      {/* Gradient overlay for better text readability */}
-      <div className="absolute inset-0 h-24 rounded-lg bg-gradient-to-b from-transparent to-gray-900/50" />
+      {/* Lighter gradient overlay for better text readability */}
+      <div className="absolute inset-0 h-24 rounded-lg bg-gradient-to-b from-transparent to-gray-900/30" />
       
       {/* Profile Content */}
       <div className="relative flex items-start gap-4 pt-8">
@@ -100,10 +100,10 @@ export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, b
             {getStatusText()}
           </Badge>
           
-          {/* Custom Status - Discord-style bubble */}
+          {/* Custom Status - Discord-style bubble with improved visibility */}
           {customStatus?.text && (
             <div className="mb-3">
-              <div className="inline-flex items-center gap-2 bg-gray-800/80 backdrop-blur-sm rounded-full px-3 py-1.5 border border-gray-700/50 shadow-lg">
+              <div className="inline-flex items-center gap-2 bg-gray-800 backdrop-blur-sm rounded-full px-3 py-2 border border-gray-600 shadow-md">
                 {customStatus.emoji?.name && (
                   <span className="text-sm">
                     {customStatus.emoji.id ? 
