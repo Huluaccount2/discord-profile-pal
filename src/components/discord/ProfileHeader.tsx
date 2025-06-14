@@ -46,34 +46,34 @@ export const ProfileHeader = ({
 
   return (
     <div className="relative h-full overflow-hidden flex flex-col">
-      {/* Compact banner for Car Thing */}
+      {/* Larger banner for Car Thing */}
       {bannerUrl && (
         <div 
-          className="absolute inset-0 h-20 rounded-lg bg-cover bg-center bg-no-repeat opacity-90"
+          className="absolute inset-0 h-24 rounded-lg bg-cover bg-center bg-no-repeat opacity-90"
           style={{ backgroundImage: `url(${bannerUrl})` }}
         />
       )}
       
       {/* Lighter gradient overlay */}
-      <div className="absolute inset-0 h-20 rounded-lg bg-gradient-to-b from-transparent to-gray-900/30" />
+      <div className="absolute inset-0 h-24 rounded-lg bg-gradient-to-b from-transparent to-gray-900/30" />
       
-      {/* Compact Profile Content for Car Thing */}
-      <div className="relative flex flex-col pt-8 flex-1 min-h-0">
-        {/* Compact Avatar and Username Row */}
+      {/* Profile Content with larger avatar */}
+      <div className="relative flex flex-col pt-10 flex-1 min-h-0">
+        {/* Larger Avatar and Username Row */}
         <div className="flex items-start gap-3 mb-3 flex-shrink-0">
-          <div className="relative -mt-4">
+          <div className="relative -mt-6">
             {avatarUrl ? (
               <img
                 src={avatarUrl}
                 alt={`${displayName}'s avatar`}
-                className="w-16 h-16 rounded-full ring-2 ring-gray-900 transition-transform hover:scale-105"
+                className="w-20 h-20 rounded-full ring-2 ring-gray-900 transition-transform hover:scale-105"
               />
             ) : (
-              <div className="w-16 h-16 rounded-full ring-2 ring-gray-900 bg-gray-600 flex items-center justify-center">
-                <User className="w-8 h-8 text-gray-400" />
+              <div className="w-20 h-20 rounded-full ring-2 ring-gray-900 bg-gray-600 flex items-center justify-center">
+                <User className="w-10 h-10 text-gray-400" />
               </div>
             )}
-            <div className={`absolute -bottom-1 -right-1 w-5 h-5 ${getStatusColor()} rounded-full border-2 border-gray-900`}></div>
+            <div className={`absolute -bottom-1 -right-1 w-6 h-6 ${getStatusColor()} rounded-full border-2 border-gray-900`}></div>
           </div>
           
           <div className="flex-1 min-w-0">
