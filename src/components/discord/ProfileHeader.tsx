@@ -61,34 +61,34 @@ export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, b
 
   return (
     <div className="relative mb-6 h-full">
-      {/* Banner Background - Much Larger */}
+      {/* Banner Background - Ends halfway through avatar like Discord */}
       {bannerUrl && (
         <div 
-          className="absolute inset-0 h-40 rounded-lg bg-cover bg-center bg-no-repeat opacity-90"
+          className="absolute inset-0 h-32 rounded-lg bg-cover bg-center bg-no-repeat opacity-90"
           style={{ backgroundImage: `url(${bannerUrl})` }}
         />
       )}
       
       {/* Lighter gradient overlay for better text readability */}
-      <div className="absolute inset-0 h-40 rounded-lg bg-gradient-to-b from-transparent to-gray-900/30" />
+      <div className="absolute inset-0 h-32 rounded-lg bg-gradient-to-b from-transparent to-gray-900/30" />
       
       {/* Profile Content */}
-      <div className="relative flex flex-col pt-8">
-        {/* Avatar and Username Row */}
+      <div className="relative flex flex-col pt-16">
+        {/* Avatar and Username Row - Avatar overlaps banner */}
         <div className="flex items-start gap-4 mb-6">
-          <div className="relative">
+          <div className="relative -mt-8">
             {avatarUrl ? (
               <img
                 src={avatarUrl}
                 alt={`${displayName}'s avatar`}
-                className="w-20 h-20 rounded-full ring-2 ring-gray-700 transition-transform hover:scale-105"
+                className="w-24 h-24 rounded-full ring-4 ring-gray-900 transition-transform hover:scale-105"
               />
             ) : (
-              <div className="w-20 h-20 rounded-full ring-2 ring-gray-700 bg-gray-600 flex items-center justify-center">
-                <User className="w-10 h-10 text-gray-400" />
+              <div className="w-24 h-24 rounded-full ring-4 ring-gray-900 bg-gray-600 flex items-center justify-center">
+                <User className="w-12 h-12 text-gray-400" />
               </div>
             )}
-            <div className={`absolute -bottom-1 -right-1 w-6 h-6 ${getStatusColor()} rounded-full border-2 border-gray-900`}></div>
+            <div className={`absolute -bottom-1 -right-1 w-7 h-7 ${getStatusColor()} rounded-full border-3 border-gray-900`}></div>
           </div>
           
           <div className="flex-1">
@@ -98,7 +98,7 @@ export const ProfileHeader = ({ displayName, discriminator, avatarUrl, status, b
           </div>
         </div>
         
-        {/* Status and Bio Section - Pushed to Left */}
+        {/* Status and Bio Section - Aligned to Left */}
         <div className="space-y-4">
           <div className="flex justify-start">
             <Badge variant="secondary" className="bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors">
