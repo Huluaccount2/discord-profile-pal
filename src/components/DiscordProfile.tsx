@@ -33,16 +33,6 @@ export const DiscordProfile = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Extra log at top level to check loading propagation
-  if (loading) {
-    console.log('DiscordProfile: Still loading profile. [Profile loading state]');
-    return (
-      <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-6 shadow-2xl h-full">
-        <div className="text-center text-white">Loading profile...</div>
-      </Card>
-    );
-  }
-
   // Calculate current song data with improved Spotify integration
   let currentSong = null;
   if (profile && discordData) {
@@ -90,6 +80,15 @@ export const DiscordProfile = () => {
       setLastKnownSong(currentSong);
     }
   }, [currentSong]);
+
+  if (loading) {
+    console.log('DiscordProfile: Still loading profile...');
+    return (
+      <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-6 shadow-2xl h-full">
+        <div className="text-center text-white">Loading profile...</div>
+      </Card>
+    );
+  }
 
   try {
     // Use Discord data if available, otherwise fall back to regular profile data
