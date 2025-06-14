@@ -34,7 +34,6 @@ export const useSpotifyData = (userId: string | undefined) => {
       if (!session.data.session) {
         console.log('useSpotifyData: No authenticated session, skipping track fetch');
         setConnectionError('No authenticated session');
-        setIsConnected(false);
         return;
       }
 
@@ -47,15 +46,14 @@ export const useSpotifyData = (userId: string | undefined) => {
 
       if (error) {
         console.error('useSpotifyData: Error fetching current track:', error);
-        if (error.message?.includes('No Spotify connection')) {
+        if (error.message === 'No Spotify connection') {
           console.log('useSpotifyData: No Spotify connection found');
           setIsConnected(false);
-          setConnectionError('Not connected to Spotify');
-          setSpotifyData(null);
+          setConnectionError('No Spotify connection - please connect your Spotify account');
         } else {
-          setConnectionError(error.message || 'Failed to fetch track data');
-          setSpotifyData(null);
+          setConnectionError(error.message);
         }
+        setSpotifyData(null);
         return;
       }
 
@@ -67,7 +65,6 @@ export const useSpotifyData = (userId: string | undefined) => {
       console.error('useSpotifyData: Error fetching current track:', error);
       setConnectionError('Failed to fetch track data');
       setSpotifyData(null);
-      setIsConnected(false);
     }
   }, [userId]);
 

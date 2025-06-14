@@ -35,12 +35,8 @@ export const useSpotifyAuth = (userId: string | undefined) => {
         return;
       }
 
-      if (data?.authUrl) {
-        console.log('useSpotifyAuth: Redirecting to Spotify auth URL');
-        window.location.href = data.authUrl;
-      } else {
-        console.error('useSpotifyAuth: No auth URL received from function');
-      }
+      console.log('useSpotifyAuth: Redirecting to Spotify auth URL:', data.authUrl);
+      window.location.href = data.authUrl;
     } catch (error) {
       console.error('useSpotifyAuth: Error connecting to Spotify:', error);
     } finally {
