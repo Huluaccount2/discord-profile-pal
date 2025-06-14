@@ -21,6 +21,8 @@ export const useSpotify = (userId: string | undefined) => {
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
 
+  console.log('useSpotify: Hook initialized with userId:', userId);
+
   const connectSpotify = async () => {
     if (!userId) {
       console.log('useSpotify: No userId provided for connection');
@@ -138,10 +140,25 @@ export const useSpotify = (userId: string | undefined) => {
     }
   };
 
-  const play = () => controlPlayback('play');
-  const pause = () => controlPlayback('pause');
-  const nextTrack = () => controlPlayback('next');
-  const previousTrack = () => controlPlayback('previous');
+  const play = () => {
+    console.log('useSpotify: Play button clicked');
+    controlPlayback('play');
+  };
+  
+  const pause = () => {
+    console.log('useSpotify: Pause button clicked');
+    controlPlayback('pause');
+  };
+  
+  const nextTrack = () => {
+    console.log('useSpotify: Next track button clicked');
+    controlPlayback('next');
+  };
+  
+  const previousTrack = () => {
+    console.log('useSpotify: Previous track button clicked');
+    controlPlayback('previous');
+  };
 
   useEffect(() => {
     if (userId) {

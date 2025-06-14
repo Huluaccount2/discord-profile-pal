@@ -1,11 +1,12 @@
-import { Music, Headphones, Play, Pause, SkipBack, SkipForward } from "lucide-react";
-import { DiscordActivity } from "@/types/discord";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+
+import React, { useState, useEffect } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Play, Pause, SkipForward, SkipBack } from 'lucide-react';
 
 interface NowPlayingProps {
-  currentSong: DiscordActivity;
+  currentSong: any;
   onPlay?: () => void;
   onPause?: () => void;
   onNext?: () => void;
@@ -13,189 +14,184 @@ interface NowPlayingProps {
   isSpotifyConnected?: boolean;
 }
 
-export const NowPlaying = ({ 
-  currentSong, 
-  onPlay, 
-  onPause, 
-  onNext, 
+export const NowPlaying: React.FC<NowPlayingProps> = ({
+  currentSong,
+  onPlay,
+  onPause,
+  onNext,
   onPrevious,
-  isSpotifyConnected = false 
-}: NowPlayingProps) => {
-  const [progress, setProgress] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
+  isSpotifyConnected = false
+}) => {
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  console.log('NowPlaying: Props received:', {
+    currentSong: currentSong ? 'present' : 'null',
+    isSpotifyConnected,
+    hasOnPlay: !!onPlay,
+    hasOnPause: !!onPause,
+    hasOnNext: !!onNext,
+    hasOnPrevious: !!onPrevious
+  });
 
   useEffect(() => {
-    if (currentSong.timestamps?.start && currentSong.timestamps?.end) {
-      const updateProgress = () => {
-        const startTime = currentSong.timestamps!.start!;
-        const endTime = currentSong.timestamps!.end!;
-        const totalDuration = endTime - startTime;
-        const elapsed = Date.now() - startTime;
-        const progressPercent = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
-        setProgress(progressPercent);
-      };
-
-      updateProgress();
-      const interval = setInterval(updateProgress, 1000);
-      return () => clearInterval(interval);
+    if (!currentSong?.timestamps?.start || !currentSong?.timestamps?.end) {
+      console.log('NowPlaying: No valid timestamps found');
+      return;
     }
+
+    const startTime = currentSong.timestamps.start;
+    const endTime = currentSong.timestamps.end;
+    const duration = endTime - startTime;
+    
+    console.log('NowPlaying: Setting up progress tracking:', { startTime, endTime, duration });
+
+    const updateProgress = () => {
+      const now = Date.now();
+      const elapsed = now - startTime;
+      setCurrentTime(Math.max(0, Math.min(elapsed, duration)));
+      setIsPlaying(elapsed >= 0 && elapsed <= duration);
+    };
+
+    updateProgress();
+    const interval = setInterval(updateProgress, 1000);
+
+    return () => clearInterval(interval);
   }, [currentSong]);
 
-  const handlePlayPause = () => {
-    if (isSpotifyConnected) {
-      if (isPlaying) {
-        onPause?.();
-      } else {
-        onPlay?.();
-      }
-    }
-    setIsPlaying(!isPlaying);
-    console.log(isPlaying ? 'Pausing' : 'Playing');
+  const formatTime = (ms: number) => {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const handlePrevious = () => {
-    if (isSpotifyConnected) {
-      onPrevious?.();
+  const handlePlayPause = () => {
+    console.log('NowPlaying: Play/Pause clicked, isPlaying:', isPlaying, 'isSpotifyConnected:', isSpotifyConnected);
+    
+    if (!isSpotifyConnected) {
+      console.log('NowPlaying: Spotify not connected, ignoring click');
+      return;
     }
-    console.log('Previous track');
+
+    if (isPlaying && onPause) {
+      console.log('NowPlaying: Calling onPause');
+      onPause();
+    } else if (!isPlaying && onPlay) {
+      console.log('NowPlaying: Calling onPlay');
+      onPlay();
+    }
   };
 
   const handleNext = () => {
-    if (isSpotifyConnected) {
-      onNext?.();
+    console.log('NowPlaying: Next clicked, isSpotifyConnected:', isSpotifyConnected);
+    if (isSpotifyConnected && onNext) {
+      console.log('NowPlaying: Calling onNext');
+      onNext();
     }
-    console.log('Next track');
   };
 
-  console.log('NowPlaying component received currentSong:', currentSong);
-  console.log('Album cover URL:', currentSong.assets?.large_image);
+  const handlePrevious = () => {
+    console.log('NowPlaying: Previous clicked, isSpotifyConnected:', isSpotifyConnected);
+    if (isSpotifyConnected && onPrevious) {
+      console.log('NowPlaying: Calling onPrevious');
+      onPrevious();
+    }
+  };
+
+  if (!currentSong) {
+    console.log('NowPlaying: No current song, not rendering');
+    return null;
+  }
+
+  const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  console.log('NowPlaying: Rendering with progress:', progress, 'isSpotifyConnected:', isSpotifyConnected);
 
   return (
-    <div className="relative bg-gradient-to-r from-green-900/20 to-green-800/20 border border-green-700/30 rounded-lg p-4 w-full h-full flex flex-col overflow-hidden">
-      <style>
-        {`
-          @keyframes scroll-text {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-100%); }
-          }
-          .scroll-text {
-            display: inline-block;
-            animation: scroll-text 10s linear infinite;
-          }
-          .scroll-container {
-            white-space: nowrap;
-            overflow: hidden;
-            position: relative;
-          }
-          .scroll-container:hover .scroll-text {
-            animation-play-state: paused;
-          }
-        `}
-      </style>
+    <Card className="bg-gray-800/50 border-gray-700/50 p-4 w-full">
+      <div className="flex items-center space-x-4">
+        {/* Album Art */}
+        <div className="flex-shrink-0">
+          <img
+            src={currentSong.assets?.large_image || '/placeholder.svg'}
+            alt={currentSong.assets?.large_text || 'Album Art'}
+            className="w-16 h-16 rounded-lg object-cover"
+          />
+        </div>
 
-      {/* Blurred background */}
-      {currentSong.assets?.large_image && (
-        <div 
-          className="absolute inset-0 bg-cover bg-center rounded-lg opacity-20 blur-sm"
-          style={{ 
-            backgroundImage: `url(${currentSong.assets.large_image})`,
-            filter: 'blur(8px) brightness(0.4)'
-          }}
-        />
-      )}
-      
-      {/* Content overlay */}
-      <div className="relative z-10 flex items-center gap-6 flex-1">
-        {/* Album Cover */}
-        {currentSong.assets?.large_image && (
-          <div className="flex-shrink-0">
-            <img
-              src={currentSong.assets.large_image}
-              alt={currentSong.assets.large_text || 'Album cover'}
-              className="w-32 h-32 rounded-lg shadow-lg object-cover"
-              onError={(e) => {
-                console.error('Failed to load album cover:', currentSong.assets?.large_image);
-                e.currentTarget.style.display = 'none';
-              }}
-              onLoad={() => {
-                console.log('Album cover loaded successfully:', currentSong.assets?.large_image);
-              }}
-            />
-          </div>
-        )}
-        
-        {/* Song Info */}
+        {/* Song Info and Controls */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-3">
-            <Music className="w-5 h-5 text-green-400" />
-            <span className="text-base font-medium text-green-400">
-              {currentSong.name}
-            </span>
-            <Headphones className="w-5 h-5 text-green-400 animate-pulse ml-auto" />
-          </div>
-          
-          <div className="space-y-2">
-            {currentSong.details && (
-              <div className="scroll-container">
-                <p className={`text-white font-semibold text-2xl ${currentSong.details.length > 30 ? 'scroll-text' : ''}`}>
-                  {currentSong.details}
-                </p>
-              </div>
-            )}
-            {currentSong.state && (
-              <div className="scroll-container">
-                <p className={`text-gray-400 text-xl ${currentSong.state.length > 35 ? 'scroll-text' : ''}`}>
-                  {currentSong.state}
-                </p>
-              </div>
-            )}
+          <div className="mb-2">
+            <h3 className="text-white font-semibold text-lg truncate">
+              {currentSong.details || 'Unknown Track'}
+            </h3>
+            <p className="text-gray-400 text-sm truncate">
+              {currentSong.state || 'Unknown Artist'}
+            </p>
             {currentSong.assets?.large_text && (
-              <div className="scroll-container">
-                <p className={`text-gray-500 text-lg ${currentSong.assets.large_text.length > 40 ? 'scroll-text' : ''}`}>
-                  {currentSong.assets.large_text}
-                </p>
-              </div>
+              <p className="text-gray-500 text-xs truncate">
+                {currentSong.assets.large_text}
+              </p>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* Progress bar and controls */}
-      <div className="relative z-10 mt-4 space-y-3">
-        <Progress value={progress} className="w-full h-2" />
-        
-        <div className="flex items-center justify-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`text-green-400 hover:text-green-300 hover:bg-green-900/20 transition-all duration-200 hover:scale-110 ${!isSpotifyConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
-            onClick={handlePrevious}
-            disabled={!isSpotifyConnected}
-          >
-            <SkipBack className="w-5 h-5" />
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`text-green-400 hover:text-green-300 hover:bg-green-900/20 transition-all duration-200 hover:scale-110 ${!isSpotifyConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
-            onClick={handlePlayPause}
-            disabled={!isSpotifyConnected}
-          >
-            {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`text-green-400 hover:text-green-300 hover:bg-green-900/20 transition-all duration-200 hover:scale-110 ${!isSpotifyConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
-            onClick={handleNext}
-            disabled={!isSpotifyConnected}
-          >
-            <SkipForward className="w-5 h-5" />
-          </Button>
+          {/* Progress Bar */}
+          <div className="mb-3">
+            <Progress value={progress} className="h-2" />
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center justify-center space-x-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handlePrevious}
+              disabled={!isSpotifyConnected}
+              className={`text-white hover:text-green-400 ${
+                !isSpotifyConnected ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700/50'
+              }`}
+            >
+              <SkipBack className="h-4 w-4" />
+            </Button>
+
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handlePlayPause}
+              disabled={!isSpotifyConnected}
+              className={`text-white hover:text-green-400 ${
+                !isSpotifyConnected ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700/50'
+              }`}
+            >
+              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+            </Button>
+
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleNext}
+              disabled={!isSpotifyConnected}
+              className={`text-white hover:text-green-400 ${
+                !isSpotifyConnected ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-700/50'
+              }`}
+            >
+              <SkipForward className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {!isSpotifyConnected && (
+            <p className="text-xs text-gray-500 text-center mt-2">
+              Connect Spotify to control playback
+            </p>
+          )}
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
