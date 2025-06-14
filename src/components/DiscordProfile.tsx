@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +12,7 @@ import { useSpotify } from "@/hooks/useSpotify";
 
 export const DiscordProfile = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [lastKnownSong, setLastKnownSong] = useState(null);
+  const [lastKnownSong, setLastKnownSong] = useState<any>(null);
   const { user } = useAuth();
   const { profile, loading } = useProfile(user?.id);
   const { discordData, refreshing, fetchDiscordData } = useDiscordData(user?.id, profile?.discord_id);
@@ -109,8 +110,15 @@ export const DiscordProfile = () => {
     const customStatus = discordData?.custom_status || null;
     const connections = discordData?.connections || [];
 
-    // Use current song if available, otherwise show last known song
-    const songToDisplay = currentSong || lastKnownSong;
+    // Decide what song to display:
+    // 1. If Spotify is connected, show currentSong if available;
+    // 2. If currentSong is null but isConnected=true and we have lastKnownSong, show lastKnownSong even if paused;
+    // 3. Only show EmptyMusicState's connect UI if truly not connected and no lastKnownSong.
+    let songToDisplay = currentSong;
+    const shouldShowLastKnownSong = isConnected && !currentSong && lastKnownSong;
+    if (!songToDisplay && shouldShowLastKnownSong) {
+      songToDisplay = lastKnownSong;
+    }
 
     console.log('DiscordProfile: Final songToDisplay:', songToDisplay);
     console.log('DiscordProfile: About to render main component');
