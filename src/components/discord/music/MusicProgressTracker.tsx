@@ -12,6 +12,7 @@ interface MusicProgressTrackerProps {
  * - Spotify integration: trusted isPlaying/track.progress values.
  * - Discord fallback: Pause only if progress hasn't advanced for >2 polling cycles (2s), not just missing timestamp change.
  * - Emits new updates only when time or playing state changes.
+ * - When paused, progress and timer freeze at last position until resumed.
  */
 export const useMusicProgressTracker = ({
   currentSong,
@@ -86,7 +87,7 @@ export const useMusicProgressTracker = ({
         } else if (songEnded && songHasEnded) {
           onProgressUpdate(duration, false);
         } else {
-          // New: Track if progress is stalling
+          // Track if progress is stalling
           let isPlaying = true;
           let currentTime = rawCurrentTime;
 
@@ -97,20 +98,25 @@ export const useMusicProgressTracker = ({
           }
           lastRawProgressRef.current = currentTime;
 
-          // If progress hasn't advanced for >2 intervals (~2s), treat as paused and freeze time
+          // If progress hasn't advanced for >2 intervals (~2s), treat as paused and FREEZE time at last known progress
           if (progressUnchangedCountRef.current > 2) {
             isPlaying = false;
-            currentTime = cachedProgress; // Freeze at last known progress
+            currentTime = cachedProgress; // Absolutely freeze at last known position
           } else {
+            // Only update cachedProgress when not paused
             setCachedProgress(currentTime);
             setLastUpdateTime(now);
           }
 
-          // Only emit if change
+          // Only emit to parent if either progress or playing state has changed
+          // In paused state, this will keep emitting the same frozen progress
           if (currentTime !== cachedProgress || isPlaying !== cachedIsPlaying) {
             setCachedIsPlaying(isPlaying);
             setSongHasEnded(false);
             onProgressUpdate(currentTime, isPlaying);
+          } else if (!isPlaying) {
+            // When paused, keep emitting the exact frozen value to prevent number increment
+            onProgressUpdate(cachedProgress, false);
           }
         }
       }
