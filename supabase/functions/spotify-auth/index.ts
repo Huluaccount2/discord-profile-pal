@@ -63,7 +63,7 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error('Spotify client ID not configured');
       }
 
-      const redirectUri = `${new URL(req.url).origin}/auth`;
+      const redirectUri = `${new URL(req.url).origin}/auth/spotify/callback`;
       const scopes = 'user-read-currently-playing user-read-playback-state';
       const state = user.id; // Use user ID as state for security
 
@@ -75,6 +75,65 @@ const handler = async (req: Request): Promise<Response> => {
         `state=${state}`;
 
       return new Response(JSON.stringify({ authUrl }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
+    if (action === 'exchange-code') {
+      // Exchange authorization code for access tokens
+      const { code, state } = body;
+      
+      if (state !== user.id) {
+        throw new Error('Invalid state parameter');
+      }
+
+      const clientId = Deno.env.get('SPOTIFY_CLIENT_ID');
+      const clientSecret = Deno.env.get('SPOTIFY_CLIENT_SECRET');
+
+      if (!clientId || !clientSecret) {
+        throw new Error('Spotify credentials not configured');
+      }
+
+      const redirectUri = `${new URL(req.url).origin}/auth/spotify/callback`;
+
+      const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: redirectUri,
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error('Failed to exchange code for tokens');
+      }
+
+      const tokens: SpotifyTokenResponse = await tokenResponse.json();
+
+      // Store tokens in the database
+      const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+      
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          spotify_access_token: tokens.access_token,
+          spotify_refresh_token: tokens.refresh_token,
+          spotify_token_expires_at: expiresAt.toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        throw new Error('Failed to store tokens');
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
