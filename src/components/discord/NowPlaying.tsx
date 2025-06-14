@@ -75,6 +75,33 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 
   return (
     <div className="relative w-full h-full rounded-lg overflow-hidden">
+      {/* CSS for auto-scrolling text */}
+      <style>
+        {`
+          .scrolling-text {
+            display: inline-block;
+            animation: scroll-left 15s linear infinite;
+          }
+          
+          .scrolling-text:hover {
+            animation-play-state: paused;
+          }
+          
+          @keyframes scroll-left {
+            0% {
+              transform: translateX(100%);
+            }
+            100% {
+              transform: translateX(-100%);
+            }
+          }
+          
+          .scrolling-text {
+            min-width: 100%;
+          }
+        `}
+      </style>
+
       {/* Lighter Blurred Background */}
       <div 
         className="absolute inset-0 bg-cover bg-center filter blur-sm"
@@ -140,32 +167,6 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
           </div>
         </div>
       </Card>
-
-      {/* CSS for auto-scrolling text */}
-      <style jsx>{`
-        .scrolling-text {
-          display: inline-block;
-          animation: scroll-left 15s linear infinite;
-        }
-        
-        .scrolling-text:hover {
-          animation-play-state: paused;
-        }
-        
-        @keyframes scroll-left {
-          0% {
-            transform: translateX(100%);
-          }
-          100% {
-            transform: translateX(-100%);
-          }
-        }
-        
-        /* Only animate if text is longer than container */
-        .scrolling-text {
-          min-width: 100%;
-        }
-      `}</style>
     </div>
   );
 };
