@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { MusicArtwork } from './music/MusicArtwork';
@@ -27,7 +26,6 @@ interface NowPlayingProps {
   notificationOpen?: boolean;
   onNotificationClose?: () => void;
   notificationData?: NotificationData;
-  onShowDemoNotification?: () => void;
 }
 
 export const NowPlaying: React.FC<NowPlayingProps> = ({
@@ -37,7 +35,6 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   notificationOpen = false,
   onNotificationClose,
   notificationData,
-  onShowDemoNotification,
 }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -81,8 +78,8 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   try {
     return (
       <div className="relative w-full h-full rounded-lg overflow-hidden">
-        {/* Notification banner inside music player (absolute to container) */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 w-full max-w-md pointer-events-none">
+        {/* Notification banner INSIDE the Spotify player, floats from the top with new styling */}
+        <div className="absolute top-0 left-0 w-full flex justify-center z-30 pointer-events-none">
           {notificationOpen && notificationData && (
             <NotificationBanner
               open={notificationOpen}
@@ -93,19 +90,6 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
               server={notificationData.server}
               channel={notificationData.channel}
             />
-          )}
-        </div>
-
-        {/* Demo trigger - can be hidden/removed in prod */}
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10">
-          {onShowDemoNotification && (
-            <button
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow"
-              onClick={onShowDemoNotification}
-              type="button"
-            >
-              Demo Notification
-            </button>
           )}
         </div>
         
