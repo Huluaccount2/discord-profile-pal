@@ -19,8 +19,8 @@ export const ConnectionsList = ({ connections }: ConnectionsListProps) => {
 
   return (
     <div className="text-left">
-      <h3 className="text-sm font-semibold text-gray-300 mb-3">CONNECTIONS</h3>
-      <div className="space-y-2">
+      <h3 className="text-sm font-semibold text-gray-300 mb-4">CONNECTIONS</h3>
+      <div className="space-y-3">
         {connections.map((connection, index) => (
           <ConnectionItem key={index} connection={connection} />
         ))}

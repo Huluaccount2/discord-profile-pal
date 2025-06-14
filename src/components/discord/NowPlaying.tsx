@@ -1,35 +1,54 @@
 
-import { Music, Headphones } from "lucide-react";
+import { Music, Headphones, Play, Pause, SkipBack, SkipForward } from "lucide-react";
 import { DiscordActivity } from "@/types/discord";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 
 interface NowPlayingProps {
   currentSong: DiscordActivity;
 }
 
 export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
-  const formatDuration = (startTime: number, endTime?: number) => {
-    if (endTime) {
-      const total = Math.floor((endTime - startTime) / 1000);
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      const remaining = Math.max(0, total - elapsed);
-      const minutes = Math.floor(remaining / 60);
-      const seconds = remaining % 60;
-      return `${minutes}:${seconds.toString().padStart(2, '0')} remaining`;
-    } else {
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      const minutes = Math.floor(elapsed / 60);
-      const seconds = elapsed % 60;
-      return `${minutes}:${seconds.toString().padStart(2, '0')} elapsed`;
+  const [progress, setProgress] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+
+  useEffect(() => {
+    if (currentSong.timestamps?.start && currentSong.timestamps?.end) {
+      const updateProgress = () => {
+        const startTime = currentSong.timestamps!.start!;
+        const endTime = currentSong.timestamps!.end!;
+        const totalDuration = endTime - startTime;
+        const elapsed = Date.now() - startTime;
+        const progressPercent = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+        setProgress(progressPercent);
+      };
+
+      updateProgress();
+      const interval = setInterval(updateProgress, 1000);
+      return () => clearInterval(interval);
     }
-  };
+  }, [currentSong]);
 
   console.log('NowPlaying component received currentSong:', currentSong);
   console.log('Album cover URL:', currentSong.assets?.large_image);
 
   return (
-    <div className="bg-gradient-to-r from-green-900/20 to-green-800/20 border border-green-700/30 rounded-lg p-4 w-full h-full flex items-center">
-      <div className="flex items-center gap-6 w-full">
-        {/* Album Cover - Much Larger */}
+    <div className="relative bg-gradient-to-r from-green-900/20 to-green-800/20 border border-green-700/30 rounded-lg p-4 w-full h-full flex flex-col overflow-hidden">
+      {/* Blurred background */}
+      {currentSong.assets?.large_image && (
+        <div 
+          className="absolute inset-0 bg-cover bg-center rounded-lg opacity-10 blur-sm"
+          style={{ 
+            backgroundImage: `url(${currentSong.assets.large_image})`,
+            filter: 'blur(8px) opacity(0.9)'
+          }}
+        />
+      )}
+      
+      {/* Content overlay */}
+      <div className="relative z-10 flex items-center gap-6 flex-1">
+        {/* Album Cover */}
         {currentSong.assets?.large_image && (
           <div className="flex-shrink-0">
             <img
@@ -47,7 +66,7 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
           </div>
         )}
         
-        {/* Song Info - Larger Text */}
+        {/* Song Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-3">
             <Music className="w-5 h-5 text-green-400" />
@@ -65,17 +84,41 @@ export const NowPlaying = ({ currentSong }: NowPlayingProps) => {
               <p className="text-gray-400 text-xl truncate">{currentSong.state}</p>
             )}
             {currentSong.assets?.large_text && (
-              <p className="text-gray-500 text-lg truncate">on {currentSong.assets.large_text}</p>
-            )}
-            {currentSong.timestamps?.start && (
-              <div className="flex items-center gap-2 mt-3">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-sm text-gray-400 font-mono">
-                  {formatDuration(currentSong.timestamps.start, currentSong.timestamps.end)}
-                </span>
-              </div>
+              <p className="text-gray-500 text-lg truncate">{currentSong.assets.large_text}</p>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Progress bar and controls */}
+      <div className="relative z-10 mt-4 space-y-3">
+        <Progress value={progress} className="w-full h-2" />
+        
+        <div className="flex items-center justify-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-green-400 hover:text-green-300 hover:bg-green-900/20"
+          >
+            <SkipBack className="w-5 h-5" />
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-green-400 hover:text-green-300 hover:bg-green-900/20"
+            onClick={() => setIsPlaying(!isPlaying)}
+          >
+            {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-green-400 hover:text-green-300 hover:bg-green-900/20"
+          >
+            <SkipForward className="w-5 h-5" />
+          </Button>
         </div>
       </div>
     </div>
