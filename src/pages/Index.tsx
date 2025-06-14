@@ -39,10 +39,11 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-4">
-        {/* Logout button */}
-        <div className="flex justify-end">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-2">
+      <div className="w-full max-w-6xl h-[480px] flex flex-col">
+        {/* Header with logout button */}
+        <div className="flex justify-between items-center mb-3 px-2">
+          <h1 className="text-lg font-bold text-white">DesktThing</h1>
           <Button
             onClick={signOut}
             variant="outline"
@@ -54,7 +55,10 @@ const Index = () => {
           </Button>
         </div>
         
-        <DiscordProfile />
+        {/* Main content area - horizontal layout */}
+        <div className="flex-1">
+          <DiscordProfile />
+        </div>
       </div>
     </div>
   );

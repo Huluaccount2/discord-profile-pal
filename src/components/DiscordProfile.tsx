@@ -27,7 +27,7 @@ export const DiscordProfile = () => {
 
   if (loading) {
     return (
-      <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-6 shadow-2xl">
+      <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-6 shadow-2xl h-full">
         <div className="text-center text-white">Loading profile...</div>
       </Card>
     );
@@ -76,7 +76,7 @@ export const DiscordProfile = () => {
   }
 
   return (
-    <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-6 shadow-2xl">
+    <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-4 shadow-2xl h-full flex flex-col">
       <WidgetHeader 
         currentTime={currentTime}
         refreshing={refreshing}
@@ -84,24 +84,33 @@ export const DiscordProfile = () => {
         hideRefreshButton={true}
       />
 
-      <ProfileHeader 
-        displayName={displayName}
-        discriminator={discriminator}
-        avatarUrl={avatarUrl}
-        status={status}
-        bannerUrl={bannerUrl}
-        bio={bio}
-        customStatus={customStatus}
-      />
+      {/* Horizontal layout for Car Thing */}
+      <div className="flex-1 flex gap-4">
+        {/* Left side - Profile */}
+        <div className="flex-shrink-0 w-80">
+          <ProfileHeader 
+            displayName={displayName}
+            discriminator={discriminator}
+            avatarUrl={avatarUrl}
+            status={status}
+            bannerUrl={bannerUrl}
+            bio={bio}
+            customStatus={customStatus}
+          />
+        </div>
 
-      {currentSong ? (
-        <NowPlaying currentSong={currentSong} />
-      ) : (
-        <EmptyMusicState 
-          isConnected={isConnected}
-          onConnect={connectSpotify}
-        />
-      )}
+        {/* Right side - Music */}
+        <div className="flex-1 flex items-center">
+          {currentSong ? (
+            <NowPlaying currentSong={currentSong} />
+          ) : (
+            <EmptyMusicState 
+              isConnected={isConnected}
+              onConnect={connectSpotify}
+            />
+          )}
+        </div>
+      </div>
 
       <WidgetFooter />
     </Card>
