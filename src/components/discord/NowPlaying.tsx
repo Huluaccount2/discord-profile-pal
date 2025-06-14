@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -46,15 +45,27 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     const updateProgress = () => {
       const now = Date.now();
       const elapsed = now - startTime;
+      const currentPlayingState = elapsed >= 0 && elapsed <= duration;
+      
       setCurrentTime(Math.max(0, Math.min(elapsed, duration)));
-      setIsPlaying(elapsed >= 0 && elapsed <= duration);
+      setIsPlaying(currentPlayingState);
     };
 
     updateProgress();
-    const interval = setInterval(updateProgress, 1000);
+    
+    // Only update progress if the song is playing (for Spotify-connected songs)
+    // For Discord activities, always update since we don't have real-time play/pause state
+    const shouldUpdateProgress = !isSpotifyConnected || 
+      (isSpotifyConnected && currentSong.name === "Spotify" && isPlaying);
+    
+    const interval = shouldUpdateProgress ? setInterval(updateProgress, 1000) : null;
 
-    return () => clearInterval(interval);
-  }, [currentSong]);
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [currentSong, isSpotifyConnected, isPlaying]);
 
   // Check for text overflow and determine if we need multiple lines
   useEffect(() => {
