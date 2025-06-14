@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 
@@ -16,50 +16,17 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   currentSong,
   isSpotifyConnected = false
 }) => {
-  // CSS for auto-scrolling text - moved to top to avoid re-creation
-  const scrollingStyles = `
-    .scrolling-text {
-      display: inline-block;
-      animation: scroll-left 15s linear infinite;
-    }
-    
-    .scrolling-text:hover {
-      animation-play-state: paused;
-    }
-    
-    @keyframes scroll-left {
-      0% {
-        transform: translateX(100%);
-      }
-      100% {
-        transform: translateX(-100%);
-      }
-    }
-    
-    .scrolling-text {
-      min-width: 100%;
-    }
-  `;
-
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const titleRef = useRef<HTMLDivElement>(null);
-  const artistRef = useRef<HTMLDivElement>(null);
-  const albumRef = useRef<HTMLDivElement>(null);
-  const [shouldScrollTitle, setShouldScrollTitle] = useState(false);
-  const [shouldScrollArtist, setShouldScrollArtist] = useState(false);
-  const [shouldScrollAlbum, setShouldScrollAlbum] = useState(false);
 
   console.log('NowPlaying: Props received:', {
     currentSong: currentSong ? 'present' : 'null',
     isSpotifyConnected
   });
 
-  // Progress tracking - this can depend on currentSong since it needs timestamps
   useEffect(() => {
     if (!currentSong?.timestamps?.start || !currentSong?.timestamps?.end) {
       console.log('NowPlaying: No valid timestamps found');
-      setIsPlaying(false);
       return;
     }
 
@@ -72,14 +39,8 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     const updateProgress = () => {
       const now = Date.now();
       const elapsed = now - startTime;
-      const songIsCurrentlyPlaying = elapsed >= 0 && elapsed <= duration;
-      
-      setIsPlaying(songIsCurrentlyPlaying);
-      
-      // Only update progress if the song is currently playing
-      if (songIsCurrentlyPlaying) {
-        setCurrentTime(Math.max(0, Math.min(elapsed, duration)));
-      }
+      setCurrentTime(Math.max(0, Math.min(elapsed, duration)));
+      setIsPlaying(elapsed >= 0 && elapsed <= duration);
     };
 
     updateProgress();
@@ -87,39 +48,6 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 
     return () => clearInterval(interval);
   }, [currentSong]);
-
-  // Extract text values to use as dependencies
-  const titleText = currentSong?.details || 'Unknown Track';
-  const artistText = currentSong?.state || 'Unknown Artist';
-  const albumText = currentSong?.assets?.large_text || '';
-
-  // Check if text overflows and needs scrolling - only when text content changes
-  useEffect(() => {
-    const checkOverflow = () => {
-      if (titleRef.current) {
-        const container = titleRef.current.parentElement;
-        if (container) {
-          setShouldScrollTitle(titleRef.current.scrollWidth > container.clientWidth);
-        }
-      }
-      if (artistRef.current) {
-        const container = artistRef.current.parentElement;
-        if (container) {
-          setShouldScrollArtist(artistRef.current.scrollWidth > container.clientWidth);
-        }
-      }
-      if (albumRef.current) {
-        const container = albumRef.current.parentElement;
-        if (container) {
-          setShouldScrollAlbum(albumRef.current.scrollWidth > container.clientWidth);
-        }
-      }
-    };
-
-    // Check overflow after render
-    const timer = setTimeout(checkOverflow, 100);
-    return () => clearTimeout(timer);
-  }, [titleText, artistText, albumText]); // Only run when actual text content changes
 
   const formatTime = (ms: number) => {
     const seconds = Math.floor(ms / 1000);
@@ -134,17 +62,12 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   }
 
   const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
-  const progress = duration > 0 && isPlaying ? (currentTime / duration) * 100 : 0;
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
-  console.log('NowPlaying: Rendering with progress:', progress, 'isPlaying:', isPlaying, 'isSpotifyConnected:', isSpotifyConnected);
+  console.log('NowPlaying: Rendering with progress:', progress, 'isSpotifyConnected:', isSpotifyConnected);
 
   return (
     <div className="relative w-full h-full rounded-lg overflow-hidden">
-      {/* CSS for auto-scrolling text */}
-      <style>
-        {scrollingStyles}
-      </style>
-
       {/* Lighter Blurred Background */}
       <div 
         className="absolute inset-0 bg-cover bg-center filter blur-sm"
@@ -166,45 +89,19 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
             />
           </div>
 
-          {/* Song Info with Conditional Auto-Scrolling Text */}
+          {/* Song Info */}
           <div className="flex-1 min-w-0">
             <div className="mb-6">
-              {/* Conditionally Scrolling Song Title */}
-              <div className="h-12 mb-2 overflow-hidden">
-                <div className={shouldScrollTitle ? 'scrolling-text' : ''}>
-                  <h3 
-                    ref={titleRef}
-                    className="text-white font-bold text-3xl leading-tight whitespace-nowrap"
-                  >
-                    {titleText}
-                  </h3>
-                </div>
-              </div>
-              
-              {/* Conditionally Scrolling Artist */}
-              <div className="h-8 mb-2 overflow-hidden">
-                <div className={shouldScrollArtist ? 'scrolling-text' : ''}>
-                  <p 
-                    ref={artistRef}
-                    className="text-gray-300 text-xl leading-tight whitespace-nowrap"
-                  >
-                    {artistText}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Conditionally Scrolling Album */}
-              {albumText && (
-                <div className="h-6 overflow-hidden">
-                  <div className={shouldScrollAlbum ? 'scrolling-text' : ''}>
-                    <p 
-                      ref={albumRef}
-                      className="text-gray-400 text-lg leading-tight whitespace-nowrap"
-                    >
-                      {albumText}
-                    </p>
-                  </div>
-                </div>
+              <h3 className="text-white font-bold text-3xl mb-2 truncate">
+                {currentSong.details || 'Unknown Track'}
+              </h3>
+              <p className="text-gray-300 text-xl mb-2 truncate">
+                {currentSong.state || 'Unknown Artist'}
+              </p>
+              {currentSong.assets?.large_text && (
+                <p className="text-gray-400 text-lg truncate">
+                  {currentSong.assets.large_text}
+                </p>
               )}
             </div>
 
