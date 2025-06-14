@@ -27,6 +27,9 @@ export const useMusicProgressTracker = ({
   // Last interval's "true" (playing) progress for each platform
   const lastEmittedProgressRef = useRef(0);
 
+  // Store updateProgress function for use in visibilitychange
+  const updateProgressRef = useRef<() => void>();
+
   useEffect(() => {
     if (!currentSong?.timestamps?.start || !currentSong?.timestamps?.end) {
       onProgressUpdate(0, false);
@@ -108,11 +111,27 @@ export const useMusicProgressTracker = ({
       }
     };
 
+    // Expose updateProgress on ref for visibility listener
+    updateProgressRef.current = updateProgress;
+
     updateProgress();
     // Keep the progress bar synced every 500ms, especially when paused.
     const interval = setInterval(updateProgress, 500);
 
-    return () => clearInterval(interval);
+    // Visibility change handler
+    const handleVisibility = () => {
+      // When tab becomes visible, re-sync immediately
+      if (document.visibilityState === 'visible' && updateProgressRef.current) {
+        updateProgressRef.current();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [
     currentSong,
     isSpotifyConnected,
