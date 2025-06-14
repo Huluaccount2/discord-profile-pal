@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -70,13 +69,6 @@ export const DiscordProfile = () => {
 
       if (error) {
         console.error('Discord function error:', error);
-        if (showToast) {
-          toast({
-            title: "Error fetching Discord data",
-            description: "Failed to connect to Discord. Please try again.",
-            variant: "destructive",
-          });
-        }
       } else {
         console.log('Discord data received:', data);
         setDiscordData(data);
@@ -97,13 +89,6 @@ export const DiscordProfile = () => {
       }
     } catch (error) {
       console.error('Error calling Discord function:', error);
-      if (showToast) {
-        toast({
-          title: "Connection error",
-          description: "Failed to fetch Discord data. Please try again.",
-          variant: "destructive",
-        });
-      }
     } finally {
       setRefreshing(false);
     }
@@ -146,32 +131,21 @@ export const DiscordProfile = () => {
     }
   }, [user, profile?.discord_id]);
 
-  // Fast refresh for custom status only
+  // Combined refresh interval - check both custom status and music every 2 seconds
   useEffect(() => {
     if (!user || !profile?.discord_id) return;
 
-    const customStatusInterval = setInterval(() => {
-      if (shouldRefreshCustomStatus()) {
-        console.log('Refreshing due to custom status change');
+    const refreshInterval = setInterval(() => {
+      const needsMusicRefresh = shouldRefreshMusic();
+      const needsCustomStatusRefresh = shouldRefreshCustomStatus();
+      
+      if (needsMusicRefresh || needsCustomStatusRefresh) {
+        console.log('Refreshing due to:', { needsMusicRefresh, needsCustomStatusRefresh });
         fetchDiscordData(false);
       }
-    }, 1000); // 1 second for custom status changes
+    }, 2000); // Check every 2 seconds
 
-    return () => clearInterval(customStatusInterval);
-  }, [user, profile?.discord_id, discordData]);
-
-  // Slower refresh for music changes
-  useEffect(() => {
-    if (!user || !profile?.discord_id) return;
-
-    const musicRefreshInterval = setInterval(() => {
-      if (shouldRefreshMusic()) {
-        console.log('Refreshing due to music change or end');
-        fetchDiscordData(false);
-      }
-    }, 5000); // 5 seconds for music changes
-
-    return () => clearInterval(musicRefreshInterval);
+    return () => clearInterval(refreshInterval);
   }, [user, profile?.discord_id, discordData]);
 
   if (loading) {
