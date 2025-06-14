@@ -57,8 +57,8 @@ export const ConnectionItem = ({ connection }: ConnectionItemProps) => {
   const colorClass = getConnectionColor(connection.type);
 
   return (
-    <div className="flex flex-col items-center gap-1 p-2 bg-gray-800/50 rounded-lg min-w-[60px] max-w-[80px]">
-      <div className={`w-6 h-6 ${colorClass} rounded-lg flex items-center justify-center p-1`}>
+    <div className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg">
+      <div className={`relative w-6 h-6 ${colorClass} rounded-lg flex items-center justify-center p-1 flex-shrink-0`}>
         {logoUrl ? (
           <img
             src={logoUrl}
@@ -77,9 +77,7 @@ export const ConnectionItem = ({ connection }: ConnectionItemProps) => {
           </div>
         )}
       </div>
-      <div className="text-center">
-        <span className="text-xs text-gray-300 font-medium block truncate max-w-[70px]">{connection.name}</span>
-      </div>
+      <span className="text-xs text-gray-300 font-medium truncate flex-1">{connection.name}</span>
     </div>
   );
 };

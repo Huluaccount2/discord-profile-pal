@@ -23,13 +23,13 @@ export const ConnectionsList = ({ connections }: ConnectionsListProps) => {
   return (
     <div className="text-left">
       <h3 className="text-xs font-semibold text-gray-300 mb-2">CONNECTIONS</h3>
-      <div className="flex flex-wrap gap-2 overflow-hidden">
+      <div className="space-y-2 overflow-hidden">
         {displayConnections.map((connection, index) => (
           <ConnectionItem key={index} connection={connection} />
         ))}
         {connections.length > 6 && (
           <div className="text-xs text-gray-500 px-2 py-1 bg-gray-800/50 rounded-lg">
-            +{connections.length - 6}
+            +{connections.length - 6} more
           </div>
         )}
       </div>
