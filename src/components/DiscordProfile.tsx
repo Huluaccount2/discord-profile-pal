@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -182,7 +181,6 @@ export const DiscordProfile = () => {
                 notificationOpen={notifOpen}
                 onNotificationClose={() => setNotifOpen(false)}
                 notificationData={sampleNotif}
-                onShowDemoNotification={() => setNotifOpen(true)}
               />
             ) : shouldShowConnectPrompt ? (
               <EmptyMusicState 
