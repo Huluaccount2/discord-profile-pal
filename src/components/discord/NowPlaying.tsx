@@ -1,18 +1,10 @@
+
 import React, { useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { MusicArtwork } from './music/MusicArtwork';
 import { MusicInfo } from './music/MusicInfo';
 import { MusicProgressBar } from './music/MusicProgressBar';
 import { useMusicProgressTracker } from './music/MusicProgressTracker';
-import { NotificationBanner } from '@/components/NotificationBanner';
-
-interface NotificationData {
-  avatarUrl: string | null;
-  username: string;
-  message: string;
-  server: string;
-  channel: string;
-}
 
 interface NowPlayingProps {
   currentSong: any;
@@ -22,19 +14,12 @@ interface NowPlayingProps {
   onPrevious?: () => void;
   isSpotifyConnected?: boolean;
   spotifyData?: any;
-  // Notification props:
-  notificationOpen?: boolean;
-  onNotificationClose?: () => void;
-  notificationData?: NotificationData;
 }
 
 export const NowPlaying: React.FC<NowPlayingProps> = ({
   currentSong,
   isSpotifyConnected = false,
-  spotifyData,
-  notificationOpen = false,
-  onNotificationClose,
-  notificationData,
+  spotifyData
 }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -78,20 +63,13 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   try {
     return (
       <div className="relative w-full h-full rounded-lg overflow-hidden">
-        {/* Notification banner INSIDE the Spotify player, floats from the top with new styling */}
-        <div className="absolute top-0 left-0 w-full flex justify-center z-30 pointer-events-none">
-          {notificationOpen && notificationData && (
-            <NotificationBanner
-              open={notificationOpen}
-              onClose={onNotificationClose!}
-              avatarUrl={notificationData.avatarUrl}
-              username={notificationData.username}
-              message={notificationData.message}
-              server={notificationData.server}
-              channel={notificationData.channel}
-            />
-          )}
-        </div>
+        <div 
+          className="absolute inset-0 bg-cover bg-center filter blur-sm"
+          style={{ 
+            backgroundImage: `url(${currentSong.assets?.large_image || '/placeholder.svg'})`,
+            filter: 'blur(20px) brightness(0.6)'
+          }}
+        />
         
         <Card className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-8 w-full h-full flex items-center">
           <div className="flex items-center space-x-8 w-full">
