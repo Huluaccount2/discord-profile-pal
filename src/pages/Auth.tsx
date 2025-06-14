@@ -11,6 +11,9 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, AlertCircle } from 'lucide-react';
 
 const Auth = () => {
+  // Error boundary state
+  const [renderError, setRenderError] = useState<Error | null>(null);
+
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,8 +21,21 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const { toast } = useToast();
-  const { user } = useAuth();
+  // Defensive: wrap useAuth in try/catch in case of provider issues
+  let user: any = null;
+  try {
+    user = useAuth().user;
+  } catch (err) {
+    setRenderError(
+      err instanceof Error ? err : new Error("Unknown Auth context error")
+    );
+  }
   const navigate = useNavigate();
+
+  // Log top-level render
+  useEffect(() => {
+    console.log("[Auth Page] Rendered. user:", user);
+  }, [user]);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -178,6 +194,22 @@ const Auth = () => {
     }
   };
 
+  // Error boundary rendering
+  if (renderError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="w-full max-w-md p-6 bg-red-950 text-red-300 border border-red-700">
+          <div className="text-center">
+            <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+            <div className="font-bold">A critical error occurred in the authentication page.</div>
+            <div className="mt-2">{renderError.message}</div>
+            <div className="mt-2 text-xs">Check the console for details.</div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-6">
@@ -312,3 +344,4 @@ const Auth = () => {
 };
 
 export default Auth;
+
