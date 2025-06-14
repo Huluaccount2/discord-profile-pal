@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -104,13 +103,13 @@ export const DiscordProfile = () => {
     }
   }, [user, profile?.discord_id]);
 
-  // Auto-refresh Discord data every 30 seconds
+  // Auto-refresh Discord data every 1 second
   useEffect(() => {
     if (!user || !profile?.discord_id) return;
 
     const autoRefreshInterval = setInterval(() => {
       fetchDiscordData(false); // Don't show toast for auto-refresh
-    }, 30000); // 30 seconds
+    }, 1000); // 1 second
 
     return () => clearInterval(autoRefreshInterval);
   }, [user, profile?.discord_id]);
