@@ -8,10 +8,6 @@ export const WidgetFooter = () => {
         <Music className="w-3 h-3" />
         <span>Music Widget</span>
       </div>
-      <div className="flex items-center gap-1">
-        <div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>
-        <span>Live</span>
-      </div>
     </div>
   );
 };
