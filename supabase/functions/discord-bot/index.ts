@@ -12,6 +12,7 @@ interface DiscordUser {
   username: string;
   discriminator: string;
   avatar: string | null;
+  global_name?: string;
 }
 
 interface DiscordActivity {
@@ -43,19 +44,18 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const botToken = Deno.env.get('DISCORD_BOT_TOKEN');
-    const userId = Deno.env.get('DISCORD_USER_ID');
+    const userToken = Deno.env.get('DISCORD_USER_TOKEN');
 
-    if (!botToken || !userId) {
-      throw new Error('Missing Discord credentials');
+    if (!userToken) {
+      throw new Error('Missing Discord user token');
     }
 
-    console.log('Fetching Discord data for user:', userId);
+    console.log('Fetching Discord data with user token...');
 
-    // Get user info
-    const userResponse = await fetch(`https://discord.com/api/v10/users/${userId}`, {
+    // Get user info using personal token
+    const userResponse = await fetch(`https://discord.com/api/v10/users/@me`, {
       headers: {
-        'Authorization': `Bot ${botToken}`,
+        'Authorization': userToken,
         'Content-Type': 'application/json',
       },
     });
@@ -67,6 +67,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     const userData: DiscordUser = await userResponse.json();
     console.log('User data fetched:', userData);
+
+    // Get current user's activities/presence
+    let activitiesData: DiscordActivity[] = [];
+    try {
+      const activitiesResponse = await fetch(`https://discord.com/api/v10/users/@me/activities`, {
+        headers: {
+          'Authorization': userToken,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (activitiesResponse.ok) {
+        activitiesData = await activitiesResponse.json();
+        console.log('Activities data fetched:', activitiesData);
+      } else {
+        console.log('Activities endpoint not available, using empty activities');
+      }
+    } catch (error) {
+      console.log('Could not fetch activities:', error);
+    }
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -103,12 +123,11 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Failed to update profile');
     }
 
-    // Try to fetch presence data (this requires the bot to be in a server with the user)
-    // For now, we'll return the user data and a placeholder for activities
+    // Return the user data with activities
     const responseData = {
       user: userData,
       status: 'online' as const,
-      activities: [] as DiscordActivity[],
+      activities: activitiesData,
       avatar_url: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png?size=256` : null,
     };
 
