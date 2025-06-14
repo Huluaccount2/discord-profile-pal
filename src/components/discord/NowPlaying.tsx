@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 
@@ -18,6 +18,13 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [titleOverflows, setTitleOverflows] = useState(false);
+  const [artistOverflows, setArtistOverflows] = useState(false);
+  const [albumOverflows, setAlbumOverflows] = useState(false);
+  
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const artistRef = useRef<HTMLParagraphElement>(null);
+  const albumRef = useRef<HTMLParagraphElement>(null);
 
   console.log('NowPlaying: Props received:', {
     currentSong: currentSong ? 'present' : 'null',
@@ -48,6 +55,37 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 
     return () => clearInterval(interval);
   }, [currentSong]);
+
+  // Check for text overflow and determine if we need multiple lines
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (titleRef.current) {
+        const isOverflowing = titleRef.current.scrollWidth > titleRef.current.clientWidth;
+        setTitleOverflows(isOverflowing);
+      }
+      
+      if (artistRef.current) {
+        const isOverflowing = artistRef.current.scrollWidth > artistRef.current.clientWidth;
+        setArtistOverflows(isOverflowing);
+      }
+      
+      if (albumRef.current) {
+        const isOverflowing = albumRef.current.scrollWidth > albumRef.current.clientWidth;
+        setAlbumOverflows(isOverflowing);
+      }
+    };
+
+    // Check after a short delay to ensure DOM has rendered
+    const timeoutId = setTimeout(checkOverflow, 100);
+    
+    // Also check on window resize
+    window.addEventListener('resize', checkOverflow);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', checkOverflow);
+    };
+  }, [currentSong?.details, currentSong?.state, currentSong?.assets?.large_text]);
 
   const formatTime = (ms: number) => {
     const seconds = Math.floor(ms / 1000);
@@ -92,14 +130,34 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
           {/* Song Info */}
           <div className="flex-1 min-w-0">
             <div className="mb-6">
-              <h3 className="text-white font-bold text-3xl mb-2 truncate">
+              {/* Song Title - with overflow handling */}
+              <h3 
+                ref={titleRef}
+                className={`text-white font-bold text-3xl mb-2 ${
+                  titleOverflows ? 'whitespace-normal break-words' : 'truncate'
+                }`}
+              >
                 {currentSong.details || 'Unknown Track'}
               </h3>
-              <p className="text-gray-300 text-xl mb-2 truncate">
+              
+              {/* Artist - with overflow handling */}
+              <p 
+                ref={artistRef}
+                className={`text-gray-300 text-xl mb-2 ${
+                  artistOverflows ? 'whitespace-normal break-words' : 'truncate'
+                }`}
+              >
                 {currentSong.state || 'Unknown Artist'}
               </p>
+              
+              {/* Album - with overflow handling */}
               {currentSong.assets?.large_text && (
-                <p className="text-gray-400 text-lg truncate">
+                <p 
+                  ref={albumRef}
+                  className={`text-gray-400 text-lg ${
+                    albumOverflows ? 'whitespace-normal break-words' : 'truncate'
+                  }`}
+                >
                   {currentSong.assets.large_text}
                 </p>
               )}
