@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface NowPlayingProps {
   currentSong: any;
@@ -97,30 +96,36 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
             />
           </div>
 
-          {/* Song Info with Scrollable Text */}
+          {/* Song Info with Auto-Scrolling Text */}
           <div className="flex-1 min-w-0">
             <div className="mb-6">
-              {/* Scrollable Song Title */}
-              <ScrollArea className="h-12 mb-2">
-                <h3 className="text-white font-bold text-3xl leading-tight">
-                  {currentSong.details || 'Unknown Track'}
-                </h3>
-              </ScrollArea>
+              {/* Auto-Scrolling Song Title */}
+              <div className="h-12 mb-2 overflow-hidden">
+                <div className="scrolling-text">
+                  <h3 className="text-white font-bold text-3xl leading-tight whitespace-nowrap">
+                    {currentSong.details || 'Unknown Track'}
+                  </h3>
+                </div>
+              </div>
               
-              {/* Scrollable Artist */}
-              <ScrollArea className="h-8 mb-2">
-                <p className="text-gray-300 text-xl leading-tight">
-                  {currentSong.state || 'Unknown Artist'}
-                </p>
-              </ScrollArea>
-              
-              {/* Scrollable Album */}
-              {currentSong.assets?.large_text && (
-                <ScrollArea className="h-6">
-                  <p className="text-gray-400 text-lg leading-tight">
-                    {currentSong.assets.large_text}
+              {/* Auto-Scrolling Artist */}
+              <div className="h-8 mb-2 overflow-hidden">
+                <div className="scrolling-text">
+                  <p className="text-gray-300 text-xl leading-tight whitespace-nowrap">
+                    {currentSong.state || 'Unknown Artist'}
                   </p>
-                </ScrollArea>
+                </div>
+              </div>
+              
+              {/* Auto-Scrolling Album */}
+              {currentSong.assets?.large_text && (
+                <div className="h-6 overflow-hidden">
+                  <div className="scrolling-text">
+                    <p className="text-gray-400 text-lg leading-tight whitespace-nowrap">
+                      {currentSong.assets.large_text}
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -135,6 +140,32 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
           </div>
         </div>
       </Card>
+
+      {/* CSS for auto-scrolling text */}
+      <style jsx>{`
+        .scrolling-text {
+          display: inline-block;
+          animation: scroll-left 15s linear infinite;
+        }
+        
+        .scrolling-text:hover {
+          animation-play-state: paused;
+        }
+        
+        @keyframes scroll-left {
+          0% {
+            transform: translateX(100%);
+          }
+          100% {
+            transform: translateX(-100%);
+          }
+        }
+        
+        /* Only animate if text is longer than container */
+        .scrolling-text {
+          min-width: 100%;
+        }
+      `}</style>
     </div>
   );
 };
