@@ -1,11 +1,14 @@
-import React, { useState, useCallback, useRef } from 'react';
+
+import React, { useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { MusicArtwork } from './music/MusicArtwork';
 import { MusicInfo } from './music/MusicInfo';
 import { MusicProgressBar } from './music/MusicProgressBar';
 import { useMusicProgressTracker } from './music/MusicProgressTracker';
 import { PlayerNotification } from './PlayerNotification';
-import { useNotifications } from "@/hooks/useNotifications";
+
+// New: player notification management/hook import
+import { usePlayerNotification } from './music/usePlayerNotification';
 
 interface NowPlayingProps {
   currentSong: any;
@@ -25,88 +28,18 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Notification state for mentions
-  const [notificationOpen, setNotificationOpen] = useState(false);
-  const [notificationData, setNotificationData] = useState<{
-    avatarUrl: string;
-    username: string;
-    message: string;
-    server: string;
-    channel: string;
-    hasImage?: boolean;
-    hasGif?: boolean;
-    hasVoiceMessage?: boolean;
-  }>({
-    avatarUrl: "",
-    username: "",
-    message: "",
-    server: "",
-    channel: "",
-  });
+  // Extracted notification logic to hook
+  const {
+    notificationOpen,
+    notificationData,
+    notificationRef,
+    notifHeight,
+    handleNotificationClose,
+    showDemoNotification,
+  } = usePlayerNotification();
 
-  // Add a ref for the notification so we can measure its height
-  const notificationRef = React.useRef<HTMLDivElement | null>(null);
-  const [notifHeight, setNotifHeight] = useState(0);
-
-  // Watch for open/close, update height
-  React.useEffect(() => {
-    if (notificationOpen && notificationRef.current) {
-      const rect = notificationRef.current.getBoundingClientRect();
-      setNotifHeight(rect.height);
-    } else {
-      setNotifHeight(0);
-    }
-  }, [notificationOpen, notificationData]);
-
-  // Bump the player content by notifHeight + 12px if open
+  // The section below the notification will always be padded down by notification height (or 0)
   const playerSectionPaddingTop = notificationOpen ? notifHeight + 12 : 0;
-
-  // ------------ Notifications integration ---------------
-  const { notifications } = useNotifications();
-
-  // If there's a new notification, display it as a PlayerNotification
-  // We'll just show the latest notification if present, falling back to the demo buttons if not.
-  React.useEffect(() => {
-    if (notifications.length > 0) {
-      const notif = notifications[0];
-      setNotificationData({
-        avatarUrl: notif.source_user_avatar || "",
-        username: notif.source_username || "Unknown",
-        message: notif.message || "",
-        server: notif.server || "",
-        channel: notif.channel || "",
-        hasImage: notif.has_image,
-        hasGif: notif.has_gif,
-        hasVoiceMessage: notif.has_voice_message,
-      });
-      setNotificationOpen(true);
-    }
-    // eslint-disable-next-line
-  }, [notifications.length > 0 ? notifications[0].id : null]);
-  // ------------ end new logic ------------
-
-  // DEMO ONLY: Simple test button to launch a sample notification. Remove for production.
-  const handleShowDemoNotification = (
-    variant: "text" | "image" | "gif" | "voice" = "text"
-  ) => {
-    setNotificationData({
-      avatarUrl: "https://randomuser.me/api/portraits/men/32.jpg",
-      username: "Alex McLean",
-      message:
-        variant === "text"
-          ? "Hey @you! Let's finish the playlist collab soon. Did you check all 4 songs I posted in #music-collab? DM me 😁\nExtra: with\nNewlines\nto test."
-          : "",
-      server: "Chill Hub",
-      channel: "music-chat",
-      hasImage: variant === "image" ? true : undefined,
-      hasGif: variant === "gif" ? true : undefined,
-      hasVoiceMessage: variant === "voice" ? true : undefined,
-    });
-    setNotificationOpen(true);
-  };
-
-  // Listen ONLY for the notification's onClose – parent doesn't forcibly unset notificationOpen except here.
-  const handleNotificationClose = () => setNotificationOpen(false);
 
   const handleProgressUpdate = useCallback((time: number, playing: boolean) => {
     setCurrentTime(time);
@@ -128,46 +61,54 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   try {
     return (
       <div className="relative w-full h-full rounded-lg overflow-hidden">
+        {/* PlayerNotification moves the music down instead of overlapping! */}
         {notificationOpen && (
-          <PlayerNotification
-            ref={notificationRef}
-            avatarUrl={notificationData.avatarUrl}
-            username={notificationData.username}
-            message={notificationData.message}
-            server={notificationData.server}
-            channel={notificationData.channel}
-            hasImage={notificationData.hasImage}
-            hasGif={notificationData.hasGif}
-            hasVoiceMessage={notificationData.hasVoiceMessage}
-            open={notificationOpen}
-            onClose={handleNotificationClose}
-          />
+          <div ref={notificationRef}>
+            <PlayerNotification
+              avatarUrl={notificationData.avatarUrl}
+              username={notificationData.username}
+              message={notificationData.message}
+              server={notificationData.server}
+              channel={notificationData.channel}
+              hasImage={notificationData.hasImage}
+              hasGif={notificationData.hasGif}
+              hasVoiceMessage={notificationData.hasVoiceMessage}
+              open={notificationOpen}
+              onClose={handleNotificationClose}
+            />
+          </div>
         )}
-        {/* Demo Notification Buttons below - REMOVE in production */}
+
+        {/* Spaceholder for notification height: music will always appear BELOW the notification */}
+        {notificationOpen && notifHeight > 0 && (
+          <div style={{ height: notifHeight + 12 }} aria-hidden="true" />
+        )}
+
+        {/* Demo Notification Buttons (can remove in production if you want) */}
         <div className="absolute top-2 left-1/2 z-30 -translate-x-1/2 flex gap-1 pointer-events-auto">
           <button
-            onClick={() => handleShowDemoNotification("text")}
+            onClick={() => showDemoNotification("text")}
             className="px-2 py-1 text-xs rounded bg-white bg-opacity-20 text-black font-bold shadow hover:bg-opacity-30 select-none"
             aria-label="Show mention popup (text)"
           >
             Demo Text
           </button>
           <button
-            onClick={() => handleShowDemoNotification("image")}
+            onClick={() => showDemoNotification("image")}
             className="px-2 py-1 text-xs rounded bg-green-100/70 text-green-950 font-bold shadow hover:bg-green-100 select-none"
             aria-label="Show mention popup (image)"
           >
             Demo Image
           </button>
           <button
-            onClick={() => handleShowDemoNotification("gif")}
+            onClick={() => showDemoNotification("gif")}
             className="px-2 py-1 text-xs rounded bg-blue-100/80 text-blue-950 font-bold shadow hover:bg-blue-100 select-none"
             aria-label="Show mention popup (gif)"
           >
             Demo GIF
           </button>
           <button
-            onClick={() => handleShowDemoNotification("voice")}
+            onClick={() => showDemoNotification("voice")}
             className="px-2 py-1 text-xs rounded bg-violet-100/80 text-violet-950 font-bold shadow hover:bg-violet-100 select-none"
             aria-label="Show mention popup (voice)"
           >
