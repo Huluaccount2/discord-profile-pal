@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { MusicArtwork } from './music/MusicArtwork';
@@ -85,6 +84,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
         )}
 
         {/* Demo Notification Buttons (can remove in production if you want) */}
+        {/*
         <div className="absolute top-2 left-1/2 z-30 -translate-x-1/2 flex gap-1 pointer-events-auto">
           <button
             onClick={() => showDemoNotification("text")}
@@ -115,6 +115,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
             Demo Voice
           </button>
         </div>
+        */}
         <div
           className="absolute inset-0 bg-cover bg-center filter blur-sm"
           style={{
