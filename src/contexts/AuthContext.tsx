@@ -49,56 +49,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                                typeof (window as any).DeskThing !== 'undefined';
 
   useEffect(() => {
-    if (isRunningOnDeskThing) {
-      console.log('AuthProvider: Running on DeskThing, using mock authentication');
-      // For DeskThing, we bypass Supabase auth entirely
-      setUser(DESKTHING_USER);
-      setSession(null); // DeskThing doesn't need sessions
-      setLoading(false);
-      return;
-    }
+    let mounted = true;
 
-    console.log('AuthProvider: Setting up Supabase auth state listener');
-    
-    // Set up auth state listener for regular web usage
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id ? 'user logged in' : 'no user');
+    const initializeAuth = async () => {
+      if (isRunningOnDeskThing) {
+        console.log('AuthProvider: Running on DeskThing, using mock authentication');
+        if (mounted) {
+          setUser(DESKTHING_USER);
+          setSession(null); // DeskThing doesn't need sessions
+          setLoading(false);
+        }
+        return;
+      }
+
+      console.log('AuthProvider: Setting up Supabase auth state listener');
+      
+      // Set up auth state listener for regular web usage
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          if (!mounted) return;
+          
+          console.log('Auth state changed:', event, session?.user?.id ? 'user logged in' : 'no user');
+          
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+
+          // Handle specific auth events
+          if (event === 'SIGNED_IN') {
+            console.log('User signed in successfully');
+          } else if (event === 'SIGNED_OUT') {
+            console.log('User signed out');
+          } else if (event === 'TOKEN_REFRESHED') {
+            console.log('Auth token refreshed');
+          } else if (event === 'USER_UPDATED') {
+            console.log('User data updated');
+          }
+        }
+      );
+
+      // Get initial session
+      try {
+        console.log('AuthProvider: Getting initial session');
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-
-        // Handle specific auth events
-        if (event === 'SIGNED_IN') {
-          console.log('User signed in successfully');
-        } else if (event === 'SIGNED_OUT') {
-          console.log('User signed out');
-        } else if (event === 'TOKEN_REFRESHED') {
-          console.log('Auth token refreshed');
-        } else if (event === 'USER_UPDATED') {
-          console.log('User data updated');
+        if (error) {
+          console.error('Error getting initial session:', error);
+        } else {
+          console.log('Initial session:', session?.user?.id ? 'user found' : 'no user');
+        }
+        
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Failed to get initial session:', error);
+        if (mounted) {
+          setLoading(false);
         }
       }
-    );
 
-    // Get initial session
-    console.log('AuthProvider: Getting initial session');
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error('Error getting initial session:', error);
-      } else {
-        console.log('Initial session:', session?.user?.id ? 'user found' : 'no user');
-      }
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+      return () => {
+        console.log('AuthProvider: Cleaning up auth listener');
+        subscription.unsubscribe();
+      };
+    };
 
+    const cleanup = initializeAuth();
+    
     return () => {
-      console.log('AuthProvider: Cleaning up auth listener');
-      subscription.unsubscribe();
+      mounted = false;
+      cleanup?.then(cleanupFn => cleanupFn?.());
     };
   }, [isRunningOnDeskThing]);
 

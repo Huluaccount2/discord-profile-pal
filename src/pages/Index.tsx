@@ -34,7 +34,7 @@ const Index = () => {
     );
   }
 
-  // Regular web app flow - require authentication for browser users
+  // Show loading state only for a brief moment to avoid infinite loading
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
