@@ -9,18 +9,38 @@ import { useProfile } from "@/hooks/useProfile";
 import { useDiscordData } from "@/hooks/useDiscordData";
 import { useSpotify } from "@/hooks/useSpotify";
 import { useLastKnownSong } from "@/hooks/useLastKnownSong";
+import { toast } from "@/components/ui/use-toast";
 
 export const DiscordProfile = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { user } = useAuth();
   const { profile, loading } = useProfile(user?.id);
   const { discordData, refreshing, fetchDiscordData } = useDiscordData(user?.id, profile?.discord_id);
-  const { 
-    spotifyData, 
-    isConnected, 
-    connectSpotify,
-    connectionError
-  } = useSpotify(user?.id);
+
+  // Spotify logic: catch errors gracefully
+  let spotifyErrorMsg = null;
+  let isConnected = false;
+  let spotifyData = null;
+  let connectSpotify = () => {};
+  let connectionError = null;
+
+  try {
+    // Defensive: wrap Spotify hook in a try-catch to prevent a crash if function bails
+    const spotifyResult = useSpotify(user?.id);
+    isConnected = spotifyResult.isConnected;
+    spotifyData = spotifyResult.spotifyData;
+    connectSpotify = spotifyResult.connectSpotify;
+    connectionError = spotifyResult.connectionError;
+    if (connectionError) {
+      spotifyErrorMsg = typeof connectionError === "string"
+        ? connectionError
+        : "Spotify connection failed. (See logs)";
+      console.error("DiscordProfile: Spotify error in hook:", connectionError);
+    }
+  } catch (err) {
+    spotifyErrorMsg = "Spotify error (hook crashed): " + ((err as Error)?.message || String(err));
+    console.error("DiscordProfile: Caught fatal error in Spotify hook:", err);
+  }
 
   // Use refactored hook for localStorage song
   const [lastKnownSong, setLastKnownSong] = useLastKnownSong();
@@ -36,63 +56,55 @@ export const DiscordProfile = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Calculate current song data with improved Spotify integration
+  // Calculate current song data, but only if no Spotify error (if error, skip)
   let currentSong = null;
-  if (profile && discordData) {
-    console.log('DiscordProfile: Spotify integration status:', { 
-      isConnected, 
-      spotifyData,
-      connectionError,
-      discordActivities: discordData?.activities 
-    });
-
-    if (isConnected && spotifyData?.track) {
-      // Use our own Spotify integration first (even if paused)
-      const track = spotifyData.track;
-      const startTime = Date.now() - track.progress;
-      
-      currentSong = {
-        name: "Spotify",
-        type: 2,
-        details: track.name,
-        state: track.artist,
-        timestamps: {
-          start: Math.floor(startTime),
-          end: Math.floor(startTime + track.duration),
-        },
-        assets: {
-          large_image: track.albumCover,
-          large_text: track.album,
-        },
-      };
-      console.log('DiscordProfile: Using Spotify OAuth integration data');
-    } else if (isConnected && spotifyData?.lastPlayed) {
-      // New: Use the last recently played song if nothing currently playing
-      const track = spotifyData.lastPlayed;
-      // Start progress at end (as it's not playing, but show song details)
-      const now = Date.now();
-      currentSong = {
-        name: "Spotify",
-        type: 2,
-        details: track.name,
-        state: track.artist,
-        timestamps: {
-          start: now - track.duration,
-          end: now,
-        },
-        assets: {
-          large_image: track.albumCover,
-          large_text: track.album,
-        },
-      };
-      console.log('DiscordProfile: Using Spotify recently played song as fallback');
-    } else {
-      // Fall back to Discord activities if no Spotify OAuth connection
-      const discordSong = discordData?.activities?.find(activity => activity.type === 2);
-      if (discordSong) {
-        currentSong = discordSong;
-        console.log('DiscordProfile: Using Discord activity data');
+  if (profile && discordData && !spotifyErrorMsg) {
+    try {
+      if (isConnected && spotifyData?.track) {
+        const track = spotifyData.track;
+        const startTime = Date.now() - track.progress;
+        currentSong = {
+          name: "Spotify",
+          type: 2,
+          details: track.name,
+          state: track.artist,
+          timestamps: {
+            start: Math.floor(startTime),
+            end: Math.floor(startTime + track.duration),
+          },
+          assets: {
+            large_image: track.albumCover,
+            large_text: track.album,
+          },
+        };
+      } else if (isConnected && spotifyData?.lastPlayed) {
+        const track = spotifyData.lastPlayed;
+        const now = Date.now();
+        currentSong = {
+          name: "Spotify",
+          type: 2,
+          details: track.name,
+          state: track.artist,
+          timestamps: {
+            start: now - track.duration,
+            end: now,
+          },
+          assets: {
+            large_image: track.albumCover,
+            large_text: track.album,
+          },
+        };
+      } else {
+        // Fallback on Discord activities
+        const discordSong = discordData?.activities?.find(a => a.type === 2);
+        if (discordSong) {
+          currentSong = discordSong;
+        }
       }
+    } catch (err) {
+      // Even a crash here won't kill notifications
+      console.error("DiscordProfile: Song calculation error:", err);
+      currentSong = null;
     }
   }
 
@@ -126,15 +138,13 @@ export const DiscordProfile = () => {
       `https://cdn.discordapp.com/banners/${discordData.user.id}/${discordData.user.banner}.png?size=600` : 
       null;
 
-    // Get bio, custom status, and connections from Discord data
     const bio = discordData?.user?.bio || null;
     const customStatus = discordData?.custom_status || null;
     const connections = discordData?.connections || [];
 
-    // Final logic: always display the most recently detected song, checking both session and localStorage
+    // New: show currentSong only if Spotify is working; otherwise fallback on lastKnownSong
     let songToDisplay = currentSong || lastKnownSong;
-
-    const shouldShowConnectPrompt = !isConnected && !songToDisplay;
+    const shouldShowConnectPrompt = !isConnected && !songToDisplay && !spotifyErrorMsg;
 
     console.log('DiscordProfile: Final songToDisplay:', songToDisplay);
     console.log('DiscordProfile: Show connect prompt?', shouldShowConnectPrompt);
@@ -159,7 +169,23 @@ export const DiscordProfile = () => {
 
           {/* Right side - Music or prompt based on state */}
           <div className="flex-1 flex items-center min-w-0">
-            {songToDisplay ? (
+            {spotifyErrorMsg ? (
+              <div className="w-full text-center">
+                {/* Notifications always render! */}
+                <NowPlaying 
+                  currentSong={null}
+                  isSpotifyConnected={false}
+                  spotifyData={null}
+                />
+                <div className="text-red-400 my-3">
+                  <b>Spotify Error:</b> {spotifyErrorMsg}
+                  <br />
+                  <span className="text-white/60">
+                    Notifications will still be shown.
+                  </span>
+                </div>
+              </div>
+            ) : songToDisplay ? (
               <NowPlaying 
                 currentSong={songToDisplay}
                 isSpotifyConnected={isConnected}
@@ -182,7 +208,7 @@ export const DiscordProfile = () => {
       </Card>
     );
   } catch (error) {
-    console.error('DiscordProfile: Component error:', error);
+    console.error("DiscordProfile: Component error:", error);
     return (
       <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-6 shadow-2xl h-full">
         <div className="text-center text-red-500">
