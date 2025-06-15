@@ -20,41 +20,59 @@ export class DeskThingIntegration {
   }
 
   private setupEventListeners() {
-    // Listen for DeskThing connection status
+    // Essential DeskThing lifecycle events
     this.deskThing.on('start', () => {
-      console.log('DeskThing: App started');
+      console.log('DeskThing: App has started successfully!');
       this.isConnected = true;
     });
 
     this.deskThing.on('stop', () => {
-      console.log('DeskThing: App stopped');
+      console.log('DeskThing: Sample app has stopped successfully');
       this.isConnected = false;
     });
 
-    // Handle settings updates
+    this.deskThing.on('purge', () => {
+      console.log('DeskThing: Sample app is cleaned up successfully');
+      this.cleanup();
+    });
+
+    // Handle settings updates from DeskThing
     this.deskThing.on('settings', (settings: any) => {
       console.log('DeskThing: Settings updated', settings);
       this.handleSettingsUpdate(settings);
     });
 
-    // Handle data requests
+    // Handle data requests from DeskThing server
     this.deskThing.on('get', (request: any) => {
       console.log('DeskThing: Data requested', request);
       this.handleDataRequest(request);
     });
+
+    // Handle incoming data from server
+    this.deskThing.on('sampleType', (data: any) => {
+      console.log(data.payload); // prints 'Hello from the server!'
+    });
+  }
+
+  private cleanup() {
+    // Clean up any resources, intervals, etc.
+    this.isConnected = false;
   }
 
   private handleSettingsUpdate(settings: any) {
     // Handle settings updates from DeskThing
-    // This could include theme changes, refresh intervals, etc.
     if (settings.theme) {
       document.documentElement.setAttribute('data-theme', settings.theme);
+    }
+    
+    if (settings.refresh_interval) {
+      // Update polling intervals based on DeskThing settings
+      console.log('DeskThing: Refresh interval updated to', settings.refresh_interval);
     }
   }
 
   private handleDataRequest(request: any) {
-    // Handle data requests from DeskThing
-    // This could be for profile data, music status, etc.
+    // Handle data requests from DeskThing server
     switch (request.type) {
       case 'discord-profile':
         this.sendDiscordProfile();
@@ -68,12 +86,12 @@ export class DeskThingIntegration {
   }
 
   private async sendDiscordProfile() {
-    // Send current Discord profile data to DeskThing
     try {
       const profileData = await this.getCurrentProfileData();
-      this.deskThing.send({
-        type: 'discord-profile',
-        payload: profileData
+      // Send data to DeskThing server
+      this.deskThing.send({ 
+        type: 'sampleType', 
+        payload: 'Hello from the client!' 
       });
     } catch (error) {
       console.error('DeskThing: Error sending Discord profile', error);
@@ -81,7 +99,6 @@ export class DeskThingIntegration {
   }
 
   private async sendSpotifyStatus() {
-    // Send current Spotify status to DeskThing
     try {
       const spotifyData = await this.getCurrentSpotifyData();
       this.deskThing.send({
@@ -95,7 +112,6 @@ export class DeskThingIntegration {
 
   private async getCurrentProfileData() {
     // This would integrate with your existing profile hooks
-    // For now, return a placeholder
     return {
       username: 'User',
       status: 'online',
@@ -105,15 +121,14 @@ export class DeskThingIntegration {
 
   private async getCurrentSpotifyData() {
     // This would integrate with your existing Spotify hooks
-    // For now, return a placeholder
     return {
       isPlaying: false,
       track: null
     };
   }
 
+  // Client-side methods for sending data to server
   public sendLog(level: 'info' | 'warn' | 'error', message: string, data?: any) {
-    // Try to use the logging system if available
     try {
       this.deskThing.send({
         type: 'log',

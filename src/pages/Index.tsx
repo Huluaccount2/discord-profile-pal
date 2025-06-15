@@ -16,6 +16,7 @@ const Index = () => {
   useEffect(() => {
     if (isRunningOnDeskThing) {
       sendLog('info', 'Discord Profile Pal loaded on DeskThing');
+      console.log('DeskThing: Sample App has started successfully!');
     }
   }, [isRunningOnDeskThing, sendLog]);
 
