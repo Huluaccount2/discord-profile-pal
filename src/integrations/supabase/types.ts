@@ -9,54 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      notifications: {
-        Row: {
-          channel: string | null
-          created_at: string | null
-          has_gif: boolean | null
-          has_image: boolean | null
-          has_voice_message: boolean | null
-          id: string
-          message: string | null
-          server: string | null
-          source_user_avatar: string | null
-          source_user_id: string | null
-          source_username: string | null
-          type: string
-          user_id: string
-        }
-        Insert: {
-          channel?: string | null
-          created_at?: string | null
-          has_gif?: boolean | null
-          has_image?: boolean | null
-          has_voice_message?: boolean | null
-          id?: string
-          message?: string | null
-          server?: string | null
-          source_user_avatar?: string | null
-          source_user_id?: string | null
-          source_username?: string | null
-          type?: string
-          user_id: string
-        }
-        Update: {
-          channel?: string | null
-          created_at?: string | null
-          has_gif?: boolean | null
-          has_image?: boolean | null
-          has_voice_message?: boolean | null
-          id?: string
-          message?: string | null
-          server?: string | null
-          source_user_avatar?: string | null
-          source_user_id?: string | null
-          source_username?: string | null
-          type?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           avatar_url: string | null
