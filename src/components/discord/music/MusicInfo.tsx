@@ -1,5 +1,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
+import { useDebounceState } from '@/hooks/useDebounceState';
 
 interface MusicInfoProps {
   title: string;
@@ -8,7 +9,7 @@ interface MusicInfoProps {
   isPlaying: boolean;
 }
 
-export const MusicInfo: React.FC<MusicInfoProps> = ({
+export const MusicInfo: React.FC<MusicInfoProps> = React.memo(({
   title,
   artist,
   album,
@@ -21,6 +22,11 @@ export const MusicInfo: React.FC<MusicInfoProps> = ({
   const titleRef = useRef<HTMLHeadingElement>(null);
   const artistRef = useRef<HTMLParagraphElement>(null);
   const albumRef = useRef<HTMLParagraphElement>(null);
+
+  // Debounce track info changes to prevent flickering during transitions
+  const debouncedTitle = useDebounceState(title, 200);
+  const debouncedArtist = useDebounceState(artist, 200);
+  const debouncedAlbum = useDebounceState(album, 200);
 
   const cleanArtistName = (artistName: string) => {
     if (!artistName) return 'Unknown Artist';
@@ -52,32 +58,34 @@ export const MusicInfo: React.FC<MusicInfoProps> = ({
       clearTimeout(timeoutId);
       window.removeEventListener('resize', checkOverflow);
     };
-  }, [title, artist, album]);
+  }, [debouncedTitle, debouncedArtist, debouncedAlbum]);
 
   return (
     <div className="mb-6">
       <h3 
         ref={titleRef}
-        className={`font-bold text-3xl mb-2 transition-opacity text-white ${titleOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
+        className={`font-bold text-3xl mb-2 transition-opacity duration-150 text-white ${titleOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
       >
-        {title || 'Unknown Track'}
+        {debouncedTitle || 'Unknown Track'}
       </h3>
       
       <p 
         ref={artistRef}
-        className={`text-xl mb-2 transition-opacity text-gray-300 ${artistOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
+        className={`text-xl mb-2 transition-opacity duration-150 text-gray-300 ${artistOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
       >
-        {cleanArtistName(artist)}
+        {cleanArtistName(debouncedArtist)}
       </p>
       
-      {album && (
+      {debouncedAlbum && (
         <p 
           ref={albumRef}
-          className={`text-lg transition-opacity text-gray-400 ${albumOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
+          className={`text-lg transition-opacity duration-150 text-gray-400 ${albumOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
         >
-          {album}
+          {debouncedAlbum}
         </p>
       )}
     </div>
   );
-};
+});
+
+MusicInfo.displayName = 'MusicInfo';

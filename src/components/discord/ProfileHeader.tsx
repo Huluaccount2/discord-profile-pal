@@ -3,6 +3,7 @@ import { User } from "lucide-react";
 import { ConnectionsList } from "./ConnectionsList";
 import { CustomStatus } from "./CustomStatus";
 import { StatusIndicator } from "./StatusIndicator";
+import React from "react";
 
 interface Connection {
   type: string;
@@ -28,7 +29,7 @@ interface ProfileHeaderProps {
   connections?: Connection[];
 }
 
-export const ProfileHeader = ({ 
+export const ProfileHeader = React.memo(({ 
   displayName, 
   discriminator, 
   avatarUrl, 
@@ -75,7 +76,7 @@ export const ProfileHeader = ({
                 <User className="w-8 h-8 text-gray-400" />
               </div>
             )}
-            <div className={`absolute -bottom-1 -right-1 w-5 h-5 ${getStatusColor()} rounded-full border-2 border-gray-900`}></div>
+            <div className={`absolute -bottom-1 -right-1 w-5 h-5 ${getStatusColor()} rounded-full border-2 border-gray-900 transition-colors duration-150`}></div>
           </div>
           
           <div className="flex-1 min-w-0">
@@ -98,4 +99,6 @@ export const ProfileHeader = ({
       </div>
     </div>
   );
-};
+});
+
+ProfileHeader.displayName = 'ProfileHeader';
