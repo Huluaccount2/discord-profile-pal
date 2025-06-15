@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { MusicArtwork } from './music/MusicArtwork';
@@ -37,118 +38,127 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     showDemoNotification,
   } = usePlayerNotification();
 
-  // Defensive error handling so notifications always show
-  let renderError = null;
-  let safeCurrentSong = currentSong;
+  // The section below the notification will always be padded down by notification height (or 0)
+  const playerSectionPaddingTop = notificationOpen ? notifHeight + 12 : 0;
+
+  const handleProgressUpdate = useCallback((time: number, playing: boolean) => {
+    setCurrentTime(time);
+    setIsPlaying(playing);
+  }, []);
+
+  useMusicProgressTracker({
+    currentSong,
+    isSpotifyConnected,
+    spotifyData,
+    onProgressUpdate: handleProgressUpdate
+  });
+
+  if (!currentSong) return null;
+
+  const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
   try {
-    // Defensive: Don't let any Spotify/NowPlaying crash block notification UI
-    if (!currentSong) {
-      // Still want to render notification (just skip the rest)
-      safeCurrentSong = null;
-    }
-    const playerSectionPaddingTop = notificationOpen ? notifHeight + 12 : 0;
-
-    const handleProgressUpdate = useCallback((time: number, playing: boolean) => {
-      setCurrentTime(time);
-      setIsPlaying(playing);
-    }, []);
-
-    useMusicProgressTracker({
-      currentSong,
-      isSpotifyConnected,
-      spotifyData,
-      onProgressUpdate: handleProgressUpdate
-    });
-
-    if (!currentSong) return null;
-
-    const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
-    const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
-  } catch (e) {
-    renderError = e;
-    safeCurrentSong = null;
-    console.error("NowPlaying: Fatal error, fallback to notification only", e);
-  }
-
-  // Always render notifications at the top
-  return (
-    <div className="relative w-full h-full rounded-lg overflow-hidden">
-      {/* PlayerNotification (always render even if no song) */}
-      {notificationOpen && (
-        <div ref={notificationRef}>
-          <PlayerNotification
-            avatarUrl={notificationData.avatarUrl}
-            username={notificationData.username}
-            message={notificationData.message}
-            server={notificationData.server}
-            channel={notificationData.channel}
-            hasImage={notificationData.hasImage}
-            hasGif={notificationData.hasGif}
-            hasVoiceMessage={notificationData.hasVoiceMessage}
-            open={notificationOpen}
-            onClose={handleNotificationClose}
-          />
-        </div>
-      )}
-
-      {notificationOpen && notifHeight > 0 && (
-        <div style={{ height: notifHeight + 12 }} aria-hidden="true" />
-      )}
-
-      {renderError ? (
-        <div className="w-full h-full flex items-center justify-center">
-          <div className="text-red-500 text-sm">
-            Error displaying music: {String(renderError)}
+    return (
+      <div className="relative w-full h-full rounded-lg overflow-hidden">
+        {/* PlayerNotification moves the music down instead of overlapping! */}
+        {notificationOpen && (
+          <div ref={notificationRef}>
+            <PlayerNotification
+              avatarUrl={notificationData.avatarUrl}
+              username={notificationData.username}
+              message={notificationData.message}
+              server={notificationData.server}
+              channel={notificationData.channel}
+              hasImage={notificationData.hasImage}
+              hasGif={notificationData.hasGif}
+              hasVoiceMessage={notificationData.hasVoiceMessage}
+              open={notificationOpen}
+              onClose={handleNotificationClose}
+            />
           </div>
-        </div>
-      ) : safeCurrentSong ? (
-        <>
-          <div
-            className="absolute inset-0 bg-cover bg-center filter blur-sm"
-            style={{
-              backgroundImage: `url(${safeCurrentSong.assets?.large_image || "/placeholder.svg"})`,
-              filter: "blur(20px) brightness(0.6)",
-            }}
-          />
-          <Card
-            className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-8 w-full h-full flex items-center"
-            style={{
-              paddingTop: notificationOpen ? notifHeight + 12 : 0,
-              transition: "padding-top 0.33s cubic-bezier(0.34,1.56,0.64,1)",
-            }}
+        )}
+
+        {/* Spaceholder for notification height: music will always appear BELOW the notification */}
+        {notificationOpen && notifHeight > 0 && (
+          <div style={{ height: notifHeight + 12 }} aria-hidden="true" />
+        )}
+
+        {/* Demo Notification Buttons (can remove in production if you want) */}
+        <div className="absolute top-2 left-1/2 z-30 -translate-x-1/2 flex gap-1 pointer-events-auto">
+          <button
+            onClick={() => showDemoNotification("text")}
+            className="px-2 py-1 text-xs rounded bg-white bg-opacity-20 text-black font-bold shadow hover:bg-opacity-30 select-none"
+            aria-label="Show mention popup (text)"
           >
-            <div className="flex items-center space-x-8 w-full">
-              <MusicArtwork
-                imageUrl={safeCurrentSong.assets?.large_image}
-                altText={safeCurrentSong.assets?.large_text}
+            Demo Text
+          </button>
+          <button
+            onClick={() => showDemoNotification("image")}
+            className="px-2 py-1 text-xs rounded bg-green-100/70 text-green-950 font-bold shadow hover:bg-green-100 select-none"
+            aria-label="Show mention popup (image)"
+          >
+            Demo Image
+          </button>
+          <button
+            onClick={() => showDemoNotification("gif")}
+            className="px-2 py-1 text-xs rounded bg-blue-100/80 text-blue-950 font-bold shadow hover:bg-blue-100 select-none"
+            aria-label="Show mention popup (gif)"
+          >
+            Demo GIF
+          </button>
+          <button
+            onClick={() => showDemoNotification("voice")}
+            className="px-2 py-1 text-xs rounded bg-violet-100/80 text-violet-950 font-bold shadow hover:bg-violet-100 select-none"
+            aria-label="Show mention popup (voice)"
+          >
+            Demo Voice
+          </button>
+        </div>
+        <div
+          className="absolute inset-0 bg-cover bg-center filter blur-sm"
+          style={{
+            backgroundImage: `url(${currentSong.assets?.large_image || "/placeholder.svg"})`,
+            filter: "blur(20px) brightness(0.6)",
+          }}
+        />
+        <Card
+          className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-8 w-full h-full flex items-center"
+          style={{
+            paddingTop: playerSectionPaddingTop,
+            transition: "padding-top 0.33s cubic-bezier(0.34,1.56,0.64,1)",
+          }}
+        >
+          <div className="flex items-center space-x-8 w-full">
+            <MusicArtwork
+              imageUrl={currentSong.assets?.large_image}
+              altText={currentSong.assets?.large_text}
+              isPlaying={isPlaying}
+            />
+            <div className="flex-1 min-w-0">
+              <MusicInfo
+                title={currentSong.details}
+                artist={currentSong.state}
+                album={currentSong.assets?.large_text}
                 isPlaying={isPlaying}
               />
-              <div className="flex-1 min-w-0">
-                <MusicInfo
-                  title={safeCurrentSong.details}
-                  artist={safeCurrentSong.state}
-                  album={safeCurrentSong.assets?.large_text}
-                  isPlaying={isPlaying}
-                />
-                <MusicProgressBar
-                  currentTime={currentTime}
-                  duration={
-                    safeCurrentSong.timestamps?.end - safeCurrentSong.timestamps?.start || 0
-                  }
-                  progress={
-                    (safeCurrentSong.timestamps?.end - safeCurrentSong.timestamps?.start) > 0
-                      ? (currentTime /
-                        (safeCurrentSong.timestamps?.end - safeCurrentSong.timestamps?.start)) *
-                        100
-                      : 0
-                  }
-                  isPlaying={isPlaying}
-                />
-              </div>
+              <MusicProgressBar
+                currentTime={currentTime}
+                duration={duration}
+                progress={progress}
+                isPlaying={isPlaying}
+              />
             </div>
-          </Card>
-        </>
-      ) : null}
-    </div>
-  );
+          </div>
+        </Card>
+      </div>
+    );
+  } catch (error) {
+    console.error("NowPlaying: Render error:", error);
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-red-500">Error rendering music component</div>
+      </div>
+    );
+  }
 };
