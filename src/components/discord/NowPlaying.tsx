@@ -6,8 +6,6 @@ import { MusicInfo } from './music/MusicInfo';
 import { MusicProgressBar } from './music/MusicProgressBar';
 import { useMusicProgressTracker } from './music/MusicProgressTracker';
 import { PlayerNotification } from './PlayerNotification';
-
-// New: player notification management/hook import
 import { usePlayerNotification } from './music/usePlayerNotification';
 
 interface NowPlayingProps {
@@ -28,7 +26,6 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Extracted notification logic to hook
   const {
     notificationOpen,
     notificationData,
@@ -38,8 +35,8 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     showDemoNotification,
   } = usePlayerNotification();
 
-  // The section below the notification will always be padded down by notification height (or 0)
-  const playerSectionPaddingTop = notificationOpen ? notifHeight + 12 : 0;
+  // Always give room for notification: Card/music area moves down by notif height (plus padding)
+  const playerSectionPaddingTop = notificationOpen ? notifHeight + 24 : 0;
 
   const handleProgressUpdate = useCallback((time: number, playing: boolean) => {
     setCurrentTime(time);
@@ -60,7 +57,13 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 
   try {
     return (
-      <div className="relative w-full h-full rounded-lg overflow-hidden">
+      <div
+        className="relative w-full h-full rounded-lg overflow-hidden"
+        style={{
+          paddingTop: playerSectionPaddingTop,
+          transition: 'padding-top 0.33s cubic-bezier(0.34,1.56,0.64,1)',
+        }}
+      >
         {/* PlayerNotification moves the music down instead of overlapping! */}
         {notificationOpen && (
           <div ref={notificationRef}>
@@ -77,11 +80,6 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
               onClose={handleNotificationClose}
             />
           </div>
-        )}
-
-        {/* Spaceholder for notification height: music will always appear BELOW the notification */}
-        {notificationOpen && notifHeight > 0 && (
-          <div style={{ height: notifHeight + 12 }} aria-hidden="true" />
         )}
 
         {/* Demo Notification Buttons (can remove in production if you want) */}
@@ -115,6 +113,8 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
             Demo Voice
           </button>
         </div>
+
+        {/* Background blur */}
         <div
           className="absolute inset-0 bg-cover bg-center filter blur-sm"
           style={{
@@ -124,10 +124,6 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
         />
         <Card
           className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-8 w-full h-full flex items-center"
-          style={{
-            paddingTop: playerSectionPaddingTop,
-            transition: "padding-top 0.33s cubic-bezier(0.34,1.56,0.64,1)",
-          }}
         >
           <div className="flex items-center space-x-8 w-full">
             <MusicArtwork
