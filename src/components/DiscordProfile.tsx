@@ -10,6 +10,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useDiscordData } from "@/hooks/useDiscordData";
 import { useSpotify } from "@/hooks/useSpotify";
 import { useLastKnownSong } from "@/hooks/useLastKnownSong";
+import { useLyricStatus } from "@/hooks/useLyricStatus";
 
 export const DiscordProfile = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -22,6 +23,7 @@ export const DiscordProfile = () => {
     connectSpotify,
     connectionError
   } = useSpotify(user?.id);
+  const { currentLyric, isActive: isLyricActive, isMonitoring } = useLyricStatus();
 
   const [lastKnownSong, setLastKnownSong] = useLastKnownSong();
 
@@ -121,6 +123,7 @@ export const DiscordProfile = () => {
     const status = discordData?.status || 'offline';
 
     console.log('DiscordProfile: Display data:', { displayName, discriminator, avatarUrl, status });
+    console.log('DiscordProfile: Lyric Status:', { isLyricActive, isMonitoring, currentLyric });
 
     const bannerUrl = discordData?.user?.banner ? 
       `https://cdn.discordapp.com/banners/${discordData.user.id}/${discordData.user.banner}.png?size=600` : 
@@ -155,9 +158,12 @@ export const DiscordProfile = () => {
               customStatus={customStatus}
               connections={connections}
             />
-            {/* Add Lyric Status indicator below profile */}
+            {/* Updated Lyric Status indicator */}
             <div className="mt-2 flex justify-center">
-              <LyricStatusIndicator isActive={isLyricStatusActive} />
+              <LyricStatusIndicator 
+                isActive={isLyricActive || isLyricStatusActive} 
+                isMonitoring={isMonitoring}
+              />
             </div>
           </div>
 

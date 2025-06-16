@@ -1,5 +1,7 @@
 
 import React from 'react';
+import { LyricDisplay } from './LyricDisplay';
+import { useLyricStatus } from '@/hooks/useLyricStatus';
 
 interface CustomStatusProps {
   customStatus?: {
@@ -12,9 +14,16 @@ interface CustomStatusProps {
 }
 
 export const CustomStatus = React.memo(({ customStatus }: CustomStatusProps) => {
-  // Remove debouncing for real-time lyric updates
+  const { currentLyric, isActive } = useLyricStatus();
+  
+  // Priority 1: Show Lyric Status if active and has lyrics
+  if (isActive && currentLyric) {
+    return <LyricDisplay currentLyric={currentLyric} />;
+  }
+  
+  // Priority 2: Show Discord custom status
   const statusText = customStatus?.text;
-
+  
   // Always render a container to maintain consistent layout
   if (!statusText) {
     return <div className="flex-1 min-w-0 min-h-[2.5rem]"></div>;
