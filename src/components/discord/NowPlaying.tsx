@@ -71,8 +71,8 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
           }}
         />
         
-        <Card className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-2 w-full h-full flex items-center overflow-hidden">
-          <div className="flex items-center space-x-2 w-full min-w-0">
+        <Card className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-6 w-full h-full flex items-center overflow-hidden">
+          <div className="flex items-center space-x-8 w-full min-w-0">
             <div className="flex-shrink-0">
               <MusicArtwork 
                 imageUrl={currentSong.assets?.large_image}

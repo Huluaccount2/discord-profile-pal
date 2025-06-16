@@ -29,9 +29,9 @@ export const MusicProgressBar: React.FC<MusicProgressBarProps> = ({
     <div className="mb-2">
       <Progress 
         value={clampedProgress} 
-        className="h-2 mb-2"
+        className="h-3 mb-3"
       />
-      <div className="flex justify-between text-xs text-gray-300">
+      <div className="flex justify-between text-base text-gray-300">
         <span>{formatTime(currentTime)}</span>
         <span>{formatTime(duration)}</span>
       </div>

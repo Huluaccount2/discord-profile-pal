@@ -61,17 +61,17 @@ export const MusicInfo: React.FC<MusicInfoProps> = React.memo(({
   }, [debouncedTitle, debouncedArtist, debouncedAlbum]);
 
   return (
-    <div className="mb-4">
+    <div className="mb-6">
       <h3 
         ref={titleRef}
-        className={`font-bold text-xl mb-1 transition-opacity duration-150 text-white ${titleOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
+        className={`font-bold text-3xl mb-3 transition-opacity duration-150 text-white ${titleOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
       >
         {debouncedTitle || 'Unknown Track'}
       </h3>
       
       <p 
         ref={artistRef}
-        className={`text-base mb-1 transition-opacity duration-150 text-gray-300 ${artistOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
+        className={`text-xl mb-2 transition-opacity duration-150 text-gray-300 ${artistOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
       >
         {cleanArtistName(debouncedArtist)}
       </p>
@@ -79,7 +79,7 @@ export const MusicInfo: React.FC<MusicInfoProps> = React.memo(({
       {debouncedAlbum && (
         <p 
           ref={albumRef}
-          className={`text-sm transition-opacity duration-150 text-gray-400 ${albumOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
+          className={`text-lg transition-opacity duration-150 text-gray-400 ${albumOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
         >
           {debouncedAlbum}
         </p>
