@@ -72,7 +72,7 @@ export const DiscordProfileContent = React.memo(({
           </div>
         </div>
 
-        <div className="flex-1 flex items-center min-w-0">
+        <div className="flex-1 flex items-center min-w-0 p-2">
           {songToDisplay ? (
             <NowPlaying 
               currentSong={songToDisplay}
