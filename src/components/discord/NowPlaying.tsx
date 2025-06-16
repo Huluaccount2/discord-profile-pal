@@ -62,7 +62,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 
   try {
     return (
-      <div className="relative w-full h-full rounded-lg overflow-hidden mx-3 my-2">
+      <div className="relative w-full h-full rounded-lg overflow-hidden">
         <div 
           className="absolute inset-0 bg-cover bg-center filter blur-sm"
           style={{ 
@@ -71,8 +71,8 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
           }}
         />
         
-        <Card className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-4 w-full h-full flex items-center overflow-hidden">
-          <div className="flex items-center space-x-4 w-full min-w-0">
+        <Card className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-3 w-full h-full flex items-center overflow-hidden">
+          <div className="flex items-center space-x-3 w-full min-w-0">
             <div className="flex-shrink-0">
               <MusicArtwork 
                 imageUrl={currentSong.assets?.large_image}
