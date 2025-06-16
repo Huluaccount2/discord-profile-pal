@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -36,7 +37,7 @@ export const useSpotifyData = (userId: string | undefined) => {
         return;
       }
 
-      // First: Try current-track as usual
+      // Try current-track first
       const { data, error } = await supabase.functions.invoke('spotify-auth', {
         body: { action: 'current-track' },
         headers: {
@@ -44,17 +45,34 @@ export const useSpotifyData = (userId: string | undefined) => {
         },
       });
 
-      if (!error && data && data.track) {
-        console.log('useSpotifyData: Received track data:', data);
-        setIsConnected(true);
-        setConnectionError(null);
-        setSpotifyData(data);
-        return;
+      console.log('useSpotifyData: Spotify current track response:', { data, error });
+
+      if (!error && data) {
+        if (data.track && data.isPlaying) {
+          // Currently playing
+          console.log('useSpotifyData: Currently playing track:', data.track);
+          setIsConnected(true);
+          setConnectionError(null);
+          setSpotifyData({
+            isPlaying: true,
+            track: data.track
+          });
+          return;
+        } else if (data.track && !data.isPlaying) {
+          // Track exists but not playing
+          console.log('useSpotifyData: Track exists but not playing:', data.track);
+          setIsConnected(true);
+          setConnectionError(null);
+          setSpotifyData({
+            isPlaying: false,
+            lastPlayed: data.track
+          });
+          return;
+        }
       }
 
-      // If not playing, try recently played endpoint (using the same Supabase function, extend backend to allow this or fall back to latest)
-      // We'll attempt to fetch "recently played" as a fallback if NOT playing. 
-      // We'll assume the backend supports this with action: 'recently-played'
+      // Try recently played as fallback
+      console.log('useSpotifyData: Trying recently played as fallback...');
       const { data: rpData, error: rpError } = await supabase.functions.invoke('spotify-auth', {
         body: { action: 'recently-played' },
         headers: {
@@ -63,7 +81,7 @@ export const useSpotifyData = (userId: string | undefined) => {
       });
 
       if (!rpError && rpData && rpData.track) {
-        // Compose the fallback
+        console.log('useSpotifyData: Got recently played track:', rpData.track);
         setSpotifyData({
           isPlaying: false,
           lastPlayed: rpData.track,
@@ -73,7 +91,7 @@ export const useSpotifyData = (userId: string | undefined) => {
         return;
       }
 
-      // Otherwise, handle error as before
+      // Handle connection errors
       if (error) {
         console.error('useSpotifyData: Error fetching current track:', error);
         if (error.message === 'No Spotify connection') {
@@ -86,6 +104,8 @@ export const useSpotifyData = (userId: string | undefined) => {
         setSpotifyData(null);
         return;
       }
+      
+      console.log('useSpotifyData: No track information found');
       setConnectionError('No track information found');
       setSpotifyData(null);
     } catch (error) {

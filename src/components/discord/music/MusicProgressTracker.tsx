@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 
 interface MusicProgressTrackerProps {
@@ -7,10 +8,6 @@ interface MusicProgressTrackerProps {
   onProgressUpdate: (currentTime: number, isPlaying: boolean) => void;
 }
 
-/**
- * Ensures music progress FREEZES at the exact prior play position when paused.
- * This emits the cached progress point every 500ms when paused to prevent drift and visual wiggle.
- */
 export const useMusicProgressTracker = ({
   currentSong,
   isSpotifyConnected,
@@ -18,16 +15,10 @@ export const useMusicProgressTracker = ({
   onProgressUpdate
 }: MusicProgressTrackerProps) => {
   const [lastSongId, setLastSongId] = useState<string | null>(null);
-
-  // Progress state refs to persist across renders/intervals
   const cachedProgressRef = useRef(0);
   const cachedIsPlayingRef = useRef(false);
   const cachedSongHasEndedRef = useRef(false);
-
-  // Last interval's "true" (playing) progress for each platform
   const lastEmittedProgressRef = useRef(0);
-
-  // Store updateProgress function for use in visibilitychange
   const updateProgressRef = useRef<() => void>();
 
   useEffect(() => {
@@ -41,8 +32,9 @@ export const useMusicProgressTracker = ({
     const duration = endTime - startTime;
     const songId = `${currentSong.details}-${currentSong.state}-${startTime}`;
 
-    // When the song changes, reset all cached state
+    // Reset state when song changes
     if (lastSongId !== songId) {
+      console.log('MusicProgressTracker: Song changed from', lastSongId, 'to', songId);
       cachedProgressRef.current = 0;
       cachedIsPlayingRef.current = true;
       cachedSongHasEndedRef.current = false;
@@ -55,30 +47,29 @@ export const useMusicProgressTracker = ({
       let isPlaying = true;
       let progressValue = 0;
 
-      // --------- Spotify (OAuth) branch ---------
+      // Spotify OAuth integration takes priority
       if (isSpotifyConnected && currentSong.name === "Spotify" && spotifyData?.track) {
         isPlaying = Boolean(spotifyData.isPlaying);
         progressValue = spotifyData.track.progress;
 
         if (isPlaying) {
-          // If playing: always update cachedProgress to *latest* progressValue and emit
+          // Update cached progress when playing
           cachedProgressRef.current = progressValue;
           cachedIsPlayingRef.current = true;
           onProgressUpdate(progressValue, true);
           lastEmittedProgressRef.current = progressValue;
         } else {
-          // If paused: emit the FROZEN cachedProgress every interval (never let progress drift!)
+          // Use frozen progress when paused
           onProgressUpdate(cachedProgressRef.current, false);
           cachedIsPlayingRef.current = false;
         }
         return;
       }
 
-      // --------- Discord fallback branch ---------
+      // Discord fallback - calculate elapsed time
       const elapsed = now - startTime;
       const discordSongEnded = elapsed >= duration;
 
-      // If the song is over, mark as ended and freeze progress at the end
       if (discordSongEnded && !cachedSongHasEndedRef.current) {
         cachedProgressRef.current = duration;
         cachedIsPlayingRef.current = false;
@@ -86,15 +77,12 @@ export const useMusicProgressTracker = ({
         onProgressUpdate(duration, false);
         lastEmittedProgressRef.current = duration;
       } else if (discordSongEnded && cachedSongHasEndedRef.current) {
-        // Just keep re-emitting the end state if they keep us running after end
         onProgressUpdate(duration, false);
       } else {
-        // Is song playing (detect stall by seeing if progress value is not advancing)?
-        // To freeze instantly on pause, we use a "last emitted" comparison.
         const computedProgress = Math.max(0, Math.min(elapsed, duration));
-
+        
+        // Check if progress is advancing (song is playing)
         if (cachedIsPlayingRef.current && computedProgress !== lastEmittedProgressRef.current) {
-          // If progress advanced, treat as playing, update cache and emit
           isPlaying = true;
           progressValue = computedProgress;
           cachedProgressRef.current = progressValue;
@@ -102,25 +90,20 @@ export const useMusicProgressTracker = ({
           onProgressUpdate(progressValue, true);
           lastEmittedProgressRef.current = progressValue;
         } else if (!cachedIsPlayingRef.current || computedProgress === lastEmittedProgressRef.current) {
-          // Progress stuck (paused): emit the frozen progress from before the stall every interval
+          // Progress stuck (paused) - emit frozen progress
           isPlaying = false;
           onProgressUpdate(cachedProgressRef.current, false);
           cachedIsPlayingRef.current = false;
-          // NB: update lastEmittedProgressRef here so that a "stuck" progress value doesn't allow drift
         }
       }
     };
 
-    // Expose updateProgress on ref for visibility listener
     updateProgressRef.current = updateProgress;
 
     updateProgress();
-    // Keep the progress bar synced every 500ms, especially when paused.
-    const interval = setInterval(updateProgress, 500);
+    const interval = setInterval(updateProgress, 1000); // Update every second
 
-    // Visibility change handler
     const handleVisibility = () => {
-      // When tab becomes visible, re-sync immediately
       if (document.visibilityState === 'visible' && updateProgressRef.current) {
         updateProgressRef.current();
       }

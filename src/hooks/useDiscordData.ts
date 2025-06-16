@@ -8,8 +8,6 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
   const [discordData, setDiscordData] = useState<DiscordData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const lastCustomStatusRef = useRef<string | null>(null);
-
-  // NEW: Also track the last detected song/activity (by type 2 for Spotify)
   const lastSongKeyRef = useRef<string | null>(null);
   const { isRunningOnDeskThing } = useDeskThing();
 
@@ -26,7 +24,6 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
           console.log('useDiscordData: Discord data received on DeskThing:', data);
           setDiscordData(data);
           lastCustomStatusRef.current = data?.custom_status?.text || null;
-          // Update the last song/activity key as well
           const latestSong = data?.activities?.find((a: any) => a.type === 2);
           lastSongKeyRef.current = latestSong ? makeSongKey(latestSong) : null;
         }
@@ -48,7 +45,6 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
           console.log('useDiscordData: Discord data received:', data);
           setDiscordData(data);
           lastCustomStatusRef.current = data?.custom_status?.text || null;
-          // Update the last song/activity key as well
           const latestSong = data?.activities?.find((a: any) => a.type === 2);
           lastSongKeyRef.current = latestSong ? makeSongKey(latestSong) : null;
         }
@@ -60,7 +56,6 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
     }
   };
 
-  // Utility: build a unique identifier for the currently playing song/activity
   const makeSongKey = (song: any) => {
     if (!song) return "";
     return [
@@ -79,7 +74,7 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
     }
   }, [userId, discordId, isRunningOnDeskThing]);
 
-  // Custom status & activity refresh - check for changes in either custom status or music activity
+  // Reduced interval and improved change detection
   useEffect(() => {
     if (!isRunningOnDeskThing && (!userId || !discordId)) return;
     if (isRunningOnDeskThing || (userId && discordId)) {
@@ -102,15 +97,19 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
             const currentSong = data?.activities?.find((a: any) => a.type === 2);
             const currentSongKey = currentSong ? makeSongKey(currentSong) : null;
 
-            // Detect: EITHER custom status OR song key change
+            // Always update data every few calls to ensure we don't miss changes
+            const forceUpdate = Math.random() < 0.1; // 10% chance to force update
+            
             if (
               currentCustomStatus !== lastCustomStatusRef.current ||
-              currentSongKey !== lastSongKeyRef.current
+              currentSongKey !== lastSongKeyRef.current ||
+              forceUpdate
             ) {
               console.log(
-                'useDiscordData: Detected state change. Previous status/song: ',
+                'useDiscordData: State change detected. Previous status/song: ',
                 lastCustomStatusRef.current, lastSongKeyRef.current,
-                '→ Now:', currentCustomStatus, currentSongKey
+                '→ Now:', currentCustomStatus, currentSongKey,
+                forceUpdate ? '(forced update)' : ''
               );
               setDiscordData(data);
               lastCustomStatusRef.current = currentCustomStatus;
@@ -120,7 +119,7 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
         } catch (error) {
           console.error('useDiscordData: Error checking custom status/song:', error);
         }
-      }, 100); // 100ms interval
+      }, 1000); // Increased to 1 second to reduce load
 
       return () => {
         console.log('useDiscordData: Cleaning up status/song check interval');

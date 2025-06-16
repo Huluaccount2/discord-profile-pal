@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,13 +23,14 @@ export const DiscordProfile = () => {
     connectionError
   } = useSpotify(user?.id);
 
-  // Use refactored hook for localStorage song
   const [lastKnownSong, setLastKnownSong] = useLastKnownSong();
 
   console.log('DiscordProfile: Rendering with user:', user?.id, 'profile:', profile, 'loading:', loading);
   console.log('DiscordProfile: Spotify connection status:', { isConnected, connectionError });
+  console.log('DiscordProfile: Discord data:', { discordData, refreshing });
+  console.log('DiscordProfile: Spotify data:', spotifyData);
 
-  // Timer effect - must be at top level
+  // Timer effect
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -36,18 +38,13 @@ export const DiscordProfile = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Calculate current song data with improved Spotify integration
+  // Calculate current song data with improved priority logic
   let currentSong = null;
   if (profile && discordData) {
-    console.log('DiscordProfile: Spotify integration status:', { 
-      isConnected, 
-      spotifyData,
-      connectionError,
-      discordActivities: discordData?.activities 
-    });
+    console.log('DiscordProfile: Processing music data...');
 
-    if (isConnected && spotifyData?.track) {
-      // Use our own Spotify integration first (even if paused)
+    // Priority 1: Spotify OAuth if connected and has current track
+    if (isConnected && spotifyData?.track && spotifyData?.isPlaying) {
       const track = spotifyData.track;
       const startTime = Date.now() - track.progress;
       
@@ -65,11 +62,11 @@ export const DiscordProfile = () => {
           large_text: track.album,
         },
       };
-      console.log('DiscordProfile: Using Spotify OAuth integration data');
-    } else if (isConnected && spotifyData?.lastPlayed) {
-      // New: Use the last recently played song if nothing currently playing
+      console.log('DiscordProfile: Using Spotify OAuth current track');
+    }
+    // Priority 2: Spotify OAuth last played if connected but not currently playing
+    else if (isConnected && spotifyData?.lastPlayed) {
       const track = spotifyData.lastPlayed;
-      // Start progress at end (as it's not playing, but show song details)
       const now = Date.now();
       currentSong = {
         name: "Spotify",
@@ -85,20 +82,24 @@ export const DiscordProfile = () => {
           large_text: track.album,
         },
       };
-      console.log('DiscordProfile: Using Spotify recently played song as fallback');
-    } else {
-      // Fall back to Discord activities if no Spotify OAuth connection
+      console.log('DiscordProfile: Using Spotify OAuth last played track');
+    }
+    // Priority 3: Discord activities (if Discord Spotify token works)
+    else {
       const discordSong = discordData?.activities?.find(activity => activity.type === 2);
       if (discordSong) {
         currentSong = discordSong;
         console.log('DiscordProfile: Using Discord activity data');
+      } else {
+        console.log('DiscordProfile: No Discord music activity found');
       }
     }
   }
 
-  // Whenever a 'currentSong' is picked up, write it to both local state and localStorage
+  // Store any current song in localStorage
   useEffect(() => {
     if (currentSong) {
+      console.log('DiscordProfile: Storing current song in localStorage:', currentSong);
       setLastKnownSong(currentSong);
     }
   }, [currentSong, setLastKnownSong]);
@@ -113,7 +114,6 @@ export const DiscordProfile = () => {
   }
 
   try {
-    // Use Discord data if available, otherwise fall back to regular profile data
     const displayName = discordData?.user?.username || profile?.discord_username || profile?.username || "User";
     const discriminator = discordData?.user?.discriminator || profile?.discord_discriminator || "0000";
     const avatarUrl = discordData?.avatar_url || profile?.discord_avatar || profile?.avatar_url || null;
@@ -121,29 +121,28 @@ export const DiscordProfile = () => {
 
     console.log('DiscordProfile: Display data:', { displayName, discriminator, avatarUrl, status });
 
-    // Get banner URL from Discord data
     const bannerUrl = discordData?.user?.banner ? 
       `https://cdn.discordapp.com/banners/${discordData.user.id}/${discordData.user.banner}.png?size=600` : 
       null;
 
-    // Get bio, custom status, and connections from Discord data
     const bio = discordData?.user?.bio || null;
     const customStatus = discordData?.custom_status || null;
     const connections = discordData?.connections || [];
 
-    // Final logic: always display the most recently detected song, checking both session and localStorage
+    // Final song selection: current song or last known song
     let songToDisplay = currentSong || lastKnownSong;
-
     const shouldShowConnectPrompt = !isConnected && !songToDisplay;
 
-    console.log('DiscordProfile: Final songToDisplay:', songToDisplay);
-    console.log('DiscordProfile: Show connect prompt?', shouldShowConnectPrompt);
+    console.log('DiscordProfile: Final song selection:', { 
+      currentSong: currentSong ? 'present' : 'null',
+      lastKnownSong: lastKnownSong ? 'present' : 'null',
+      songToDisplay: songToDisplay ? 'present' : 'null',
+      shouldShowConnectPrompt 
+    });
 
     return (
       <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 shadow-2xl h-full flex flex-col rounded-none border-0">
-        {/* Car Thing optimized horizontal layout - compact profile, prominent music */}
         <div className="flex-1 flex gap-3 min-h-0 p-3">
-          {/* Left side - Compact Profile */}
           <div className="flex-shrink-0 w-[280px] min-h-0 overflow-hidden">
             <ProfileHeader 
               displayName={displayName}
@@ -157,7 +156,6 @@ export const DiscordProfile = () => {
             />
           </div>
 
-          {/* Right side - Music or prompt based on state */}
           <div className="flex-1 flex items-center min-w-0">
             {songToDisplay ? (
               <NowPlaying 
@@ -171,7 +169,6 @@ export const DiscordProfile = () => {
                 onConnect={connectSpotify}
               />
             ) : (
-              // If connected, but somehow NO song, you could show a neutral empty state if preferred.
               <div className="text-white text-center w-full">
                 No music currently detected.
               </div>
