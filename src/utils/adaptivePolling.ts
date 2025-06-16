@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export class AdaptivePolling {
@@ -32,16 +33,16 @@ export class AdaptivePolling {
       const timeSinceLastChange = now - this.lastChangeTimeRef.current;
       this.lastChangeTimeRef.current = now;
       
-      // If changes happen within 10 seconds, increment rapid change counter
-      if (timeSinceLastChange < 10000) {
+      // If changes happen within 15 seconds, increment rapid change counter
+      if (timeSinceLastChange < 15000) {
         this.rapidChangeCountRef.current++;
       } else {
         this.rapidChangeCountRef.current = 1;
       }
       
-      // Detect Lyric Status mode (3+ rapid changes)
+      // Detect Lyric Status mode (2+ rapid changes instead of 3)
       const wasLyricMode = this.lyricStatusModeRef.current;
-      this.lyricStatusModeRef.current = this.rapidChangeCountRef.current >= 3;
+      this.lyricStatusModeRef.current = this.rapidChangeCountRef.current >= 2;
       
       if (this.lyricStatusModeRef.current && !wasLyricMode) {
         this.logWithCleanup('useDiscordData: Lyric Status activity detected - entering rapid polling mode');
