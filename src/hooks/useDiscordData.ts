@@ -26,6 +26,8 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
   const lastCustomStatusRef = useRef<string | null>(null);
   const lastSongKeyRef = useRef<string | null>(null);
   const messageCountRef = useRef(0);
+  const pollIntervalRef = useRef(500); // Start with 500ms
+  const unchangedCountRef = useRef(0); // Track consecutive unchanged polls
   const { isRunningOnDeskThing } = useDeskThing();
 
   const logWithCleanup = (message: string, ...args: any[]) => {
@@ -97,6 +99,27 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
     ].join("|");
   };
 
+  // Adaptive polling function
+  const updatePollInterval = (hasChanges: boolean) => {
+    if (hasChanges) {
+      // Reset to fast polling when changes detected
+      unchangedCountRef.current = 0;
+      pollIntervalRef.current = 500;
+      logWithCleanup('useDiscordData: Changes detected, reset to fast polling (500ms)');
+    } else {
+      // Increase interval when no changes
+      unchangedCountRef.current++;
+      
+      if (unchangedCountRef.current >= 3 && pollIntervalRef.current < 2000) {
+        pollIntervalRef.current = 2000; // After 3 unchanged, go to 2s
+        logWithCleanup('useDiscordData: No changes for 3 polls, slowing to 2s');
+      } else if (unchangedCountRef.current >= 10 && pollIntervalRef.current < 5000) {
+        pollIntervalRef.current = 5000; // After 10 unchanged, go to 5s
+        logWithCleanup('useDiscordData: No changes for 10 polls, slowing to 5s');
+      }
+    }
+  };
+
   useEffect(() => {
     if (isRunningOnDeskThing || (userId && discordId)) {
       logWithCleanup('useDiscordData: Initial fetch triggered');
@@ -104,63 +127,75 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
     }
   }, [userId, discordId, isRunningOnDeskThing]);
 
-  // Reduced interval and improved change detection with cleanup
+  // Adaptive polling with smart interval adjustment
   useEffect(() => {
     if (!isRunningOnDeskThing && (!userId || !discordId)) return;
     if (isRunningOnDeskThing || (userId && discordId)) {
-      logWithCleanup('useDiscordData: Setting up status/song check interval');
-      const statusInterval = setInterval(async () => {
-        try {
-          let data, error;
-          if (isRunningOnDeskThing) {
-            ({ data, error } = await supabase.functions.invoke('discord-bot'));
-          } else {
-            ({ data, error } = await supabase.functions.invoke('discord-bot', {
-              headers: {
-                Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-              },
-            }));
-          }
+      logWithCleanup('useDiscordData: Setting up adaptive status/song check interval');
+      
+      let timeoutId: NodeJS.Timeout;
+      
+      const scheduleNextPoll = () => {
+        timeoutId = setTimeout(async () => {
+          try {
+            let data, error;
+            if (isRunningOnDeskThing) {
+              ({ data, error } = await supabase.functions.invoke('discord-bot'));
+            } else {
+              ({ data, error } = await supabase.functions.invoke('discord-bot', {
+                headers: {
+                  Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+                },
+              }));
+            }
 
-          if (!error && data) {
-            const currentCustomStatus = data.custom_status?.text || null;
-            const currentSong = data?.activities?.find((a: any) => a.type === 2);
-            const currentSongKey = currentSong ? makeSongKey(currentSong) : null;
+            if (!error && data) {
+              const currentCustomStatus = data.custom_status?.text || null;
+              const currentSong = data?.activities?.find((a: any) => a.type === 2);
+              const currentSongKey = currentSong ? makeSongKey(currentSong) : null;
 
-            // Always update data every few calls to ensure we don't miss changes
-            const forceUpdate = Math.random() < 0.1; // 10% chance to force update
-            
-            if (
-              currentCustomStatus !== lastCustomStatusRef.current ||
-              currentSongKey !== lastSongKeyRef.current ||
-              forceUpdate
-            ) {
-              // Only log significant changes to reduce message spam
+              // Check for actual changes
               const hasStatusChange = currentCustomStatus !== lastCustomStatusRef.current;
               const hasSongChange = currentSongKey !== lastSongKeyRef.current;
+              const hasChanges = hasStatusChange || hasSongChange;
               
-              if (hasStatusChange || hasSongChange || forceUpdate) {
+              // Update polling interval based on changes
+              updatePollInterval(hasChanges);
+              
+              if (hasChanges) {
                 logWithCleanup(
                   'useDiscordData: State change detected.',
                   hasStatusChange ? 'Status changed.' : '',
-                  hasSongChange ? 'Song changed.' : '',
-                  forceUpdate ? '(forced update)' : ''
+                  hasSongChange ? 'Song changed.' : ''
                 );
+                
+                setDiscordData(data);
+                lastCustomStatusRef.current = currentCustomStatus;
+                lastSongKeyRef.current = currentSongKey;
               }
-              
-              setDiscordData(data);
-              lastCustomStatusRef.current = currentCustomStatus;
-              lastSongKeyRef.current = currentSongKey;
             }
+          } catch (error) {
+            logWithCleanup('useDiscordData: Error checking custom status/song:', error);
+            // On error, slow down polling
+            updatePollInterval(false);
           }
-        } catch (error) {
-          logWithCleanup('useDiscordData: Error checking custom status/song:', error);
-        }
-      }, 500); // Changed from 1000ms to 500ms
+          
+          // Schedule next poll with current interval
+          scheduleNextPoll();
+        }, pollIntervalRef.current);
+      };
+
+      // Start the adaptive polling
+      scheduleNextPoll();
 
       return () => {
-        logWithCleanup('useDiscordData: Cleaning up status/song check interval');
-        clearInterval(statusInterval);
+        logWithCleanup('useDiscordData: Cleaning up adaptive polling');
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        // Reset intervals on cleanup
+        pollIntervalRef.current = 500;
+        unchangedCountRef.current = 0;
       };
     }
   }, [userId, discordId, isRunningOnDeskThing]);
