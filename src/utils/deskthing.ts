@@ -59,6 +59,91 @@ export class DeskThingIntegration {
     });
   }
 
+  // File system methods for LyricStatusMonitor
+  public watchFile(path: string, callback: (event: string, filename: string) => void) {
+    console.log('DeskThing: Setting up file watcher for:', path);
+    DeskThing.send({
+      type: 'file_watch',
+      payload: { path }
+    });
+
+    // Set up listener for file change events
+    DeskThing.on('file_change', (data) => {
+      if (data.path === path) {
+        callback(data.event, data.filename);
+      }
+    });
+  }
+
+  public unwatchFile(path: string) {
+    console.log('DeskThing: Removing file watcher for:', path);
+    DeskThing.send({
+      type: 'file_unwatch',
+      payload: { path }
+    });
+  }
+
+  public async listDirectory(path: string): Promise<string[]> {
+    console.log('DeskThing: Listing directory:', path);
+    return new Promise((resolve) => {
+      DeskThing.send({
+        type: 'list_directory',
+        payload: { path }
+      });
+
+      const handleResponse = (data: any) => {
+        if (data.type === 'directory_list' && data.path === path) {
+          DeskThing.off('file_response', handleResponse);
+          resolve(data.files || []);
+        }
+      };
+
+      DeskThing.on('file_response', handleResponse);
+    });
+  }
+
+  public async getFileStats(path: string): Promise<{ modified: number }> {
+    console.log('DeskThing: Getting file stats for:', path);
+    return new Promise((resolve) => {
+      DeskThing.send({
+        type: 'file_stats',
+        payload: { path }
+      });
+
+      const handleResponse = (data: any) => {
+        if (data.type === 'file_stats' && data.path === path) {
+          DeskThing.off('file_response', handleResponse);
+          resolve({ modified: data.modified || Date.now() });
+        }
+      };
+
+      DeskThing.on('file_response', handleResponse);
+    });
+  }
+
+  public async readFile(path: string): Promise<string> {
+    console.log('DeskThing: Reading file:', path);
+    return new Promise((resolve, reject) => {
+      DeskThing.send({
+        type: 'read_file',
+        payload: { path }
+      });
+
+      const handleResponse = (data: any) => {
+        if (data.type === 'file_content' && data.path === path) {
+          DeskThing.off('file_response', handleResponse);
+          if (data.error) {
+            reject(new Error(data.error));
+          } else {
+            resolve(data.content || '');
+          }
+        }
+      };
+
+      DeskThing.on('file_response', handleResponse);
+    });
+  }
+
   private cleanup() {
     this.isConnected = false;
     this.discordDataCallbacks.clear();
