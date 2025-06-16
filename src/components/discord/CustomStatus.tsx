@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { useDebounceState } from '@/hooks/useDebounceState';
 
 interface CustomStatusProps {
   customStatus?: {
@@ -13,11 +12,11 @@ interface CustomStatusProps {
 }
 
 export const CustomStatus = React.memo(({ customStatus }: CustomStatusProps) => {
-  // Debounce the status text to prevent flickering during rapid changes
-  const debouncedStatusText = useDebounceState(customStatus?.text, 150);
+  // Remove debouncing for real-time lyric updates
+  const statusText = customStatus?.text;
 
   // Always render a container to maintain consistent layout
-  if (!debouncedStatusText) {
+  if (!statusText) {
     return <div className="flex-1 min-w-0 min-h-[2.5rem]"></div>;
   }
 
@@ -36,7 +35,7 @@ export const CustomStatus = React.memo(({ customStatus }: CustomStatusProps) => 
         </span>
       )}
       <span className="text-xs text-gray-200 font-medium break-words leading-relaxed">
-        {debouncedStatusText}
+        {statusText}
       </span>
     </div>
   );
