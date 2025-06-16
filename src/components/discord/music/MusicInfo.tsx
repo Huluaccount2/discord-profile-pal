@@ -61,7 +61,7 @@ export const MusicInfo: React.FC<MusicInfoProps> = React.memo(({
   }, [debouncedTitle, debouncedArtist, debouncedAlbum]);
 
   return (
-    <div className="mb-6">
+    <div>
       <h3 
         ref={titleRef}
         className={`font-bold text-3xl mb-3 transition-opacity duration-150 text-white ${titleOverflows ? 'whitespace-normal break-words' : 'truncate'}`}
