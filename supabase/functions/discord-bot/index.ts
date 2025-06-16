@@ -134,7 +134,7 @@ const handler = async (req: Request): Promise<Response> => {
           console.log('Found Spotify connection with access token');
           
           try {
-            // First try to fetch with existing token
+            // Try to fetch current playing with existing token
             let spotifyResponse = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
               headers: {
                 'Authorization': `Bearer ${spotifyConnection.access_token}`,
@@ -142,23 +142,8 @@ const handler = async (req: Request): Promise<Response> => {
               },
             });
 
-            // If token is expired (401), try to refresh it
-            if (spotifyResponse.status === 401) {
-              console.log('Spotify token expired, attempting refresh...');
-              
-              // Try to refresh the token using Discord's refresh mechanism
-              // Discord should handle this automatically, but we'll retry the request
-              await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-              
-              // Retry the request - Discord might have refreshed the token
-              spotifyResponse = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
-                headers: {
-                  'Authorization': `Bearer ${spotifyConnection.access_token}`,
-                  'Content-Type': 'application/json',
-                },
-              });
-            }
-
+            // If token is invalid/expired, skip Spotify data for now
+            // Discord connection tokens are managed by Discord and can't be refreshed by us
             if (spotifyResponse.ok && spotifyResponse.status !== 204) {
               const spotifyData: SpotifyCurrentlyPlaying = await spotifyResponse.json();
               console.log('Spotify currently playing:', spotifyData);
@@ -188,18 +173,19 @@ const handler = async (req: Request): Promise<Response> => {
                   }
                 ];
                 
-                console.log('Created Spotify activity from real data');
+                console.log('Created Spotify activity from Discord connection');
               } else {
                 console.log('Spotify not currently playing or no track data');
               }
             } else if (spotifyResponse.status === 401) {
-              console.log('Spotify token still expired after retry');
-              // Token is still expired, Discord needs to refresh it
+              console.log('Discord Spotify token expired - Discord needs to refresh it automatically');
+              // Discord connection tokens are managed by Discord, we can't refresh them
+              // The user needs to reconnect Spotify in Discord if the token stays expired
             } else {
               console.log('Spotify API response not ok or empty:', spotifyResponse.status);
             }
           } catch (spotifyError) {
-            console.log('Error fetching Spotify data:', spotifyError);
+            console.log('Error fetching Spotify data from Discord connection:', spotifyError);
           }
         } else {
           console.log('No Spotify connection with valid access token found');
@@ -245,7 +231,7 @@ const handler = async (req: Request): Promise<Response> => {
     const responseData = {
       user: userData,
       status: userStatus,
-      activities: activitiesData, // Only real Spotify data, no fallbacks
+      activities: activitiesData, // Only real Spotify data when available
       avatar_url: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png?size=256` : null,
       custom_status: customStatus,
       connections: connectionsData,
