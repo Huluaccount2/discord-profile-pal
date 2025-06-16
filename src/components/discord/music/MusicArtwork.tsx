@@ -17,7 +17,7 @@ export const MusicArtwork: React.FC<MusicArtworkProps> = ({
       <img
         src={imageUrl || '/placeholder.svg'}
         alt={altText || 'Album Art'}
-        className="w-32 h-32 rounded-xl object-cover shadow-2xl transition-all duration-300"
+        className="w-24 h-24 rounded-lg object-cover shadow-lg transition-all duration-300"
       />
     </div>
   );

@@ -23,12 +23,12 @@ export const MusicProgressBar: React.FC<MusicProgressBarProps> = ({
   };
 
   return (
-    <div className="mb-4">
+    <div className="mb-2">
       <Progress 
         value={progress} 
-        className="h-3 mb-3 transition-opacity"
+        className="h-2 mb-2 transition-opacity"
       />
-      <div className="flex justify-between text-sm text-gray-300 transition-opacity">
+      <div className="flex justify-between text-xs text-gray-300 transition-opacity">
         <span>{formatTime(currentTime)}</span>
         <span>{formatTime(duration)}</span>
       </div>
