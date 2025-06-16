@@ -134,13 +134,30 @@ const handler = async (req: Request): Promise<Response> => {
           console.log('Found Spotify connection with access token');
           
           try {
-            // Fetch currently playing track from Spotify
-            const spotifyResponse = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+            // First try to fetch with existing token
+            let spotifyResponse = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
               headers: {
                 'Authorization': `Bearer ${spotifyConnection.access_token}`,
                 'Content-Type': 'application/json',
               },
             });
+
+            // If token is expired (401), try to refresh it
+            if (spotifyResponse.status === 401) {
+              console.log('Spotify token expired, attempting refresh...');
+              
+              // Try to refresh the token using Discord's refresh mechanism
+              // Discord should handle this automatically, but we'll retry the request
+              await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+              
+              // Retry the request - Discord might have refreshed the token
+              spotifyResponse = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+                headers: {
+                  'Authorization': `Bearer ${spotifyConnection.access_token}`,
+                  'Content-Type': 'application/json',
+                },
+              });
+            }
 
             if (spotifyResponse.ok && spotifyResponse.status !== 204) {
               const spotifyData: SpotifyCurrentlyPlaying = await spotifyResponse.json();
@@ -176,8 +193,8 @@ const handler = async (req: Request): Promise<Response> => {
                 console.log('Spotify not currently playing or no track data');
               }
             } else if (spotifyResponse.status === 401) {
-              console.log('Spotify token expired, need refresh');
-              // Don't create fallback activity if token is expired
+              console.log('Spotify token still expired after retry');
+              // Token is still expired, Discord needs to refresh it
             } else {
               console.log('Spotify API response not ok or empty:', spotifyResponse.status);
             }
@@ -195,39 +212,33 @@ const handler = async (req: Request): Promise<Response> => {
     // Since the user is making this request, we know they're online
     userStatus = 'online';
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Get the current user from the request
+    // Initialize Supabase client only for web requests (not DeskThing)
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
+    if (authHeader) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
-    if (userError || !user) {
-      throw new Error('Invalid user token');
-    }
+      if (!userError && user) {
+        // Update the user's profile with Discord data
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            discord_id: userData.id,
+            discord_username: userData.username,
+            discord_discriminator: userData.discriminator,
+            discord_avatar: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png?size=256` : null,
+            updated_at: new Date().toISOString(),
+          });
 
-    // Update the user's profile with Discord data
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .upsert({
-        id: user.id,
-        discord_id: userData.id,
-        discord_username: userData.username,
-        discord_discriminator: userData.discriminator,
-        discord_avatar: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png?size=256` : null,
-        updated_at: new Date().toISOString(),
-      });
-
-    if (updateError) {
-      console.error('Error updating profile:', updateError);
-      throw new Error('Failed to update profile');
+        if (updateError) {
+          console.error('Error updating profile:', updateError);
+        }
+      }
     }
 
     // Return the user data with only real music activities, custom status, and connections

@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -235,6 +234,52 @@ const handler = async (req: Request): Promise<Response> => {
           albumCover,
           duration: track.duration_ms,
           progress: currentTrack.progress_ms,
+        }
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
+    if (action === 'recently-played') {
+      // Get recently played tracks as fallback
+      const accessToken = await getValidAccessToken();
+
+      const spotifyResponse = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=1', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!spotifyResponse.ok) {
+        return new Response(JSON.stringify({ isPlaying: false }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+
+      const recentlyPlayed = await spotifyResponse.json();
+      
+      if (!recentlyPlayed.items || recentlyPlayed.items.length === 0) {
+        return new Response(JSON.stringify({ isPlaying: false }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+
+      const track = recentlyPlayed.items[0].track;
+      const artists = track.artists.map((artist: any) => artist.name).join(', ');
+      const albumCover = track.album.images.find((img: any) => img.height >= 300)?.url || track.album.images[0]?.url;
+
+      return new Response(JSON.stringify({
+        isPlaying: false,
+        track: {
+          name: track.name,
+          artist: artists,
+          album: track.album.name,
+          albumCover,
+          duration: track.duration_ms,
+          progress: track.duration_ms, // Show as complete since it was recently played
         }
       }), {
         status: 200,
