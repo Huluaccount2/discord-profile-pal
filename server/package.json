@@ -2,18 +2,19 @@
 {
   "name": "discord-profile-pal-server",
   "version": "1.0.0",
-  "description": "Discord Profile Pal DeskThing server component",
+  "description": "Discord Profile Pal DeskThing server component with RPC integration",
   "main": "index.ts",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
   },
   "dependencies": {
-    "deskthing-server": "^0.10.4"
+    "deskthing-server": "^0.10.4",
+    "@ankziety/discord-rpc": "^1.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
   }
 }
-

@@ -5,9 +5,9 @@ export class DeskThingIntegration {
   private deskThing: typeof DeskThing;
   private isConnected = false;
   private fileWatchers = new Map<string, (event: string, filename: string) => void>();
+  private discordDataCallbacks = new Set<(data: any) => void>();
 
   private constructor() {
-    // Initialize DeskThing - it's a static object
     this.deskThing = DeskThing;
     this.setupEventListeners();
   }
@@ -20,20 +20,47 @@ export class DeskThingIntegration {
   }
 
   private setupEventListeners() {
-    // Essential DeskThing lifecycle events
     this.deskThing.on('start', () => {
       console.log('DeskThing: App has started successfully!');
       this.isConnected = true;
+      
+      // Request initial Discord profile data
+      this.requestDiscordProfile();
     });
 
     this.deskThing.on('stop', () => {
-      console.log('DeskThing: Sample app has stopped successfully');
+      console.log('DeskThing: App has stopped');
       this.isConnected = false;
     });
 
     this.deskThing.on('purge', () => {
-      console.log('DeskThing: Sample app is cleaned up successfully');
+      console.log('DeskThing: App is cleaned up');
       this.cleanup();
+    });
+
+    // Handle Discord-specific data from server
+    this.deskThing.on('discord', (data: any) => {
+      console.log('DeskThing: Discord data received', data);
+      this.handleDiscordData(data);
+    });
+
+    // Handle profile data specifically
+    this.deskThing.on('profile_data', (data: any) => {
+      console.log('DeskThing: Profile data received', data);
+      this.discordDataCallbacks.forEach(callback => callback(data));
+    });
+
+    // Handle voice chat data
+    this.deskThing.on('channel_member', (data: any) => {
+      console.log('DeskThing: Voice channel member data', data);
+    });
+
+    this.deskThing.on('voice_data', (data: any) => {
+      console.log('DeskThing: Voice data update', data);
+    });
+
+    this.deskThing.on('speaking_data', (data: any) => {
+      console.log('DeskThing: Speaking data update', data);
     });
 
     // Handle settings updates from DeskThing
@@ -54,16 +81,32 @@ export class DeskThingIntegration {
       this.handleFileSystemChange(data);
     });
 
-    // Handle file system responses
     this.deskThing.on('fs-response', (data: any) => {
       console.log('DeskThing: File system response', data);
       this.handleFileSystemResponse(data);
     });
+  }
 
-    // Handle incoming data from server
-    this.deskThing.on('sampleType', (data: any) => {
-      console.log(data.payload); // prints 'Hello from the server!'
-    });
+  private handleDiscordData(data: any) {
+    // Forward Discord data to registered callbacks
+    this.discordDataCallbacks.forEach(callback => callback(data));
+  }
+
+  public onDiscordData(callback: (data: any) => void) {
+    this.discordDataCallbacks.add(callback);
+    return () => this.discordDataCallbacks.delete(callback);
+  }
+
+  public requestDiscordProfile() {
+    try {
+      this.deskThing.send({
+        type: 'get',
+        request: 'discord_profile',
+        payload: {}
+      });
+    } catch (error) {
+      console.log('DeskThing: Failed to request Discord profile', error);
+    }
   }
 
   private handleFileSystemChange(data: any) {
@@ -203,6 +246,7 @@ export class DeskThingIntegration {
     // Clean up any resources, intervals, etc.
     this.isConnected = false;
     this.fileWatchers.clear();
+    this.discordDataCallbacks.clear();
   }
 
   private handleSettingsUpdate(settings: any) {
@@ -223,9 +267,6 @@ export class DeskThingIntegration {
       case 'discord-profile':
         this.sendDiscordProfile();
         break;
-      case 'spotify-status':
-        this.sendSpotifyStatus();
-        break;
       default:
         console.log('DeskThing: Unknown data request type', request.type);
     }
@@ -233,44 +274,13 @@ export class DeskThingIntegration {
 
   private async sendDiscordProfile() {
     try {
-      const profileData = await this.getCurrentProfileData();
-      // Send data to DeskThing server
       this.deskThing.send({ 
-        type: 'sampleType', 
-        payload: 'Hello from the client!' 
+        type: 'get', 
+        request: 'discord_profile'
       });
     } catch (error) {
-      console.error('DeskThing: Error sending Discord profile', error);
+      console.error('DeskThing: Error requesting Discord profile', error);
     }
-  }
-
-  private async sendSpotifyStatus() {
-    try {
-      const spotifyData = await this.getCurrentSpotifyData();
-      this.deskThing.send({
-        type: 'spotify-status',
-        payload: spotifyData
-      });
-    } catch (error) {
-      console.error('DeskThing: Error sending Spotify status', error);
-    }
-  }
-
-  private async getCurrentProfileData() {
-    // This would integrate with your existing profile hooks
-    return {
-      username: 'User',
-      status: 'online',
-      avatar: null
-    };
-  }
-
-  private async getCurrentSpotifyData() {
-    // This would integrate with your existing Spotify hooks
-    return {
-      isPlaying: false,
-      track: null
-    };
   }
 
   // Client-side methods for sending data to server
@@ -327,7 +337,7 @@ export class DeskThingIntegration {
 
   public async initialize() {
     if (this.isRunningOnDeskThing()) {
-      console.log('DeskThing: Initializing DeskThing integration');
+      console.log('DeskThing: Initializing Discord Profile Pal integration');
       try {
         // DeskThing auto-initializes when imported, no need to call start()
         this.sendLog('info', 'Discord Profile Pal started successfully');
