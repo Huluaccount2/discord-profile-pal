@@ -83,8 +83,8 @@ export const useMusicProgressTracker = ({
     // Start with immediate update
     updateProgress();
     
-    // Set up updates every 1000ms for more accurate timing
-    updateIntervalRef.current = setInterval(updateProgress, 1000);
+    // Set up updates every 100ms for smooth progress bar movement
+    updateIntervalRef.current = setInterval(updateProgress, 100);
 
     // Handle visibility changes for more accurate timing
     const handleVisibility = () => {
