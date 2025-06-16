@@ -16,19 +16,22 @@ export const MusicProgressBar: React.FC<MusicProgressBarProps> = ({
   isPlaying
 }) => {
   const formatTime = (ms: number) => {
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
+
+  // Ensure progress is within bounds and smooth
+  const clampedProgress = Math.max(0, Math.min(100, progress));
 
   return (
     <div className="mb-2">
       <Progress 
-        value={progress} 
-        className="h-2 mb-2 transition-opacity"
+        value={clampedProgress} 
+        className="h-2 mb-2 transition-all duration-200 ease-linear"
       />
-      <div className="flex justify-between text-xs text-gray-300 transition-opacity">
+      <div className="flex justify-between text-xs text-gray-300">
         <span>{formatTime(currentTime)}</span>
         <span>{formatTime(duration)}</span>
       </div>

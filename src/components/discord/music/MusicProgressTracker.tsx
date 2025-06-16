@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 
 interface MusicProgressTrackerProps {
@@ -15,11 +14,12 @@ export const useMusicProgressTracker = ({
   onProgressUpdate
 }: MusicProgressTrackerProps) => {
   const [lastSongId, setLastSongId] = useState<string | null>(null);
+  const lastUpdateTimeRef = useRef(0);
   const cachedProgressRef = useRef(0);
-  const cachedIsPlayingRef = useRef(false);
-  const cachedSongHasEndedRef = useRef(false);
-  const lastEmittedProgressRef = useRef(0);
-  const updateProgressRef = useRef<() => void>();
+  const isPlayingRef = useRef(false);
+  const songStartTimeRef = useRef(0);
+  const pausedAtRef = useRef(0);
+  const updateIntervalRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     if (!currentSong?.timestamps?.start || !currentSong?.timestamps?.end) {
@@ -34,85 +34,92 @@ export const useMusicProgressTracker = ({
 
     // Reset state when song changes
     if (lastSongId !== songId) {
-      console.log('MusicProgressTracker: Song changed from', lastSongId, 'to', songId);
+      console.log('MusicProgressTracker: Song changed, resetting state');
       cachedProgressRef.current = 0;
-      cachedIsPlayingRef.current = true;
-      cachedSongHasEndedRef.current = false;
-      lastEmittedProgressRef.current = 0;
+      isPlayingRef.current = true;
+      songStartTimeRef.current = Date.now();
+      pausedAtRef.current = 0;
+      lastUpdateTimeRef.current = Date.now();
       setLastSongId(songId);
     }
 
     const updateProgress = () => {
       const now = Date.now();
-      let isPlaying = true;
-      let progressValue = 0;
+      let currentProgress = 0;
+      let isCurrentlyPlaying = true;
 
-      // Spotify OAuth integration takes priority
+      // Priority 1: Spotify OAuth integration
       if (isSpotifyConnected && currentSong.name === "Spotify" && spotifyData?.track) {
-        isPlaying = Boolean(spotifyData.isPlaying);
-        progressValue = spotifyData.track.progress;
+        isCurrentlyPlaying = Boolean(spotifyData.isPlaying);
+        currentProgress = spotifyData.track.progress;
 
-        if (isPlaying) {
-          // Update cached progress when playing
-          cachedProgressRef.current = progressValue;
-          cachedIsPlayingRef.current = true;
-          onProgressUpdate(progressValue, true);
-          lastEmittedProgressRef.current = progressValue;
+        if (isCurrentlyPlaying) {
+          // When playing, update our tracking references
+          isPlayingRef.current = true;
+          cachedProgressRef.current = currentProgress;
+          lastUpdateTimeRef.current = now;
         } else {
-          // Use frozen progress when paused
-          onProgressUpdate(cachedProgressRef.current, false);
-          cachedIsPlayingRef.current = false;
+          // When paused, freeze at last known position
+          isPlayingRef.current = false;
+          currentProgress = cachedProgressRef.current;
         }
+
+        onProgressUpdate(currentProgress, isCurrentlyPlaying);
         return;
       }
 
-      // Discord fallback - calculate elapsed time
-      const elapsed = now - startTime;
-      const discordSongEnded = elapsed >= duration;
-
-      if (discordSongEnded && !cachedSongHasEndedRef.current) {
-        cachedProgressRef.current = duration;
-        cachedIsPlayingRef.current = false;
-        cachedSongHasEndedRef.current = true;
-        onProgressUpdate(duration, false);
-        lastEmittedProgressRef.current = duration;
-      } else if (discordSongEnded && cachedSongHasEndedRef.current) {
-        onProgressUpdate(duration, false);
-      } else {
-        const computedProgress = Math.max(0, Math.min(elapsed, duration));
+      // Priority 2: Discord fallback with improved timing
+      const timeSinceLastUpdate = now - lastUpdateTimeRef.current;
+      
+      if (isPlayingRef.current) {
+        // If we were playing, add elapsed time to cached progress
+        cachedProgressRef.current += timeSinceLastUpdate;
+        currentProgress = cachedProgressRef.current;
         
-        // Check if progress is advancing (song is playing)
-        if (cachedIsPlayingRef.current && computedProgress !== lastEmittedProgressRef.current) {
-          isPlaying = true;
-          progressValue = computedProgress;
-          cachedProgressRef.current = progressValue;
-          cachedIsPlayingRef.current = true;
-          onProgressUpdate(progressValue, true);
-          lastEmittedProgressRef.current = progressValue;
-        } else if (!cachedIsPlayingRef.current || computedProgress === lastEmittedProgressRef.current) {
-          // Progress stuck (paused) - emit frozen progress
-          isPlaying = false;
-          onProgressUpdate(cachedProgressRef.current, false);
-          cachedIsPlayingRef.current = false;
+        // Check if song should have ended
+        if (currentProgress >= duration) {
+          currentProgress = duration;
+          isCurrentlyPlaying = false;
+          isPlayingRef.current = false;
         }
+      } else {
+        // If we were paused, keep the same progress
+        currentProgress = cachedProgressRef.current;
+        isCurrentlyPlaying = false;
       }
+
+      // Update our tracking time
+      lastUpdateTimeRef.current = now;
+      
+      // Emit the update
+      onProgressUpdate(Math.max(0, Math.min(currentProgress, duration)), isCurrentlyPlaying);
     };
 
-    updateProgressRef.current = updateProgress;
+    // Clear any existing interval
+    if (updateIntervalRef.current) {
+      clearInterval(updateIntervalRef.current);
+    }
 
+    // Start with immediate update
     updateProgress();
-    const interval = setInterval(updateProgress, 1000); // Update every second
+    
+    // Set up more frequent updates for smoother progress (250ms)
+    updateIntervalRef.current = setInterval(updateProgress, 250);
 
+    // Handle visibility changes for more accurate timing
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible' && updateProgressRef.current) {
-        updateProgressRef.current();
+      if (document.visibilityState === 'visible') {
+        lastUpdateTimeRef.current = Date.now();
+        updateProgress();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      clearInterval(interval);
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
+      }
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [
