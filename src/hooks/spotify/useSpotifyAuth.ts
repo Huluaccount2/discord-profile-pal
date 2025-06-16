@@ -1,11 +1,18 @@
 
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useDeskThing } from "@/contexts/DeskThingContext";
 
 export const useSpotifyAuth = (userId: string | undefined) => {
   const [loading, setLoading] = useState(false);
+  const { isRunningOnDeskThing } = useDeskThing();
 
   const connectSpotify = async () => {
+    if (isRunningOnDeskThing) {
+      console.log('useSpotifyAuth: Running on DeskThing, Spotify handled through Discord connection');
+      return;
+    }
+
     if (!userId) {
       console.log('useSpotifyAuth: No userId provided for connection');
       return;

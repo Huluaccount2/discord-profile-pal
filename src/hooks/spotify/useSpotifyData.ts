@@ -1,6 +1,7 @@
 
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useDeskThing } from "@/contexts/DeskThingContext";
 
 interface SpotifyTrack {
   name: string;
@@ -21,8 +22,17 @@ export const useSpotifyData = (userId: string | undefined) => {
   const [spotifyData, setSpotifyData] = useState<SpotifyState | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const { isRunningOnDeskThing } = useDeskThing();
 
   const fetchCurrentTrack = useCallback(async () => {
+    if (isRunningOnDeskThing) {
+      console.log('useSpotifyData: Running on DeskThing, skipping Spotify OAuth');
+      // DeskThing handles Spotify through Discord connection, not OAuth
+      setConnectionError(null);
+      setSpotifyData(null);
+      return;
+    }
+
     if (!userId) {
       console.log('useSpotifyData: No userId provided for fetching track');
       return;
@@ -118,7 +128,7 @@ export const useSpotifyData = (userId: string | undefined) => {
       setConnectionError('Failed to fetch track data');
       setSpotifyData(null);
     }
-  }, [userId]);
+  }, [userId, isRunningOnDeskThing]);
 
   return {
     spotifyData,
