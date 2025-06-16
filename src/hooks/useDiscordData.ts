@@ -12,7 +12,7 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
   const lastCustomStatusRef = useRef<string | null>(null);
   const lastSongKeyRef = useRef<string | null>(null);
   const messageCountRef = useRef(0);
-  const pollIntervalRef = useRef(50); // Start with 50ms
+  const pollIntervalRef = useRef(200); // Start with 200ms
   const unchangedCountRef = useRef(0); // Track consecutive unchanged polls
   const { isRunningOnDeskThing } = useDeskThing();
 

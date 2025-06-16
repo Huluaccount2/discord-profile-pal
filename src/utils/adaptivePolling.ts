@@ -1,4 +1,6 @@
 
+import React from 'react';
+
 export class AdaptivePolling {
   private pollIntervalRef: React.MutableRefObject<number>;
   private unchangedCountRef: React.MutableRefObject<number>;
@@ -18,8 +20,8 @@ export class AdaptivePolling {
     if (hasChanges) {
       // Reset to fast polling when changes detected
       this.unchangedCountRef.current = 0;
-      this.pollIntervalRef.current = 50; // Reset to 50ms
-      this.logWithCleanup('useDiscordData: Changes detected, reset to fast polling (50ms)');
+      this.pollIntervalRef.current = 200; // Reset to 200ms
+      this.logWithCleanup('useDiscordData: Changes detected, reset to fast polling (200ms)');
     } else {
       // Increase interval when no changes
       this.unchangedCountRef.current++;
@@ -35,7 +37,7 @@ export class AdaptivePolling {
   }
 
   reset() {
-    this.pollIntervalRef.current = 50; // Reset to 50ms
+    this.pollIntervalRef.current = 200; // Reset to 200ms
     this.unchangedCountRef.current = 0;
   }
 
