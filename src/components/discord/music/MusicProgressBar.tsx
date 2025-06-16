@@ -22,14 +22,17 @@ export const MusicProgressBar: React.FC<MusicProgressBarProps> = ({
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Ensure progress is within bounds and smooth
+  // Ensure progress is within bounds and handle edge cases
   const clampedProgress = Math.max(0, Math.min(100, progress));
+  
+  // Only show smooth transitions when playing
+  const transitionClass = isPlaying ? "transition-all duration-1000 ease-linear" : "transition-none";
 
   return (
     <div className="mb-2">
       <Progress 
         value={clampedProgress} 
-        className="h-2 mb-2 transition-all duration-200 ease-linear"
+        className={`h-2 mb-2 ${transitionClass}`}
       />
       <div className="flex justify-between text-xs text-gray-300">
         <span>{formatTime(currentTime)}</span>
