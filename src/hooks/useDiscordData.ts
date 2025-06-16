@@ -9,6 +9,7 @@ import { AdaptivePolling } from "@/utils/adaptivePolling";
 export const useDiscordData = (userId: string | undefined, discordId: string | null) => {
   const [discordData, setDiscordData] = useState<DiscordData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [isLyricStatusActive, setIsLyricStatusActive] = useState(false);
   const lastCustomStatusRef = useRef<string | null>(null);
   const lastSongKeyRef = useRef<string | null>(null);
   const messageCountRef = useRef(0);
@@ -64,11 +65,11 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
     }
   }, [userId, discordId, isRunningOnDeskThing]);
 
-  // Adaptive polling with smart interval adjustment
+  // Adaptive polling optimized for Lyric Status
   useEffect(() => {
     if (!isRunningOnDeskThing && (!userId || !discordId)) return;
     if (isRunningOnDeskThing || (userId && discordId)) {
-      logWithCleanup('useDiscordData: Setting up adaptive status/song check interval');
+      logWithCleanup('useDiscordData: Setting up Lyric Status optimized polling');
       
       let timeoutId: NodeJS.Timeout;
       
@@ -90,11 +91,15 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
               // Update polling interval based on changes
               adaptivePolling.updateInterval(hasChanges);
               
+              // Update Lyric Status detection state
+              setIsLyricStatusActive(adaptivePolling.isLyricStatusMode());
+              
               if (hasChanges) {
                 logWithCleanup(
                   'useDiscordData: State change detected.',
                   hasStatusChange ? 'Status changed.' : '',
-                  hasSongChange ? 'Song changed.' : ''
+                  hasSongChange ? 'Song changed.' : '',
+                  adaptivePolling.isLyricStatusMode() ? '[Lyric Status mode]' : ''
                 );
                 
                 setDiscordData(data);
@@ -123,6 +128,7 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
         }
         // Reset intervals on cleanup
         adaptivePolling.reset();
+        setIsLyricStatusActive(false);
       };
     }
   }, [userId, discordId, isRunningOnDeskThing]);
@@ -130,6 +136,7 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
   return {
     discordData,
     refreshing,
-    fetchDiscordData
+    fetchDiscordData,
+    isLyricStatusActive
   };
 };

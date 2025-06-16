@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,6 +5,7 @@ import { ProfileHeader } from "@/components/discord/ProfileHeader";
 import { NowPlaying } from "@/components/discord/NowPlaying";
 import { EmptyMusicState } from "@/components/discord/EmptyMusicState";
 import { WidgetFooter } from "@/components/discord/WidgetFooter";
+import { LyricStatusIndicator } from "@/components/discord/LyricStatusIndicator";
 import { useProfile } from "@/hooks/useProfile";
 import { useDiscordData } from "@/hooks/useDiscordData";
 import { useSpotify } from "@/hooks/useSpotify";
@@ -15,7 +15,7 @@ export const DiscordProfile = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { user } = useAuth();
   const { profile, loading } = useProfile(user?.id);
-  const { discordData, refreshing, fetchDiscordData } = useDiscordData(user?.id, profile?.discord_id);
+  const { discordData, refreshing, fetchDiscordData, isLyricStatusActive } = useDiscordData(user?.id, profile?.discord_id);
   const { 
     spotifyData, 
     isConnected, 
@@ -29,6 +29,7 @@ export const DiscordProfile = () => {
   console.log('DiscordProfile: Spotify connection status:', { isConnected, connectionError });
   console.log('DiscordProfile: Discord data:', { discordData, refreshing });
   console.log('DiscordProfile: Spotify data:', spotifyData);
+  console.log('DiscordProfile: Lyric Status active:', isLyricStatusActive);
 
   // Timer effect
   useEffect(() => {
@@ -154,6 +155,10 @@ export const DiscordProfile = () => {
               customStatus={customStatus}
               connections={connections}
             />
+            {/* Add Lyric Status indicator below profile */}
+            <div className="mt-2 flex justify-center">
+              <LyricStatusIndicator isActive={isLyricStatusActive} />
+            </div>
           </div>
 
           <div className="flex-1 flex items-center min-w-0">
