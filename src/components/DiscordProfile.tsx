@@ -147,7 +147,7 @@ export const DiscordProfile = () => {
 
     return (
       <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 shadow-2xl h-full flex flex-col rounded-none border-0">
-        <div className="flex-1 flex gap-3 min-h-0 p-3">
+        <div className="flex-1 flex gap-2 min-h-0 p-2">
           <div className="flex-shrink-0 w-[280px] min-h-0 overflow-hidden">
             <ProfileHeader 
               displayName={displayName}
