@@ -6,7 +6,9 @@ import { useDeskThing } from '@/contexts/DeskThingContext';
 export const useLyricStatus = () => {
   const [currentLyric, setCurrentLyric] = useState<CurrentLyric | null>(null);
   const [isActive, setIsActive] = useState(false);
-  const { isRunningOnDeskThing } = useDeskThing();
+  const [isMonitoring, setIsMonitoring] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { isRunningOnDeskThing, sendLog, sendError } = useDeskThing();
 
   const handleLyricUpdate = useCallback((lyric: CurrentLyric | null) => {
     setCurrentLyric(lyric);
@@ -14,27 +16,65 @@ export const useLyricStatus = () => {
     
     if (lyric) {
       console.log('useLyricStatus: Current lyric updated:', lyric.text);
+      sendLog('info', 'Lyric updated', { text: lyric.text, progress: lyric.progress });
+    } else {
+      console.log('useLyricStatus: No current lyric');
     }
-  }, []);
+  }, [sendLog]);
+
+  const handleError = useCallback((error: Error) => {
+    console.error('useLyricStatus: Error occurred:', error);
+    setError(error.message);
+    sendError(error, 'LyricStatusMonitor');
+  }, [sendError]);
 
   useEffect(() => {
     // Only start monitoring if we're running on DeskThing (has file system access)
     if (isRunningOnDeskThing) {
-      console.log('useLyricStatus: Starting Lyric Status monitoring');
-      lyricStatusMonitor.startMonitoring(handleLyricUpdate);
+      console.log('useLyricStatus: Starting Lyric Status file monitoring on DeskThing');
+      sendLog('info', 'Starting Lyric Status file monitoring');
+      
+      try {
+        lyricStatusMonitor.startMonitoring(handleLyricUpdate);
+        setIsMonitoring(true);
+        setError(null);
+      } catch (error) {
+        const err = error as Error;
+        console.error('useLyricStatus: Failed to start monitoring:', err);
+        handleError(err);
+      }
 
       return () => {
-        console.log('useLyricStatus: Stopping Lyric Status monitoring');
+        console.log('useLyricStatus: Stopping Lyric Status file monitoring');
+        sendLog('info', 'Stopping Lyric Status file monitoring');
         lyricStatusMonitor.stopMonitoring();
+        setIsMonitoring(false);
+        setIsActive(false);
+        setCurrentLyric(null);
+        setError(null);
       };
     } else {
       console.log('useLyricStatus: Not running on DeskThing, file monitoring unavailable');
+      setIsMonitoring(false);
+      setIsActive(false);
+      setCurrentLyric(null);
+      setError('File monitoring requires DeskThing environment');
     }
-  }, [isRunningOnDeskThing, handleLyricUpdate]);
+  }, [isRunningOnDeskThing, handleLyricUpdate, handleError, sendLog]);
+
+  // Method to manually update cache directory
+  const setCacheDirectory = useCallback((path: string) => {
+    if (isRunningOnDeskThing) {
+      lyricStatusMonitor.setCacheDirectory(path);
+      sendLog('info', 'Cache directory updated', { path });
+    }
+  }, [isRunningOnDeskThing, sendLog]);
 
   return {
     currentLyric,
     isActive,
-    isMonitoring: lyricStatusMonitor.isActive()
+    isMonitoring,
+    error,
+    setCacheDirectory
   };
 };

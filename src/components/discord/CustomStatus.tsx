@@ -14,11 +14,11 @@ interface CustomStatusProps {
 }
 
 export const CustomStatus = React.memo(({ customStatus }: CustomStatusProps) => {
-  const { currentLyric, isActive } = useLyricStatus();
+  const { currentLyric, isActive, error } = useLyricStatus();
   
   // Priority 1: Show Lyric Status if active and has lyrics
   if (isActive && currentLyric) {
-    return <LyricDisplay currentLyric={currentLyric} />;
+    return <LyricDisplay currentLyric={currentLyric} error={error} />;
   }
   
   // Priority 2: Show Discord custom status

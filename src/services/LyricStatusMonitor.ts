@@ -1,5 +1,5 @@
 
-import { useDeskThing } from "@/contexts/DeskThingContext";
+import { deskthingIntegration } from "@/utils/deskthing";
 
 export interface LyricStatusCache {
   title?: string;
@@ -27,10 +27,11 @@ export class LyricStatusMonitor {
   private isMonitoring = false;
   private cacheDirectory = "C:\\Users\\harri\\OneDrive\\lyrics-status-3.0.6a.1\\cache";
   private currentLyricCallback?: (lyric: CurrentLyric | null) => void;
-  private intervalId?: NodeJS.Timeout;
-  private lastModified = new Map<string, number>();
   private currentCache: LyricStatusCache | null = null;
   private startTime: number = 0;
+  private fileWatcherActive = false;
+  private syncIntervalId?: NodeJS.Timeout;
+  private lastProcessedFile: string | null = null;
 
   private constructor() {}
 
@@ -47,64 +48,160 @@ export class LyricStatusMonitor {
     this.currentLyricCallback = callback;
     this.isMonitoring = true;
     
-    console.log('LyricStatusMonitor: Starting file monitoring for:', this.cacheDirectory);
+    console.log('LyricStatusMonitor: Starting real file monitoring for:', this.cacheDirectory);
     
-    // Check for cache files immediately
+    // Start file monitoring
+    this.startFileMonitoring();
+    
+    // Check for existing cache files immediately
     this.checkForCacheFiles();
-    
-    // Set up regular polling for file changes (100ms for real-time feel)
-    this.intervalId = setInterval(() => {
-      this.checkForCacheFiles();
-    }, 100);
   }
 
   public stopMonitoring() {
     if (!this.isMonitoring) return;
     
     this.isMonitoring = false;
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = undefined;
+    
+    // Stop file watching
+    if (this.fileWatcherActive) {
+      deskthingIntegration.unwatchFile(this.cacheDirectory);
+      this.fileWatcherActive = false;
     }
+    
+    // Clear sync interval
+    if (this.syncIntervalId) {
+      clearInterval(this.syncIntervalId);
+      this.syncIntervalId = undefined;
+    }
+    
     this.currentLyricCallback = undefined;
     this.currentCache = null;
-    this.lastModified.clear();
+    this.lastProcessedFile = null;
     
-    console.log('LyricStatusMonitor: Stopped monitoring');
+    console.log('LyricStatusMonitor: Stopped file monitoring');
+  }
+
+  private startFileMonitoring() {
+    try {
+      // Set up file system watcher for the cache directory
+      deskthingIntegration.watchFile(this.cacheDirectory, (event, filename) => {
+        console.log(`LyricStatusMonitor: File ${event}: ${filename}`);
+        
+        // Only process .json files
+        if (filename && filename.endsWith('.json')) {
+          this.handleFileChange(filename);
+        }
+      });
+      
+      this.fileWatcherActive = true;
+      console.log('LyricStatusMonitor: File watcher activated for', this.cacheDirectory);
+      
+    } catch (error) {
+      console.error('LyricStatusMonitor: Error setting up file watcher:', error);
+      // Fallback to polling if file watching fails
+      this.startPollingFallback();
+    }
+  }
+
+  private startPollingFallback() {
+    console.log('LyricStatusMonitor: Using polling fallback (1 second interval)');
+    this.syncIntervalId = setInterval(() => {
+      this.checkForCacheFiles();
+    }, 1000);
+  }
+
+  private async handleFileChange(filename: string) {
+    try {
+      const filePath = `${this.cacheDirectory}\\${filename}`;
+      console.log('LyricStatusMonitor: Processing file change:', filePath);
+      
+      // Add small delay to ensure file write is complete
+      setTimeout(() => {
+        this.processFile(filePath);
+      }, 50);
+      
+    } catch (error) {
+      console.error('LyricStatusMonitor: Error handling file change:', error);
+    }
   }
 
   private async checkForCacheFiles() {
     try {
-      // For now, we'll simulate file system access
-      // In a real implementation on DeskThing, we'd use the DeskThing client's file system API
+      const files = await deskthingIntegration.listDirectory(this.cacheDirectory);
+      const jsonFiles = files.filter(file => file.endsWith('.json'));
       
-      // Try to read the most recent cache file
-      await this.readLatestCacheFile();
+      if (jsonFiles.length === 0) {
+        console.log('LyricStatusMonitor: No cache files found');
+        this.currentLyricCallback?.(null);
+        return;
+      }
+      
+      // Find the most recently modified file
+      let latestFile = '';
+      let latestTime = 0;
+      
+      for (const file of jsonFiles) {
+        try {
+          const filePath = `${this.cacheDirectory}\\${file}`;
+          const stats = await deskthingIntegration.getFileStats(filePath);
+          
+          if (stats.modified > latestTime) {
+            latestTime = stats.modified;
+            latestFile = filePath;
+          }
+        } catch (error) {
+          console.error(`LyricStatusMonitor: Error getting stats for ${file}:`, error);
+        }
+      }
+      
+      if (latestFile && latestFile !== this.lastProcessedFile) {
+        console.log('LyricStatusMonitor: New latest file detected:', latestFile);
+        await this.processFile(latestFile);
+      }
       
     } catch (error) {
       console.error('LyricStatusMonitor: Error checking cache files:', error);
     }
   }
 
-  private async readLatestCacheFile() {
+  private async processFile(filePath: string) {
     try {
-      // For web environment, we can't directly access file system
-      // This would need to be implemented through DeskThing client or a local service
+      console.log('LyricStatusMonitor: Reading file:', filePath);
+      const content = await deskthingIntegration.readFile(filePath);
       
-      // Placeholder implementation - in real scenario, this would:
-      // 1. List files in the cache directory
-      // 2. Find the most recently modified .json file
-      // 3. Read and parse the JSON content
-      // 4. Update currentCache if the file has changed
+      const cache: LyricStatusCache = JSON.parse(content);
+      console.log('LyricStatusMonitor: Parsed cache data:', {
+        title: cache.title,
+        artist: cache.artist,
+        lyricsCount: cache.lyrics?.length || 0,
+        duration: cache.duration,
+        offset: cache.offset
+      });
       
-      console.log('LyricStatusMonitor: Attempting to read cache files from:', this.cacheDirectory);
+      this.currentCache = cache;
+      this.lastProcessedFile = filePath;
+      this.startTime = Date.now();
       
-      // For now, we'll simulate this functionality
-      // In production, this would integrate with DeskThing's file system API
+      // Start real-time lyric synchronization
+      this.startLyricSync();
       
     } catch (error) {
-      console.error('LyricStatusMonitor: Error reading cache file:', error);
+      console.error('LyricStatusMonitor: Error processing file:', filePath, error);
     }
+  }
+
+  private startLyricSync() {
+    // Clear any existing sync interval
+    if (this.syncIntervalId) {
+      clearInterval(this.syncIntervalId);
+    }
+    
+    // Start high-frequency sync for smooth lyric updates (100ms)
+    this.syncIntervalId = setInterval(() => {
+      if (this.currentCache) {
+        this.processLyricCache(this.currentCache);
+      }
+    }, 100);
   }
 
   private processLyricCache(cache: LyricStatusCache) {
@@ -115,7 +212,7 @@ export class LyricStatusMonitor {
 
     // Calculate current playback position
     const now = Date.now();
-    const elapsed = now - this.startTime + (cache.offset || 0);
+    const elapsed = (now - this.startTime) + (cache.offset || 0);
     const position = elapsed / 1000; // Convert to seconds
 
     // Find current lyric based on timestamp
@@ -155,6 +252,17 @@ export class LyricStatusMonitor {
     this.currentCache = cache;
     this.startTime = Date.now();
     this.processLyricCache(cache);
+  }
+
+  // Method to update cache directory path
+  public setCacheDirectory(path: string) {
+    if (this.isMonitoring) {
+      console.warn('LyricStatusMonitor: Cannot change cache directory while monitoring is active');
+      return;
+    }
+    
+    this.cacheDirectory = path;
+    console.log('LyricStatusMonitor: Cache directory updated to:', path);
   }
 }
 

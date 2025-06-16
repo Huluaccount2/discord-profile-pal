@@ -23,7 +23,7 @@ export const DiscordProfile = () => {
     connectSpotify,
     connectionError
   } = useSpotify(user?.id);
-  const { currentLyric, isActive: isLyricActive, isMonitoring } = useLyricStatus();
+  const { currentLyric, isActive: isLyricActive, isMonitoring, error: lyricError } = useLyricStatus();
 
   const [lastKnownSong, setLastKnownSong] = useLastKnownSong();
 
@@ -32,6 +32,7 @@ export const DiscordProfile = () => {
   console.log('DiscordProfile: Discord data:', { discordData, refreshing });
   console.log('DiscordProfile: Spotify data:', spotifyData);
   console.log('DiscordProfile: Lyric Status active:', isLyricStatusActive);
+  console.log('DiscordProfile: File-based Lyric Status:', { isLyricActive, isMonitoring, lyricError });
 
   // Timer effect
   useEffect(() => {
@@ -158,11 +159,12 @@ export const DiscordProfile = () => {
               customStatus={customStatus}
               connections={connections}
             />
-            {/* Updated Lyric Status indicator */}
+            {/* Updated Lyric Status indicator with error support */}
             <div className="mt-2 flex justify-center">
               <LyricStatusIndicator 
                 isActive={isLyricActive || isLyricStatusActive} 
                 isMonitoring={isMonitoring}
+                error={lyricError}
               />
             </div>
           </div>

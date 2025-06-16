@@ -1,13 +1,30 @@
 
 import React from 'react';
-import { Music, Clock } from 'lucide-react';
+import { Music, Clock, AlertCircle } from 'lucide-react';
 import { CurrentLyric } from '@/services/LyricStatusMonitor';
 
 interface LyricDisplayProps {
   currentLyric: CurrentLyric;
+  error?: string | null;
 }
 
-export const LyricDisplay = React.memo(({ currentLyric }: LyricDisplayProps) => {
+export const LyricDisplay = React.memo(({ currentLyric, error }: LyricDisplayProps) => {
+  if (error) {
+    return (
+      <div className="inline-flex items-start gap-2 bg-red-900/50 backdrop-blur-sm rounded-lg px-3 py-2 border border-red-500/30 shadow-md flex-1 min-w-0 min-h-[2.5rem]">
+        <AlertCircle className="w-3 h-3 text-red-400 flex-shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <div className="text-xs text-red-200 font-medium break-words leading-relaxed">
+            Lyric Status Error
+          </div>
+          <div className="text-xs text-red-300/70 mt-1 truncate">
+            {error}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="inline-flex items-start gap-2 bg-purple-900/50 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-500/30 shadow-md flex-1 min-w-0 min-h-[2.5rem]">
       <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
