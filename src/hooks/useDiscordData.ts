@@ -6,15 +6,16 @@ import { useDeskThing } from "@/contexts/DeskThingContext";
 
 // Message cleanup utility
 const cleanupOldLogs = () => {
-  const MAX_CONSOLE_LOGS = 100;
+  const MAX_CONSOLE_LOGS = 200;
   
-  // Clear console if we have too many logs (this is a rough estimate)
+  // Clear console to prevent memory issues
   if (typeof window !== 'undefined' && window.console) {
-    // We can't directly count console logs, but we can clear them periodically
-    const shouldCleanup = Math.random() < 0.1; // 10% chance to cleanup on each call
-    if (shouldCleanup) {
+    try {
       console.clear();
-      console.log('useDiscordData: Console cleared to prevent memory issues');
+      console.log('useDiscordData: Console cleared to prevent memory issues - message limit reached');
+    } catch (e) {
+      // Fallback if console.clear() fails
+      console.log('useDiscordData: Attempted console cleanup');
     }
   }
 };
@@ -30,10 +31,11 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
   const logWithCleanup = (message: string, ...args: any[]) => {
     messageCountRef.current++;
     
-    // Clean up every 100 messages
-    if (messageCountRef.current % 100 === 0) {
+    // Clean up every 200 messages
+    if (messageCountRef.current >= 200) {
       cleanupOldLogs();
-      console.log(`useDiscordData: Message count reached ${messageCountRef.current}, cleaning up logs`);
+      messageCountRef.current = 0; // Reset counter after cleanup
+      console.log(`useDiscordData: Message count reset after reaching 200 messages`);
     }
     
     console.log(message, ...args);
