@@ -4,24 +4,52 @@ import { supabase } from "@/integrations/supabase/client";
 import { DiscordData } from "@/types/discord";
 import { useDeskThing } from "@/contexts/DeskThingContext";
 
+// Message cleanup utility
+const cleanupOldLogs = () => {
+  const MAX_CONSOLE_LOGS = 100;
+  
+  // Clear console if we have too many logs (this is a rough estimate)
+  if (typeof window !== 'undefined' && window.console) {
+    // We can't directly count console logs, but we can clear them periodically
+    const shouldCleanup = Math.random() < 0.1; // 10% chance to cleanup on each call
+    if (shouldCleanup) {
+      console.clear();
+      console.log('useDiscordData: Console cleared to prevent memory issues');
+    }
+  }
+};
+
 export const useDiscordData = (userId: string | undefined, discordId: string | null) => {
   const [discordData, setDiscordData] = useState<DiscordData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const lastCustomStatusRef = useRef<string | null>(null);
   const lastSongKeyRef = useRef<string | null>(null);
+  const messageCountRef = useRef(0);
   const { isRunningOnDeskThing } = useDeskThing();
+
+  const logWithCleanup = (message: string, ...args: any[]) => {
+    messageCountRef.current++;
+    
+    // Clean up every 100 messages
+    if (messageCountRef.current % 100 === 0) {
+      cleanupOldLogs();
+      console.log(`useDiscordData: Message count reached ${messageCountRef.current}, cleaning up logs`);
+    }
+    
+    console.log(message, ...args);
+  };
 
   const fetchDiscordData = async () => {
     setRefreshing(true);
     try {
       if (isRunningOnDeskThing) {
-        console.log('useDiscordData: Running on DeskThing, calling Discord function without auth');
+        logWithCleanup('useDiscordData: Running on DeskThing, calling Discord function without auth');
         const { data, error } = await supabase.functions.invoke('discord-bot');
         
         if (error) {
-          console.error('useDiscordData: Discord function error on DeskThing:', error);
+          logWithCleanup('useDiscordData: Discord function error on DeskThing:', error);
         } else {
-          console.log('useDiscordData: Discord data received on DeskThing:', data);
+          logWithCleanup('useDiscordData: Discord data received on DeskThing:', data);
           setDiscordData(data);
           lastCustomStatusRef.current = data?.custom_status?.text || null;
           const latestSong = data?.activities?.find((a: any) => a.type === 2);
@@ -29,10 +57,10 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
         }
       } else {
         if (!userId) {
-          console.log('useDiscordData: No userId provided for web usage');
+          logWithCleanup('useDiscordData: No userId provided for web usage');
           return;
         }
-        console.log('useDiscordData: Fetching Discord data for userId:', userId);
+        logWithCleanup('useDiscordData: Fetching Discord data for userId:', userId);
         const { data, error } = await supabase.functions.invoke('discord-bot', {
           headers: {
             Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
@@ -40,9 +68,9 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
         });
 
         if (error) {
-          console.error('useDiscordData: Discord function error:', error);
+          logWithCleanup('useDiscordData: Discord function error:', error);
         } else {
-          console.log('useDiscordData: Discord data received:', data);
+          logWithCleanup('useDiscordData: Discord data received:', data);
           setDiscordData(data);
           lastCustomStatusRef.current = data?.custom_status?.text || null;
           const latestSong = data?.activities?.find((a: any) => a.type === 2);
@@ -50,7 +78,7 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
         }
       }
     } catch (error) {
-      console.error('useDiscordData: Error calling Discord function:', error);
+      logWithCleanup('useDiscordData: Error calling Discord function:', error);
     } finally {
       setRefreshing(false);
     }
@@ -69,16 +97,16 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
 
   useEffect(() => {
     if (isRunningOnDeskThing || (userId && discordId)) {
-      console.log('useDiscordData: Initial fetch triggered');
+      logWithCleanup('useDiscordData: Initial fetch triggered');
       fetchDiscordData();
     }
   }, [userId, discordId, isRunningOnDeskThing]);
 
-  // Reduced interval and improved change detection
+  // Reduced interval and improved change detection with cleanup
   useEffect(() => {
     if (!isRunningOnDeskThing && (!userId || !discordId)) return;
     if (isRunningOnDeskThing || (userId && discordId)) {
-      console.log('useDiscordData: Setting up status/song check interval');
+      logWithCleanup('useDiscordData: Setting up status/song check interval');
       const statusInterval = setInterval(async () => {
         try {
           let data, error;
@@ -105,24 +133,31 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
               currentSongKey !== lastSongKeyRef.current ||
               forceUpdate
             ) {
-              console.log(
-                'useDiscordData: State change detected. Previous status/song: ',
-                lastCustomStatusRef.current, lastSongKeyRef.current,
-                '→ Now:', currentCustomStatus, currentSongKey,
-                forceUpdate ? '(forced update)' : ''
-              );
+              // Only log significant changes to reduce message spam
+              const hasStatusChange = currentCustomStatus !== lastCustomStatusRef.current;
+              const hasSongChange = currentSongKey !== lastSongKeyRef.current;
+              
+              if (hasStatusChange || hasSongChange || forceUpdate) {
+                logWithCleanup(
+                  'useDiscordData: State change detected.',
+                  hasStatusChange ? 'Status changed.' : '',
+                  hasSongChange ? 'Song changed.' : '',
+                  forceUpdate ? '(forced update)' : ''
+                );
+              }
+              
               setDiscordData(data);
               lastCustomStatusRef.current = currentCustomStatus;
               lastSongKeyRef.current = currentSongKey;
             }
           }
         } catch (error) {
-          console.error('useDiscordData: Error checking custom status/song:', error);
+          logWithCleanup('useDiscordData: Error checking custom status/song:', error);
         }
-      }, 1000); // Increased to 1 second to reduce load
+      }, 1000); // 1 second interval
 
       return () => {
-        console.log('useDiscordData: Cleaning up status/song check interval');
+        logWithCleanup('useDiscordData: Cleaning up status/song check interval');
         clearInterval(statusInterval);
       };
     }
