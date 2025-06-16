@@ -1,5 +1,4 @@
 
-
 import { DeskThing } from 'deskthing-client';
 
 export class DeskThingIntegration {
@@ -178,4 +177,3 @@ export class DeskThingIntegration {
 }
 
 export const deskthingIntegration = DeskThingIntegration.getInstance();
-
