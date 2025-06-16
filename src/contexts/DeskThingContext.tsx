@@ -13,30 +13,46 @@ const DeskThingContext = createContext<DeskThingContextType | undefined>(undefin
 
 export const DeskThingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
-  const [isRunningOnDeskThing] = useState(deskthingIntegration.isRunningOnDeskThing());
+  const [isRunningOnDeskThing] = useState(() => {
+    // Initialize this immediately to avoid context dependency issues
+    return typeof window !== 'undefined' && 
+           typeof (window as any).DeskThing !== 'undefined';
+  });
 
   useEffect(() => {
-    // Initialize DeskThing integration
-    deskthingIntegration.initialize();
+    if (isRunningOnDeskThing) {
+      // Initialize DeskThing integration
+      deskthingIntegration.initialize();
 
-    // Set up connection status monitoring
-    const checkConnection = () => {
-      setIsConnected(deskthingIntegration.getConnectionStatus());
-    };
+      // Set up connection status monitoring
+      const checkConnection = () => {
+        setIsConnected(deskthingIntegration.getConnectionStatus());
+      };
 
-    // Check connection status periodically
-    const interval = setInterval(checkConnection, 1000);
-    checkConnection(); // Initial check
+      // Check connection status periodically
+      const interval = setInterval(checkConnection, 1000);
+      checkConnection(); // Initial check
 
-    return () => clearInterval(interval);
-  }, []);
+      return () => clearInterval(interval);
+    } else {
+      console.log('DeskThing: Running in standalone web mode');
+    }
+  }, [isRunningOnDeskThing]);
 
   const sendLog = (level: 'info' | 'warn' | 'error', message: string, data?: any) => {
-    deskthingIntegration.sendLog(level, message, data);
+    if (isRunningOnDeskThing) {
+      deskthingIntegration.sendLog(level, message, data);
+    } else {
+      console.log(`[${level}] ${message}`, data);
+    }
   };
 
   const sendError = (error: Error, context?: string) => {
-    deskthingIntegration.sendError(error, context);
+    if (isRunningOnDeskThing) {
+      deskthingIntegration.sendError(error, context);
+    } else {
+      console.error('Error:', error, context);
+    }
   };
 
   return (

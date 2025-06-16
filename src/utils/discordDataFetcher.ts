@@ -8,21 +8,29 @@ export const fetchDiscordDataFromAPI = async (
 ): Promise<{ data: DiscordData | null; error: any }> => {
   try {
     if (isRunningOnDeskThing) {
-      const { data, error } = await supabase.functions.invoke('discord-bot');
-      return { data, error };
+      // For DeskThing, we don't use Supabase functions
+      // Data comes through RPC events instead
+      console.log('fetchDiscordDataFromAPI: Running on DeskThing, data comes via RPC');
+      return { data: null, error: 'DeskThing uses RPC events, not HTTP API' };
     } else {
       if (!userId) {
         return { data: null, error: 'No userId provided for web usage' };
       }
       
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        return { data: null, error: 'No authenticated session' };
+      }
+      
       const { data, error } = await supabase.functions.invoke('discord-bot', {
         headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          Authorization: `Bearer ${session.data.session.access_token}`,
         },
       });
       return { data, error };
     }
   } catch (error) {
+    console.error('fetchDiscordDataFromAPI error:', error);
     return { data: null, error };
   }
 };

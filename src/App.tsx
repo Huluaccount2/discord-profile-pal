@@ -1,38 +1,37 @@
 
-import { Toaster } from "./components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { DeskThingProvider } from "@/contexts/DeskThingContext";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import SpotifyCallback from "./pages/SpotifyCallback";
-import NotFound from "./pages/NotFound";
+import { Routes, Route } from 'react-router-dom';
+import { Toaster } from '@/components/ui/sonner';
+import Index from '@/pages/Index';
+import Auth from '@/pages/Auth';
+import SpotifyCallback from '@/pages/SpotifyCallback';
+import NotFound from '@/pages/NotFound';
+import { useDeskThing } from '@/contexts/DeskThingContext';
 
-const queryClient = new QueryClient();
+function App() {
+  const { isRunningOnDeskThing } = useDeskThing();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <DeskThingProvider>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/auth/spotify/callback" element={<SpotifyCallback />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </DeskThingProvider>
-  </QueryClientProvider>
-);
+  // For DeskThing, only show the main Index page
+  if (isRunningOnDeskThing) {
+    return (
+      <>
+        <Index />
+        <Toaster />
+      </>
+    );
+  }
+
+  // For web, show full routing
+  return (
+    <>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/auth/spotify/callback" element={<SpotifyCallback />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <Toaster />
+    </>
+  );
+}
 
 export default App;
