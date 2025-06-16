@@ -25,7 +25,7 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
         {/* DeskThing optimized layout - 800x480 full width, no authentication needed */}
-        <div className="w-full h-screen max-w-[800px] max-h-[480px] mx-auto flex flex-col p-2">
+        <div className="w-full h-screen max-w-[800px] max-h-[480px] mx-auto flex flex-col overflow-hidden">
           <div className="flex-1">
             <DiscordProfile />
           </div>
@@ -68,7 +68,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       {/* Regular web layout */}
-      <div className="w-full h-screen max-w-[800px] max-h-[480px] mx-auto flex flex-col p-2">
+      <div className="w-full h-screen max-w-[800px] max-h-[480px] mx-auto flex flex-col overflow-hidden">
         <div className="flex-1">
           <DiscordProfile />
         </div>
