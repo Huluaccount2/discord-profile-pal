@@ -156,7 +156,7 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
         } catch (error) {
           logWithCleanup('useDiscordData: Error checking custom status/song:', error);
         }
-      }, 1000); // 1 second interval
+      }, 500); // Changed from 1000ms to 500ms
 
       return () => {
         logWithCleanup('useDiscordData: Cleaning up status/song check interval');
