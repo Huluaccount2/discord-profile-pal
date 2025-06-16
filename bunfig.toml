@@ -1,0 +1,9 @@
+
+[install]
+# Skip git dependencies that fail to clone
+optional = true
+exact = false
+
+# Disable git protocol for problematic packages
+[install.scopes]
+# Try to handle register-scheme dependency issues
