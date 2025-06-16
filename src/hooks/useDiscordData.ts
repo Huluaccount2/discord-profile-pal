@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DiscordData } from "@/types/discord";
@@ -26,7 +27,7 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
   const lastCustomStatusRef = useRef<string | null>(null);
   const lastSongKeyRef = useRef<string | null>(null);
   const messageCountRef = useRef(0);
-  const pollIntervalRef = useRef(500); // Start with 500ms
+  const pollIntervalRef = useRef(50); // Start with 50ms (changed from 500ms)
   const unchangedCountRef = useRef(0); // Track consecutive unchanged polls
   const { isRunningOnDeskThing } = useDeskThing();
 
@@ -104,8 +105,8 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
     if (hasChanges) {
       // Reset to fast polling when changes detected
       unchangedCountRef.current = 0;
-      pollIntervalRef.current = 500;
-      logWithCleanup('useDiscordData: Changes detected, reset to fast polling (500ms)');
+      pollIntervalRef.current = 50; // Reset to 50ms (changed from 500ms)
+      logWithCleanup('useDiscordData: Changes detected, reset to fast polling (50ms)');
     } else {
       // Increase interval when no changes
       unchangedCountRef.current++;
@@ -194,7 +195,7 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
           clearTimeout(timeoutId);
         }
         // Reset intervals on cleanup
-        pollIntervalRef.current = 500;
+        pollIntervalRef.current = 50; // Reset to 50ms (changed from 500ms)
         unchangedCountRef.current = 0;
       };
     }
@@ -206,3 +207,4 @@ export const useDiscordData = (userId: string | undefined, discordId: string | n
     fetchDiscordData
   };
 };
+
