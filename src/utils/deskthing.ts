@@ -1,4 +1,5 @@
 
+
 import { DeskThing } from 'deskthing-client';
 
 export class DeskThingIntegration {
@@ -67,10 +68,10 @@ export class DeskThingIntegration {
       payload: { path }
     });
 
-    // Set up listener for file change events
-    DeskThing.on('file_change', (data) => {
-      if (data.path === path) {
-        callback(data.event, data.filename);
+    // Set up listener for file change events with proper typing
+    DeskThing.on('file_change', (data: any) => {
+      if (data && data.path === path) {
+        callback(data.event || 'change', data.filename || '');
       }
     });
   }
@@ -92,7 +93,7 @@ export class DeskThingIntegration {
       });
 
       const handleResponse = (data: any) => {
-        if (data.type === 'directory_list' && data.path === path) {
+        if (data && data.type === 'directory_list' && data.path === path) {
           DeskThing.off('file_response', handleResponse);
           resolve(data.files || []);
         }
@@ -111,7 +112,7 @@ export class DeskThingIntegration {
       });
 
       const handleResponse = (data: any) => {
-        if (data.type === 'file_stats' && data.path === path) {
+        if (data && data.type === 'file_stats' && data.path === path) {
           DeskThing.off('file_response', handleResponse);
           resolve({ modified: data.modified || Date.now() });
         }
@@ -130,7 +131,7 @@ export class DeskThingIntegration {
       });
 
       const handleResponse = (data: any) => {
-        if (data.type === 'file_content' && data.path === path) {
+        if (data && data.type === 'file_content' && data.path === path) {
           DeskThing.off('file_response', handleResponse);
           if (data.error) {
             reject(new Error(data.error));
@@ -177,3 +178,4 @@ export class DeskThingIntegration {
 }
 
 export const deskthingIntegration = DeskThingIntegration.getInstance();
+
