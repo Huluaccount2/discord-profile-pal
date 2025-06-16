@@ -62,7 +62,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 
   try {
     return (
-      <div className="relative w-full h-full rounded-lg overflow-hidden">
+      <div className="relative w-full h-full rounded-lg overflow-hidden mx-3 my-2">
         <div 
           className="absolute inset-0 bg-cover bg-center filter blur-sm"
           style={{ 
