@@ -47,6 +47,17 @@ export const useSpotifyData = (userId: string | undefined) => {
 
       console.log('useSpotifyData: Spotify current track response:', { data, error });
 
+      // Check if we got an error response from the function
+      if (data && data.error) {
+        console.log('useSpotifyData: Function returned error:', data.error);
+        if (data.error.includes('No Spotify connection')) {
+          setIsConnected(false);
+          setConnectionError('No Spotify connection - please connect your Spotify account');
+          setSpotifyData(null);
+          return;
+        }
+      }
+
       if (!error && data) {
         if (data.track && data.isPlaying) {
           // Currently playing
@@ -80,7 +91,7 @@ export const useSpotifyData = (userId: string | undefined) => {
         },
       });
 
-      if (!rpError && rpData && rpData.track) {
+      if (!rpError && rpData && rpData.track && !rpData.error) {
         console.log('useSpotifyData: Got recently played track:', rpData.track);
         setSpotifyData({
           isPlaying: false,
@@ -94,19 +105,13 @@ export const useSpotifyData = (userId: string | undefined) => {
       // Handle connection errors
       if (error) {
         console.error('useSpotifyData: Error fetching current track:', error);
-        if (error.message === 'No Spotify connection') {
-          console.log('useSpotifyData: No Spotify connection found');
-          setIsConnected(false);
-          setConnectionError('No Spotify connection - please connect your Spotify account');
-        } else {
-          setConnectionError(error.message);
-        }
+        setConnectionError('Failed to fetch track data');
         setSpotifyData(null);
         return;
       }
       
       console.log('useSpotifyData: No track information found');
-      setConnectionError('No track information found');
+      setConnectionError(null);
       setSpotifyData(null);
     } catch (error) {
       console.error('useSpotifyData: Error fetching current track:', error);
