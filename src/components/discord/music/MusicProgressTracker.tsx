@@ -133,9 +133,9 @@ export const useMusicProgressTracker = ({
     }
     
     if (isPlaying && pausedAt === null) {
-      // Set up updates every 100ms for smooth progress animation only when playing
-      updateIntervalRef.current = setInterval(updateProgress, 100);
-      console.log('MusicProgressTracker: Started progress interval - music is playing');
+      // Set up updates every 50ms for very smooth progress animation when playing
+      updateIntervalRef.current = setInterval(updateProgress, 50);
+      console.log('MusicProgressTracker: Started smooth progress interval - music is playing');
     } else {
       console.log('MusicProgressTracker: Not starting interval - music is paused or stopped');
     }
