@@ -29,7 +29,7 @@ export const MusicProgressBar: React.FC<MusicProgressBarProps> = ({
     <div className="mb-2">
       <Progress 
         value={clampedProgress} 
-        className={`h-3 mb-3 transition-all duration-75 ${isPlaying ? 'ease-linear' : 'ease-out'}`}
+        className={`h-3 mb-3 transition-all duration-100 ${isPlaying ? 'ease-linear' : 'ease-out'}`}
       />
       <div className="flex justify-between text-base text-gray-300">
         <span>{formatTime(currentTime)}</span>
