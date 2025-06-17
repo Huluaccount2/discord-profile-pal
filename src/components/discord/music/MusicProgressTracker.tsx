@@ -83,8 +83,8 @@ export const useMusicProgressTracker = ({
     // Start with immediate update
     updateProgress();
     
-    // Set up updates every 100ms for smooth progress bar movement
-    updateIntervalRef.current = setInterval(updateProgress, 100);
+    // Set up updates every 1000ms instead of 100ms to reduce CPU usage
+    updateIntervalRef.current = setInterval(updateProgress, 1000);
 
     // Handle visibility changes for more accurate timing
     const handleVisibility = () => {
@@ -102,10 +102,13 @@ export const useMusicProgressTracker = ({
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [
-    currentSong,
+    currentSong?.details,
+    currentSong?.state,
+    currentSong?.timestamps?.start,
+    currentSong?.timestamps?.end,
     isSpotifyConnected,
-    spotifyData,
-    onProgressUpdate,
-    lastSongId,
+    spotifyData?.isPlaying,
+    spotifyData?.track?.progress,
+    onProgressUpdate
   ]);
 };

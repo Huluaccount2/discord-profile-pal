@@ -17,13 +17,13 @@ export const useDiscordProfile = () => {
   console.log('useDiscordProfile: Lyric Status active:', isLyricStatusActive);
   console.log('useDiscordProfile: File-based Lyric Status:', { isLyricActive, isMonitoring, lyricError });
 
-  // Timer effect
+  // Optimized timer effect - only update when needed
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 1000);
+    }, 30000); // Update every 30 seconds instead of every second
     return () => clearInterval(timer);
-  }, []);
+  }, []); // Empty dependency array to prevent re-creation
 
   return {
     user,
