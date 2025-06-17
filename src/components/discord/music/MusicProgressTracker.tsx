@@ -88,9 +88,9 @@ export const useMusicProgressTracker = ({
       (spotifyData?.isPlaying ?? true) : true;
     
     if (isPlaying) {
-      // Set up updates every 1000ms for playing music
-      updateIntervalRef.current = setInterval(updateProgress, 1000);
-      console.log('MusicProgressTracker: Started progress interval - music is playing');
+      // Set up updates every 100ms for smooth progress animation
+      updateIntervalRef.current = setInterval(updateProgress, 100);
+      console.log('MusicProgressTracker: Started progress interval at 100ms - music is playing');
     } else {
       console.log('MusicProgressTracker: Not starting interval - music is paused');
     }
