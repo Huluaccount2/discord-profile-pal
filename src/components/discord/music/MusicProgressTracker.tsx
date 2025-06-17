@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 
 interface MusicProgressTrackerProps {
@@ -15,6 +16,7 @@ export const useMusicProgressTracker = ({
 }: MusicProgressTrackerProps) => {
   const [lastSongId, setLastSongId] = useState<string | null>(null);
   const [pausedAt, setPausedAt] = useState<number | null>(null);
+  const [lastKnownProgress, setLastKnownProgress] = useState<number>(0);
   const updateIntervalRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
@@ -33,6 +35,7 @@ export const useMusicProgressTracker = ({
       console.log('MusicProgressTracker: Song changed, resetting state');
       setLastSongId(songId);
       setPausedAt(null);
+      setLastKnownProgress(0);
     }
 
     const updateProgress = () => {
@@ -48,32 +51,52 @@ export const useMusicProgressTracker = ({
           // Music is playing - use Spotify's progress
           currentProgress = spotifyData.track.progress;
           setPausedAt(null);
+          setLastKnownProgress(currentProgress);
         } else {
           // Music is paused - use last known progress or Spotify's paused progress
           currentProgress = spotifyData.track.progress;
           setPausedAt(currentProgress);
+          setLastKnownProgress(currentProgress);
         }
         
-        console.log('MusicProgressTracker: Using Spotify data:', { 
+        console.log('MusicProgressTracker: Using Spotify OAuth data:', { 
           progress: currentProgress, 
           isPlaying: isCurrentlyPlaying,
           pausedAt 
         });
       } else {
         // Priority 2: Discord fallback - calculate based on timestamps
+        // Check if we have a recent progress update that suggests pausing
+        const elapsedSinceStart = now - startTime;
+        const calculatedProgress = Math.max(0, elapsedSinceStart);
+        
+        // If we have a paused state, use it
         if (pausedAt !== null) {
-          // We're paused, keep showing the paused progress
           currentProgress = pausedAt;
           isCurrentlyPlaying = false;
+          console.log('MusicProgressTracker: Using paused state:', pausedAt);
         } else {
-          // Normal playback calculation
-          const elapsedSinceStart = now - startTime;
-          currentProgress = Math.max(0, elapsedSinceStart);
+          // Check if progress hasn't advanced much (indicating pause)
+          const progressDiff = Math.abs(calculatedProgress - lastKnownProgress);
+          const timeSinceLastUpdate = 1000; // 1 second
           
-          // Check if song should have ended
-          if (currentProgress >= duration) {
-            currentProgress = duration;
+          // If calculated progress is very close to last known and we're not at the start
+          if (progressDiff < timeSinceLastUpdate && lastKnownProgress > 5000) {
+            // Likely paused
+            setPausedAt(lastKnownProgress);
+            currentProgress = lastKnownProgress;
             isCurrentlyPlaying = false;
+            console.log('MusicProgressTracker: Detected pause via progress stagnation');
+          } else {
+            // Normal playback calculation
+            currentProgress = calculatedProgress;
+            setLastKnownProgress(currentProgress);
+            
+            // Check if song should have ended
+            if (currentProgress >= duration) {
+              currentProgress = duration;
+              isCurrentlyPlaying = false;
+            }
           }
         }
         
@@ -83,7 +106,8 @@ export const useMusicProgressTracker = ({
           currentProgress, 
           duration,
           isPlaying: isCurrentlyPlaying,
-          pausedAt
+          pausedAt,
+          lastKnownProgress
         });
       }
 
@@ -140,6 +164,7 @@ export const useMusicProgressTracker = ({
     spotifyData?.isPlaying,
     spotifyData?.track?.progress,
     onProgressUpdate,
-    pausedAt
+    pausedAt,
+    lastKnownProgress
   ]);
 };
