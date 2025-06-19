@@ -1,10 +1,19 @@
 
 import React from 'react';
 import { Music, Clock, AlertCircle } from 'lucide-react';
-import { CurrentLyric } from '@/services/LyricStatusMonitor';
+
+export interface CurrentLyric {
+  text: string;
+  nextText?: string;
+  progress: number;
+  songInfo?: {
+    title: string;
+    artist: string;
+  };
+}
 
 interface LyricDisplayProps {
-  currentLyric: CurrentLyric;
+  currentLyric: CurrentLyric | null;
   error?: string | null;
 }
 
@@ -19,6 +28,19 @@ export const LyricDisplay = React.memo(({ currentLyric, error }: LyricDisplayPro
           </div>
           <div className="text-xs text-red-300/70 mt-1 truncate">
             {error}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentLyric) {
+    return (
+      <div className="inline-flex items-start gap-2 bg-gray-900/50 backdrop-blur-sm rounded-lg px-3 py-2 border border-gray-500/30 shadow-md flex-1 min-w-0 min-h-[2.5rem]">
+        <Music className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <div className="text-xs text-gray-300 font-medium break-words leading-relaxed">
+            No lyrics available
           </div>
         </div>
       </div>

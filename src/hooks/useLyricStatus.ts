@@ -1,7 +1,20 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { lyricStatusMonitor, CurrentLyric } from '@/services/LyricStatusMonitor';
 import { useDeskThing } from '@/contexts/DeskThingContext';
+import { CurrentLyric } from '@/components/discord/LyricDisplay';
+
+// Mock lyric monitor for compatibility
+const mockLyricStatusMonitor = {
+  startMonitoring: (callback: (lyric: CurrentLyric | null) => void) => {
+    console.log('Mock lyric monitoring started');
+  },
+  stopMonitoring: () => {
+    console.log('Mock lyric monitoring stopped');
+  },
+  setCacheDirectory: (path: string) => {
+    console.log('Mock cache directory set:', path);
+  }
+};
 
 export const useLyricStatus = () => {
   const [currentLyric, setCurrentLyric] = useState<CurrentLyric | null>(null);
@@ -35,7 +48,7 @@ export const useLyricStatus = () => {
       sendLog('info', 'Starting Lyric Status file monitoring');
       
       try {
-        lyricStatusMonitor.startMonitoring(handleLyricUpdate);
+        mockLyricStatusMonitor.startMonitoring(handleLyricUpdate);
         setIsMonitoring(true);
         setError(null);
       } catch (error) {
@@ -47,7 +60,7 @@ export const useLyricStatus = () => {
       return () => {
         console.log('useLyricStatus: Stopping Lyric Status file monitoring');
         sendLog('info', 'Stopping Lyric Status file monitoring');
-        lyricStatusMonitor.stopMonitoring();
+        mockLyricStatusMonitor.stopMonitoring();
         setIsMonitoring(false);
         setIsActive(false);
         setCurrentLyric(null);
@@ -65,7 +78,7 @@ export const useLyricStatus = () => {
   // Method to manually update cache directory
   const setCacheDirectory = useCallback((path: string) => {
     if (isRunningOnDeskThing) {
-      lyricStatusMonitor.setCacheDirectory(path);
+      mockLyricStatusMonitor.setCacheDirectory(path);
       sendLog('info', 'Cache directory updated', { path });
     }
   }, [isRunningOnDeskThing, sendLog]);

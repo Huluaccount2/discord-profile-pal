@@ -1,6 +1,7 @@
 
 import { Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import SpotifyCallback from '@/pages/SpotifyCallback';
@@ -13,16 +14,16 @@ function App() {
   // For DeskThing, only show the main Index page
   if (isRunningOnDeskThing) {
     return (
-      <>
+      <ErrorBoundary>
         <Index />
         <Toaster />
-      </>
+      </ErrorBoundary>
     );
   }
 
   // For web, show full routing
   return (
-    <>
+    <ErrorBoundary>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
@@ -30,7 +31,7 @@ function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />
-    </>
+    </ErrorBoundary>
   );
 }
 

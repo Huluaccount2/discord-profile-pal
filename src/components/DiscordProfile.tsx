@@ -2,6 +2,7 @@
 import { Card } from "@/components/ui/card";
 import { DiscordProfileContent } from "@/components/discord/DiscordProfileContent";
 import { useDiscordProfile } from "@/hooks/useDiscordProfile";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const DiscordProfile = () => {
   const {
@@ -23,8 +24,8 @@ export const DiscordProfile = () => {
     );
   }
 
-  try {
-    return (
+  return (
+    <ErrorBoundary>
       <DiscordProfileContent
         profile={profile}
         discordData={discordData}
@@ -33,15 +34,6 @@ export const DiscordProfile = () => {
         isMonitoring={isMonitoring}
         lyricError={lyricError}
       />
-    );
-  } catch (error) {
-    console.error('DiscordProfile: Component error:', error);
-    return (
-      <Card className="bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-6 shadow-2xl h-full">
-        <div className="text-center text-red-500">
-          Error loading profile. Check console for details.
-        </div>
-      </Card>
-    );
-  }
+    </ErrorBoundary>
+  );
 };
