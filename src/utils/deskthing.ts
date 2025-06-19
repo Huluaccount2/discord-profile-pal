@@ -1,11 +1,14 @@
-import { DeskThing } from 'deskthing-client';
+import { DeskThing as DT } from 'deskthing-client';
 
 export class DeskThingIntegration {
   private static instance: DeskThingIntegration;
   private isConnected = false;
   private discordDataCallbacks = new Set<(data: any) => void>();
+  private deskThing: any;
 
   private constructor() {
+    // Initialize DeskThing instance
+    this.deskThing = DT;
     this.setupEventListeners();
   }
 
@@ -17,38 +20,52 @@ export class DeskThingIntegration {
   }
 
   private setupEventListeners() {
-    DeskThing.on('start', () => {
-      console.log('DeskThing: App has started successfully!');
-      this.isConnected = true;
-      this.requestDiscordProfile();
-    });
+    // Use direct message handling instead of event listeners
+    console.log('DeskThing: Setting up integration');
+    
+    // Listen for messages from the parent window (DeskThing)
+    if (typeof window !== 'undefined') {
+      window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'DESKTHING_MESSAGE') {
+          this.handleMessage(event.data.payload);
+        }
+      });
+    }
 
-    DeskThing.on('stop', () => {
-      console.log('DeskThing: App has stopped');
-      this.isConnected = false;
-    });
+    this.isConnected = true;
+  }
 
-    DeskThing.on('purge', () => {
-      console.log('DeskThing: App is cleaned up');
-      this.cleanup();
-    });
-
-    // Handle data from server using the new message structure
-    DeskThing.on('data', (data) => {
-      console.log('DeskThing: Data received from server', data);
-      if (data.type === 'profile_data') {
+  private handleMessage(data: any) {
+    console.log('DeskThing: Message received:', data);
+    
+    switch (data.type) {
+      case 'start':
+        console.log('DeskThing: App has started successfully!');
+        this.isConnected = true;
+        this.requestDiscordProfile();
+        break;
+      case 'stop':
+        console.log('DeskThing: App has stopped');
+        this.isConnected = false;
+        break;
+      case 'purge':
+        console.log('DeskThing: App is cleaned up');
+        this.cleanup();
+        break;
+      case 'profile_data':
         this.handleDiscordData(data.payload);
-      }
-    });
-
-    // Handle direct messages from server
-    DeskThing.on('message', (data) => {
-      console.log('DeskThing: Message from server:', data);
-    });
+        break;
+      case 'file_change':
+        // Handle file change events
+        break;
+    }
   }
 
   private handleDiscordData(data: any) {
-    this.discordDataCallbacks.forEach(callback => callback(data));
+    this.discordDataCallbacks.forEach(callback => callback({
+      type: 'profile_data',
+      payload: data
+    }));
   }
 
   public onDiscordData(callback: (data: any) => void) {
@@ -89,11 +106,15 @@ export class DeskThingIntegration {
     console.log('DeskThing: Setting up file watcher for:', path);
     this.sendMessageToServer('get', 'file_watch', { path });
     
-    DeskThing.on('file_change', (data: any) => {
+    // Store callback for file events
+    const handleFileEvent = (data: any) => {
       if (data && data.path === path) {
         callback(data.event || 'change', data.filename || '');
       }
-    });
+    };
+    
+    // Add to callbacks (simplified implementation)
+    this.discordDataCallbacks.add(handleFileEvent);
   }
 
   public unwatchFile(path: string) {
@@ -108,12 +129,18 @@ export class DeskThingIntegration {
 
       const handleResponse = (data: any) => {
         if (data && data.type === 'directory_list' && data.path === path) {
-          DeskThing.off('file_response', handleResponse);
           resolve(data.files || []);
         }
       };
 
-      DeskThing.on('file_response', handleResponse);
+      // Add temporary callback
+      this.discordDataCallbacks.add(handleResponse);
+      
+      // Clean up after timeout
+      setTimeout(() => {
+        this.discordDataCallbacks.delete(handleResponse);
+        resolve([]);
+      }, 5000);
     });
   }
 
@@ -124,12 +151,18 @@ export class DeskThingIntegration {
 
       const handleResponse = (data: any) => {
         if (data && data.type === 'file_stats' && data.path === path) {
-          DeskThing.off('file_response', handleResponse);
           resolve({ modified: data.modified || Date.now() });
         }
       };
 
-      DeskThing.on('file_response', handleResponse);
+      // Add temporary callback
+      this.discordDataCallbacks.add(handleResponse);
+      
+      // Clean up after timeout
+      setTimeout(() => {
+        this.discordDataCallbacks.delete(handleResponse);
+        resolve({ modified: Date.now() });
+      }, 5000);
     });
   }
 
@@ -140,7 +173,6 @@ export class DeskThingIntegration {
 
       const handleResponse = (data: any) => {
         if (data && data.type === 'file_content' && data.path === path) {
-          DeskThing.off('file_response', handleResponse);
           if (data.error) {
             reject(new Error(data.error));
           } else {
@@ -149,7 +181,14 @@ export class DeskThingIntegration {
         }
       };
 
-      DeskThing.on('file_response', handleResponse);
+      // Add temporary callback
+      this.discordDataCallbacks.add(handleResponse);
+      
+      // Clean up after timeout
+      setTimeout(() => {
+        this.discordDataCallbacks.delete(handleResponse);
+        reject(new Error('Timeout'));
+      }, 5000);
     });
   }
 
