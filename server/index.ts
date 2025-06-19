@@ -1,5 +1,4 @@
 
-
 import { DeskThing } from 'deskthing-server';
 export { DeskThing };
 
@@ -51,3 +50,10 @@ DeskThing.on('set', (data) => {
   // Handle set requests here
 });
 
+// Handle sample type messages from client
+DeskThing.on('sampleType', (data) => {
+  console.log(data.payload); // prints 'Hello from the client!'
+});
+
+// Send sample message to client
+DeskThing.send({ type: 'sampleType', payload: 'Hello from the server!' });
