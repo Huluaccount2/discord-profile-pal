@@ -52,17 +52,17 @@ export class DeskThingIntegration {
 
   public requestDiscordProfile() {
     console.log('DeskThing: Requesting Discord profile');
-    DeskThing.send({
+    DeskThing.sendDataToServer({
       type: 'get',
       request: 'discord_profile',
       payload: {}
     });
   }
 
-  // File system methods for LyricStatusMonitor
+  // File system methods for LyricStatusMonitor - updated for 0.11.12
   public watchFile(path: string, callback: (event: string, filename: string) => void) {
     console.log('DeskThing: Setting up file watcher for:', path);
-    DeskThing.send({
+    DeskThing.sendDataToServer({
       type: 'file_watch',
       payload: { path }
     });
@@ -77,7 +77,7 @@ export class DeskThingIntegration {
 
   public unwatchFile(path: string) {
     console.log('DeskThing: Removing file watcher for:', path);
-    DeskThing.send({
+    DeskThing.sendDataToServer({
       type: 'file_unwatch',
       payload: { path }
     });
@@ -86,7 +86,7 @@ export class DeskThingIntegration {
   public async listDirectory(path: string): Promise<string[]> {
     console.log('DeskThing: Listing directory:', path);
     return new Promise((resolve) => {
-      DeskThing.send({
+      DeskThing.sendDataToServer({
         type: 'list_directory',
         payload: { path }
       });
@@ -105,7 +105,7 @@ export class DeskThingIntegration {
   public async getFileStats(path: string): Promise<{ modified: number }> {
     console.log('DeskThing: Getting file stats for:', path);
     return new Promise((resolve) => {
-      DeskThing.send({
+      DeskThing.sendDataToServer({
         type: 'file_stats',
         payload: { path }
       });
@@ -124,7 +124,7 @@ export class DeskThingIntegration {
   public async readFile(path: string): Promise<string> {
     console.log('DeskThing: Reading file:', path);
     return new Promise((resolve, reject) => {
-      DeskThing.send({
+      DeskThing.sendDataToServer({
         type: 'read_file',
         payload: { path }
       });
@@ -151,10 +151,13 @@ export class DeskThingIntegration {
 
   public sendLog(level: 'info' | 'warn' | 'error', message: string, data?: any) {
     console.log(`DeskThing Log [${level}]: ${message}`, data);
+    // Updated for 0.11.12 - use sendLog method
+    DeskThing.sendLog(level, message, data);
   }
 
   public sendError(error: Error, context?: string) {
     console.error('DeskThing Error:', error, context);
+    DeskThing.sendError(`${context ? context + ': ' : ''}${error.message}`);
   }
 
   public isRunningOnDeskThing(): boolean {
