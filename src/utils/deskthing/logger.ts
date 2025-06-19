@@ -16,23 +16,35 @@ export class DeskThingLogger {
   public sendLog(level: 'info' | 'warn' | 'error', message: string, data?: any) {
     console.log(`DeskThing Log [${level}]: ${message}`, data);
     
-    const deskThing = deskThingCore.getDeskThingInstance();
-    deskThing.triggerAction({ 
-      id: 'log', 
-      source: 'client',
-      payload: { level, message, data } 
-    });
+    try {
+      const deskThing = deskThingCore.getDeskThingInstance();
+      if (deskThing && typeof deskThing.triggerAction === 'function') {
+        deskThing.triggerAction({ 
+          id: 'log', 
+          source: 'client',
+          payload: { level, message, data } 
+        });
+      }
+    } catch (error) {
+      console.warn('DeskThing: Could not send log to server:', error);
+    }
   }
 
   public sendError(error: Error, context?: string) {
     console.error('DeskThing Error:', error, context);
     
-    const deskThing = deskThingCore.getDeskThingInstance();
-    deskThing.triggerAction({ 
-      id: 'error', 
-      source: 'client',
-      payload: { error: error.message, context } 
-    });
+    try {
+      const deskThing = deskThingCore.getDeskThingInstance();
+      if (deskThing && typeof deskThing.triggerAction === 'function') {
+        deskThing.triggerAction({ 
+          id: 'error', 
+          source: 'client',
+          payload: { error: error.message, context } 
+        });
+      }
+    } catch (logError) {
+      console.warn('DeskThing: Could not send error to server:', logError);
+    }
   }
 }
 

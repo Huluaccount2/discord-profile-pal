@@ -18,19 +18,31 @@ export class DeskThingFileSystem {
     console.log('DeskThing: Setting up file watcher for:', path);
     
     const deskThing = deskThingCore.getDeskThingInstance();
-    const fileListener = deskThing.on('file_change', (data: any) => {
-      if (data && data.path === path) {
-        callback(data.event || 'change', data.filename || '');
+    
+    if (!deskThing || typeof deskThing.on !== 'function') {
+      console.warn('DeskThing: File watching not available');
+      return;
+    }
+    
+    try {
+      const fileListener = deskThing.on('file_change', (data: any) => {
+        if (data && data.path === path) {
+          callback(data.event || 'change', data.filename || '');
+        }
+      });
+      
+      this.listeners.set(`file_watch_${path}`, fileListener);
+      
+      if (typeof deskThing.triggerAction === 'function') {
+        deskThing.triggerAction({ 
+          id: 'watch_file', 
+          source: 'client',
+          payload: { path } 
+        });
       }
-    });
-    
-    this.listeners.set(`file_watch_${path}`, fileListener);
-    
-    deskThing.triggerAction({ 
-      id: 'watch_file', 
-      source: 'client',
-      payload: { path } 
-    });
+    } catch (error) {
+      console.error('DeskThing: Error setting up file watcher:', error);
+    }
   }
 
   public unwatchFile(path: string) {
@@ -44,17 +56,25 @@ export class DeskThingFileSystem {
     }
     
     const deskThing = deskThingCore.getDeskThingInstance();
-    deskThing.triggerAction({ 
-      id: 'unwatch_file', 
-      source: 'client',
-      payload: { path } 
-    });
+    if (deskThing && typeof deskThing.triggerAction === 'function') {
+      deskThing.triggerAction({ 
+        id: 'unwatch_file', 
+        source: 'client',
+        payload: { path } 
+      });
+    }
   }
 
   public async listDirectory(path: string): Promise<string[]> {
     console.log('DeskThing: Listing directory:', path);
     try {
       const deskThing = deskThingCore.getDeskThingInstance();
+      
+      if (!deskThing || typeof deskThing.fetchData !== 'function') {
+        console.warn('DeskThing: Directory listing not available');
+        return [];
+      }
+      
       const result = await deskThing.fetchData('filesystem', { 
         type: 'get', 
         request: 'list_directory', 
@@ -71,6 +91,12 @@ export class DeskThingFileSystem {
     console.log('DeskThing: Getting file stats for:', path);
     try {
       const deskThing = deskThingCore.getDeskThingInstance();
+      
+      if (!deskThing || typeof deskThing.fetchData !== 'function') {
+        console.warn('DeskThing: File stats not available');
+        return { modified: Date.now() };
+      }
+      
       const result = await deskThing.fetchData('filesystem', { 
         type: 'get', 
         request: 'file_stats', 
@@ -87,6 +113,12 @@ export class DeskThingFileSystem {
     console.log('DeskThing: Reading file:', path);
     try {
       const deskThing = deskThingCore.getDeskThingInstance();
+      
+      if (!deskThing || typeof deskThing.fetchData !== 'function') {
+        console.warn('DeskThing: File reading not available');
+        throw new Error('File system not available');
+      }
+      
       const result = await deskThing.fetchData('filesystem', { 
         type: 'get', 
         request: 'read_file', 

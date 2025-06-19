@@ -21,11 +21,20 @@ export class DeskThingDiscord {
   private setupDiscordListeners() {
     const deskThing = deskThingCore.getDeskThingInstance();
     
-    const profileListener = deskThing.on('discord_profile', (data: any) => {
-      console.log('DeskThing: Discord profile received:', data);
-      this.handleDiscordData(data.payload);
-    });
-    this.listeners.set('discord_profile', profileListener);
+    if (!deskThing || typeof deskThing.on !== 'function') {
+      console.warn('DeskThing: Discord listeners not available, running in fallback mode');
+      return;
+    }
+    
+    try {
+      const profileListener = deskThing.on('discord_profile', (data: any) => {
+        console.log('DeskThing: Discord profile received:', data);
+        this.handleDiscordData(data.payload);
+      });
+      this.listeners.set('discord_profile', profileListener);
+    } catch (error) {
+      console.error('DeskThing: Error setting up Discord listeners:', error);
+    }
   }
 
   private handleDiscordData(data: any) {
@@ -44,6 +53,12 @@ export class DeskThingDiscord {
     console.log('DeskThing: Requesting Discord profile');
     try {
       const deskThing = deskThingCore.getDeskThingInstance();
+      
+      if (!deskThing || typeof deskThing.fetchData !== 'function') {
+        console.warn('DeskThing: fetchData not available');
+        return;
+      }
+      
       const profileData = await deskThing.fetchData('discord', { 
         type: 'get', 
         request: 'profile', 
