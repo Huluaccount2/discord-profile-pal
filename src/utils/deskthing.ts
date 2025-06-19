@@ -1,5 +1,3 @@
-
-
 import { DeskThing } from 'deskthing-client';
 
 export class DeskThingIntegration {
@@ -35,10 +33,17 @@ export class DeskThingIntegration {
       this.cleanup();
     });
 
-    // Handle Discord data from server
-    DeskThing.on('discord', (data) => {
-      console.log('DeskThing: Discord data received', data);
-      this.handleDiscordData(data);
+    // Handle data from server using the new message structure
+    DeskThing.on('data', (data) => {
+      console.log('DeskThing: Data received from server', data);
+      if (data.type === 'profile_data') {
+        this.handleDiscordData(data.payload);
+      }
+    });
+
+    // Handle direct messages from server
+    DeskThing.on('message', (data) => {
+      console.log('DeskThing: Message from server:', data);
     });
   }
 
@@ -53,22 +58,37 @@ export class DeskThingIntegration {
 
   public requestDiscordProfile() {
     console.log('DeskThing: Requesting Discord profile');
-    DeskThing.send({
-      type: 'get',
-      request: 'discord_profile',
-      payload: {}
-    });
+    this.sendMessageToServer('get', 'discord_profile');
   }
 
-  // File system methods for LyricStatusMonitor
+  public refreshDiscordData() {
+    console.log('DeskThing: Refreshing Discord data');
+    this.sendMessageToServer('set', 'refresh');
+  }
+
+  // Use the proper message structure from the forum
+  public sendMessageToServer(type: string, request?: string, data?: any) {
+    const payload = {
+      app: 'discord-profile-pal',
+      type: type,
+      request: request || null,
+      data: data || null
+    };
+
+    // Use the proper postMessage structure from the forum
+    if (typeof window !== 'undefined' && window.parent) {
+      window.parent.postMessage(
+        { type: 'IFRAME_ACTION', payload: payload },
+        '*'
+      );
+    }
+  }
+
+  // File system methods for LyricStatusMonitor (keeping existing functionality)
   public watchFile(path: string, callback: (event: string, filename: string) => void) {
     console.log('DeskThing: Setting up file watcher for:', path);
-    DeskThing.send({
-      type: 'file_watch',
-      payload: { path }
-    });
-
-    // Set up listener for file change events with proper typing
+    this.sendMessageToServer('get', 'file_watch', { path });
+    
     DeskThing.on('file_change', (data: any) => {
       if (data && data.path === path) {
         callback(data.event || 'change', data.filename || '');
@@ -78,19 +98,13 @@ export class DeskThingIntegration {
 
   public unwatchFile(path: string) {
     console.log('DeskThing: Removing file watcher for:', path);
-    DeskThing.send({
-      type: 'file_unwatch',
-      payload: { path }
-    });
+    this.sendMessageToServer('set', 'file_unwatch', { path });
   }
 
   public async listDirectory(path: string): Promise<string[]> {
     console.log('DeskThing: Listing directory:', path);
     return new Promise((resolve) => {
-      DeskThing.send({
-        type: 'list_directory',
-        payload: { path }
-      });
+      this.sendMessageToServer('get', 'list_directory', { path });
 
       const handleResponse = (data: any) => {
         if (data && data.type === 'directory_list' && data.path === path) {
@@ -106,10 +120,7 @@ export class DeskThingIntegration {
   public async getFileStats(path: string): Promise<{ modified: number }> {
     console.log('DeskThing: Getting file stats for:', path);
     return new Promise((resolve) => {
-      DeskThing.send({
-        type: 'file_stats',
-        payload: { path }
-      });
+      this.sendMessageToServer('get', 'file_stats', { path });
 
       const handleResponse = (data: any) => {
         if (data && data.type === 'file_stats' && data.path === path) {
@@ -125,10 +136,7 @@ export class DeskThingIntegration {
   public async readFile(path: string): Promise<string> {
     console.log('DeskThing: Reading file:', path);
     return new Promise((resolve, reject) => {
-      DeskThing.send({
-        type: 'read_file',
-        payload: { path }
-      });
+      this.sendMessageToServer('get', 'read_file', { path });
 
       const handleResponse = (data: any) => {
         if (data && data.type === 'file_content' && data.path === path) {
@@ -152,12 +160,12 @@ export class DeskThingIntegration {
 
   public sendLog(level: 'info' | 'warn' | 'error', message: string, data?: any) {
     console.log(`DeskThing Log [${level}]: ${message}`, data);
-    // Use console logging since sendLog method doesn't exist in current version
+    this.sendMessageToServer('log', level, { message, data });
   }
 
   public sendError(error: Error, context?: string) {
     console.error('DeskThing Error:', error, context);
-    // Use console logging since sendError method doesn't exist in current version
+    this.sendMessageToServer('error', 'client_error', { error: error.message, context });
   }
 
   public isRunningOnDeskThing(): boolean {
@@ -180,4 +188,3 @@ export class DeskThingIntegration {
 }
 
 export const deskthingIntegration = DeskThingIntegration.getInstance();
-
