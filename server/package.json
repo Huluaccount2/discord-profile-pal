@@ -10,7 +10,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "deskthing-server": "^0.11.12"
+    "deskthing-server": "^0.11.10"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
