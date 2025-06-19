@@ -1,124 +1,176 @@
 
 import { DeskThing } from 'deskthing-server';
 
+let discordProfileData: any = null;
+let refreshInterval: NodeJS.Timeout | null = null;
+
 const startup = async () => {
   DeskThing.sendLog('Discord Profile Pal: Starting Up');
   
-  // Request initial data to ensure connection works
-  DeskThing.send({
-    type: 'get',
-    request: 'data'
+  // Add settings for Discord Profile Pal
+  DeskThing.addSettings({
+    discord_user_id: {
+      type: 'string',
+      label: 'Discord User ID',
+      value: '',
+      description: 'Your Discord User ID for profile fetching'
+    },
+    refresh_interval: {
+      type: 'number',
+      label: 'Refresh Interval (seconds)',
+      value: 30,
+      description: 'How often to refresh Discord profile data'
+    },
+    show_spotify: {
+      type: 'boolean',
+      label: 'Show Spotify Activity',
+      value: true,
+      description: 'Display Spotify listening activity from Discord'
+    }
   });
+
+  // Get initial settings
+  const settings = await DeskThing.getSettings();
+  DeskThing.sendLog(`Discord Profile Pal: Settings loaded - Refresh interval: ${settings?.refresh_interval?.value || 30}s`);
+
+  // Send initial mock data
+  sendMockDiscordProfile();
+  
+  // Set up refresh interval
+  const interval = (settings?.refresh_interval?.value || 30) * 1000;
+  refreshInterval = setInterval(() => {
+    sendMockDiscordProfile();
+  }, interval);
   
   DeskThing.sendLog('Discord Profile Pal: App started successfully!');
 };
 
 const stop = () => {
   DeskThing.sendLog('Discord Profile Pal: Stopping app');
-};
-
-const onMessageFromMain = (event: string, ...args: any[]) => {
-  const messageType = event;
-  const messageRequest = args[0];
-  const data = args[1];
   
-  DeskThing.sendLog(`Discord Profile Pal: Received message - Type: ${messageType}, Request: ${messageRequest}`);
-  
-  switch (messageType) {
-    case 'get':
-      handleGetRequest(messageRequest, data);
-      break;
-    case 'set':
-      handleSetRequest(messageRequest, data);
-      break;
-    case 'data':
-      handleDataReceived(data);
-      break;
-    default:
-      DeskThing.sendLog(`Discord Profile Pal: Unknown message type: ${messageType}`);
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+    refreshInterval = null;
   }
 };
 
-const handleGetRequest = (request: string, data: any) => {
-  switch (request) {
-    case 'discord_profile':
-      // Send mock Discord profile data for now
-      DeskThing.send({
-        type: 'data',
-        payload: {
-          type: 'profile_data',
-          payload: {
-            id: '123456789',
-            username: 'TestUser',
-            avatar: 'avatar_hash',
-            discriminator: '0000',
-            activities: [
-              {
-                name: "Spotify",
-                type: 2,
-                details: "Sample Song",
-                state: "by Sample Artist",
-                timestamps: {
-                  start: Date.now() - 60000,
-                  end: Date.now() + 180000
-                },
-                assets: {
-                  large_image: "spotify:ab67616d0000b273...",
-                  large_text: "Sample Album"
-                }
-              }
-            ],
-            custom_status: {
-              text: "Coding with DeskThing! 🚗💻"
-            }
-          }
+const sendMockDiscordProfile = () => {
+  const mockProfile = {
+    id: '123456789012345678',
+    username: 'DeskThingUser',
+    avatar: 'a1b2c3d4e5f6g7h8i9j0',
+    discriminator: '0000',
+    global_name: 'DeskThing User',
+    activities: [
+      {
+        name: "Spotify",
+        type: 2,
+        details: "Never Gonna Give You Up",
+        state: "by Rick Astley",
+        timestamps: {
+          start: Date.now() - 60000,
+          end: Date.now() + 180000
+        },
+        assets: {
+          large_image: "spotify:ab67616d0000b273ac968dd180d712e4518fe867",
+          large_text: "Whenever You Need Somebody"
         }
-      });
+      }
+    ],
+    custom_status: {
+      text: "Driving with DeskThing! 🚗💨",
+      emoji: {
+        name: "🚗"
+      }
+    }
+  };
+
+  DeskThing.send({
+    type: 'discord_profile',
+    payload: mockProfile
+  });
+
+  DeskThing.sendLog('Discord Profile Pal: Sent Discord profile data to client');
+};
+
+// Handle messages from client
+const onMessageFromClient = async (data: any) => {
+  DeskThing.sendLog(`Discord Profile Pal: Received message from client: ${JSON.stringify(data)}`);
+  
+  switch (data.type) {
+    case 'refresh_profile':
+      DeskThing.sendLog('Discord Profile Pal: Refreshing Discord profile on client request');
+      sendMockDiscordProfile();
+      break;
+    case 'get_profile':
+      DeskThing.sendLog('Discord Profile Pal: Client requested Discord profile');
+      sendMockDiscordProfile();
       break;
     default:
-      DeskThing.sendLog(`Discord Profile Pal: Unknown get request: ${request}`);
+      DeskThing.sendLog(`Discord Profile Pal: Unknown message type: ${data.type}`);
   }
 };
 
-const handleSetRequest = (request: string, data: any) => {
-  switch (request) {
-    case 'refresh':
-      DeskThing.sendLog('Discord Profile Pal: Refreshing Discord data');
-      // Trigger a refresh of Discord data
-      handleGetRequest('discord_profile', null);
-      break;
-    default:
-      DeskThing.sendLog(`Discord Profile Pal: Unknown set request: ${request}`);
+// Handle settings changes
+const onSettingsChanged = async (settings: any) => {
+  DeskThing.sendLog('Discord Profile Pal: Settings changed:', settings);
+  
+  // Update refresh interval if changed
+  if (settings.refresh_interval && refreshInterval) {
+    clearInterval(refreshInterval);
+    const interval = settings.refresh_interval.value * 1000;
+    refreshInterval = setInterval(() => {
+      sendMockDiscordProfile();
+    }, interval);
+    DeskThing.sendLog(`Discord Profile Pal: Updated refresh interval to ${settings.refresh_interval.value}s`);
   }
 };
 
-const handleDataReceived = (data: any) => {
-  DeskThing.sendLog('Discord Profile Pal: Data received from client:', data);
-  // Handle any data sent from the webapp
-};
+// Register action for manual refresh
+DeskThing.registerAction('Refresh Discord Profile', 'refresh_discord', 'Manually refresh Discord profile data');
 
-// Export the required functions for DeskThing
-export { DeskThing };
+// Handle action triggers
+const onActionTriggered = (action: string) => {
+  switch (action) {
+    case 'refresh_discord':
+      DeskThing.sendLog('Discord Profile Pal: Manual refresh triggered');
+      sendMockDiscordProfile();
+      break;
+    default:
+      DeskThing.sendLog(`Discord Profile Pal: Unknown action: ${action}`);
+  }
+};
 
 // Set up event listeners
-DeskThing.on('start', startup);
-DeskThing.on('stop', stop);
+const startListener = DeskThing.on('start', startup);
+const stopListener = DeskThing.on('stop', stop);
+
 DeskThing.on('purge', () => {
   DeskThing.sendLog('Discord Profile Pal: App cleaned up successfully');
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
 });
 
-// Handle all messages from main using the new structure
-DeskThing.on('get', (data) => onMessageFromMain('get', data.request, data));
-DeskThing.on('set', (data) => onMessageFromMain('set', data.request, data));
-DeskThing.on('data', (data) => onMessageFromMain('data', data));
+// Handle client messages
+DeskThing.on('message', onMessageFromClient);
 
-// Handle client communication
-DeskThing.on('message', (data) => {
-  DeskThing.sendLog(`Discord Profile Pal: Message from client: ${JSON.stringify(data)}`);
-  
-  // Echo back to demonstrate two-way communication
-  DeskThing.send({
-    type: 'message',
-    payload: 'Hello from Discord Profile Pal server!'
-  });
+// Handle settings changes
+DeskThing.on('settings', onSettingsChanged);
+
+// Handle action triggers
+DeskThing.on('action', onActionTriggered);
+
+// Handle get requests from client
+DeskThing.on('get', async (data) => {
+  switch (data.request) {
+    case 'discord_profile':
+      sendMockDiscordProfile();
+      break;
+    default:
+      DeskThing.sendLog(`Discord Profile Pal: Unknown get request: ${data.request}`);
+  }
 });
+
+// Export for DeskThing
+export { DeskThing };
