@@ -15,12 +15,21 @@ export const DeskThingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isConnected, setIsConnected] = useState(false);
   const [isRunningOnDeskThing] = useState(() => {
     // Initialize this immediately to avoid context dependency issues
-    return typeof window !== 'undefined' && 
-           typeof (window as any).DeskThing !== 'undefined';
+    const isDeskThing = typeof window !== 'undefined' && 
+                        typeof (window as any).DeskThing !== 'undefined';
+    
+    // Add debugging
+    console.log('DeskThingProvider: Initializing isRunningOnDeskThing =', isDeskThing);
+    console.log('DeskThingProvider: window.DeskThing =', typeof (window as any).DeskThing);
+    
+    return isDeskThing;
   });
 
   useEffect(() => {
+    console.log('DeskThingProvider: useEffect - isRunningOnDeskThing =', isRunningOnDeskThing);
+    
     if (isRunningOnDeskThing) {
+      console.log('DeskThingProvider: Initializing DeskThing integration');
       // Initialize DeskThing integration
       deskthingIntegration.initialize();
 

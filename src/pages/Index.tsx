@@ -14,14 +14,21 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Add debugging logs
+    console.log('Index: isRunningOnDeskThing =', isRunningOnDeskThing);
+    console.log('Index: window.DeskThing =', typeof (window as any).DeskThing);
+    console.log('Index: user =', user ? 'authenticated' : 'not authenticated');
+    console.log('Index: loading =', loading);
+
     if (isRunningOnDeskThing) {
-      sendLog('info', 'Discord Profile Pal loaded on DeskThing');
+      sendLog('info', 'Discord Profile Pal loaded on DeskThing - bypassing authentication');
       console.log('DeskThing: Sample App has started successfully!');
     }
-  }, [isRunningOnDeskThing, sendLog]);
+  }, [isRunningOnDeskThing, sendLog, user, loading]);
 
   // If running on DeskThing, skip all authentication and show the profile directly
   if (isRunningOnDeskThing) {
+    console.log('Index: Rendering DeskThing mode - bypassing authentication');
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
         {/* DeskThing optimized layout - 800x480 full width, no authentication needed */}
@@ -36,6 +43,7 @@ const Index = () => {
 
   // Show loading state only for a brief moment to avoid infinite loading
   if (loading) {
+    console.log('Index: Showing loading state');
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
         <div className="text-white">Loading...</div>
@@ -44,6 +52,7 @@ const Index = () => {
   }
 
   if (!user) {
+    console.log('Index: No user found, showing sign in page');
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
         <Card className="w-full max-w-md bg-gray-900/90 backdrop-blur-xl border-gray-700/50 p-6 text-center">
@@ -65,6 +74,7 @@ const Index = () => {
     );
   }
 
+  console.log('Index: User authenticated, showing profile');
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       {/* Regular web layout */}
