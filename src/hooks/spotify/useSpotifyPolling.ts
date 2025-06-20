@@ -21,11 +21,11 @@ export const useSpotifyPolling = (
       return;
     }
 
-    console.log('useSpotifyPolling: Setting up polling interval (3s for better responsiveness)');
+    console.log('useSpotifyPolling: Setting up polling interval (5s for better balance)');
     const interval = setInterval(() => {
       console.log('useSpotifyPolling: Polling for track updates');
       fetchCurrentTrack();
-    }, 3000);
+    }, 5000); // Increased to 5 seconds to reduce API calls while still being responsive
     
     return () => {
       console.log('useSpotifyPolling: Cleaning up polling interval');
