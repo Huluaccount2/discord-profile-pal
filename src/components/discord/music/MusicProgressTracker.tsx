@@ -45,26 +45,32 @@ export const useMusicProgressTracker = ({
       let currentProgress = 0;
       let isCurrentlyPlaying = false;
 
-      // Priority 1: Spotify OAuth integration with proper pause handling
+      // Priority 1: Spotify OAuth integration with original pause handling
       if (isSpotifyConnected && currentSong.name === "Spotify" && spotifyData?.track) {
         isCurrentlyPlaying = Boolean(spotifyData.isPlaying);
         
         if (isCurrentlyPlaying) {
-          // Music is playing - use Spotify's progress as base, don't add time
+          // Music is playing - use Spotify's progress and clear any pause state
           currentProgress = spotifyData.track.progress;
           setPausedAt(null);
           setLastProgressUpdate(currentProgress);
           lastUpdateTime.current = now;
         } else {
-          // Music is paused - use the exact progress from Spotify and freeze it
-          currentProgress = spotifyData.track.progress;
-          // Don't update pausedAt continuously, just use Spotify's current progress
+          // Music is paused - set pausedAt if not already set
+          if (pausedAt === null) {
+            setPausedAt(spotifyData.track.progress);
+            currentProgress = spotifyData.track.progress;
+          } else {
+            // Use the stored pause position
+            currentProgress = pausedAt;
+          }
         }
         
         console.log('MusicProgressTracker: Using Spotify OAuth data:', { 
           progress: currentProgress, 
           isPlaying: isCurrentlyPlaying,
-          spotifyProgress: spotifyData.track.progress
+          spotifyProgress: spotifyData.track.progress,
+          pausedAt
         });
       } else {
         // Priority 2: Discord fallback with improved stagnation detection
@@ -140,7 +146,7 @@ export const useMusicProgressTracker = ({
     }
     
     if (isPlaying) {
-      // Update every 1000ms when playing - don't advance time artificially
+      // Update every 1000ms when playing
       updateIntervalRef.current = setInterval(updateProgress, 1000);
       console.log('MusicProgressTracker: Started progress interval - music is playing');
     } else {
