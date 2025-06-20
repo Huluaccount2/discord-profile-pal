@@ -83,6 +83,7 @@ export const DiscordProfileContent = React.memo(({
             <EmptyMusicState 
               isConnected={isConnected}
               onConnect={connectSpotify}
+              isLoading={false}
             />
           ) : (
             <div className="text-white text-center w-full">

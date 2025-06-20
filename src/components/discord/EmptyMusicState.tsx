@@ -2,18 +2,20 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Music } from 'lucide-react';
+import { Music, Loader2 } from 'lucide-react';
 
 interface EmptyMusicStateProps {
   isConnected: boolean;
   onConnect: () => void;
+  isLoading?: boolean;
 }
 
 export const EmptyMusicState: React.FC<EmptyMusicStateProps> = ({
   isConnected,
-  onConnect
+  onConnect,
+  isLoading = false
 }) => {
-  console.log('EmptyMusicState: Rendering with isConnected:', isConnected);
+  console.log('EmptyMusicState: Rendering with isConnected:', isConnected, 'isLoading:', isLoading);
 
   return (
     <Card className="bg-gray-800/50 border-gray-700/50 p-6 w-full">
@@ -33,9 +35,17 @@ export const EmptyMusicState: React.FC<EmptyMusicStateProps> = ({
                 console.log('EmptyMusicState: Connect button clicked');
                 onConnect();
               }}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              disabled={isLoading}
+              className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
             >
-              Connect Spotify
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Connecting...
+                </>
+              ) : (
+                'Connect Spotify'
+              )}
             </Button>
           </>
         ) : (
