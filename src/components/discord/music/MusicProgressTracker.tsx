@@ -45,29 +45,26 @@ export const useMusicProgressTracker = ({
       let currentProgress = 0;
       let isCurrentlyPlaying = false;
 
-      // Priority 1: Spotify OAuth integration with better pause detection
+      // Priority 1: Spotify OAuth integration with proper pause handling
       if (isSpotifyConnected && currentSong.name === "Spotify" && spotifyData?.track) {
         isCurrentlyPlaying = Boolean(spotifyData.isPlaying);
         
         if (isCurrentlyPlaying) {
-          // Music is playing - use Spotify's real-time progress and advance it
-          const baseProgress = spotifyData.track.progress;
-          const timeSinceLastSpotifyUpdate = now - lastUpdateTime.current;
-          currentProgress = baseProgress + (timeSinceLastSpotifyUpdate > 1000 ? 0 : timeSinceLastSpotifyUpdate);
+          // Music is playing - use Spotify's progress as base, don't add time
+          currentProgress = spotifyData.track.progress;
           setPausedAt(null);
           setLastProgressUpdate(currentProgress);
           lastUpdateTime.current = now;
         } else {
-          // Music is paused - freeze at Spotify's current progress
+          // Music is paused - use the exact progress from Spotify and freeze it
           currentProgress = spotifyData.track.progress;
-          setPausedAt(currentProgress);
+          // Don't update pausedAt continuously, just use Spotify's current progress
         }
         
         console.log('MusicProgressTracker: Using Spotify OAuth data:', { 
           progress: currentProgress, 
           isPlaying: isCurrentlyPlaying,
-          spotifyProgress: spotifyData.track.progress,
-          pausedAt 
+          spotifyProgress: spotifyData.track.progress
         });
       } else {
         // Priority 2: Discord fallback with improved stagnation detection
@@ -143,7 +140,7 @@ export const useMusicProgressTracker = ({
     }
     
     if (isPlaying) {
-      // Update every 1000ms when playing for smooth progress
+      // Update every 1000ms when playing - don't advance time artificially
       updateIntervalRef.current = setInterval(updateProgress, 1000);
       console.log('MusicProgressTracker: Started progress interval - music is playing');
     } else {
