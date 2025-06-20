@@ -5,33 +5,46 @@ let discordProfileData: any = null;
 let refreshInterval: NodeJS.Timeout | null = null;
 
 const startup = async () => {
-  DeskThing.sendLog('Discord Profile Pal: Starting Up');
+  console.log('Discord Profile Pal: Starting Up');
   
   // Add settings for Discord Profile Pal
-  DeskThing.addSettings({
-    discord_user_id: {
-      type: 'string',
-      label: 'Discord User ID',
-      value: '',
-      description: 'Your Discord User ID for profile fetching'
-    },
-    refresh_interval: {
-      type: 'number',
-      label: 'Refresh Interval (seconds)',
-      value: 30,
-      description: 'How often to refresh Discord profile data'
-    },
-    show_spotify: {
-      type: 'boolean',
-      label: 'Show Spotify Activity',
-      value: true,
-      description: 'Display Spotify listening activity from Discord'
+  try {
+    if (DeskThing.addSettings) {
+      DeskThing.addSettings({
+        discord_user_id: {
+          type: 'string',
+          label: 'Discord User ID',
+          value: '',
+          description: 'Your Discord User ID for profile fetching'
+        },
+        refresh_interval: {
+          type: 'number',
+          label: 'Refresh Interval (seconds)',
+          value: 30,
+          description: 'How often to refresh Discord profile data'
+        },
+        show_spotify: {
+          type: 'boolean',
+          label: 'Show Spotify Activity',
+          value: true,
+          description: 'Display Spotify listening activity from Discord'
+        }
+      });
     }
-  });
+  } catch (error) {
+    console.warn('Discord Profile Pal: Could not add settings:', error);
+  }
 
   // Get initial settings
-  const settings = await DeskThing.getSettings();
-  DeskThing.sendLog(`Discord Profile Pal: Settings loaded - Refresh interval: ${settings?.refresh_interval?.value || 30}s`);
+  let settings: any = {};
+  try {
+    if (DeskThing.getSettings) {
+      settings = await DeskThing.getSettings();
+      console.log(`Discord Profile Pal: Settings loaded - Refresh interval: ${settings?.refresh_interval?.value || 30}s`);
+    }
+  } catch (error) {
+    console.warn('Discord Profile Pal: Could not get settings:', error);
+  }
 
   // Send initial mock data
   sendMockDiscordProfile();
@@ -42,11 +55,11 @@ const startup = async () => {
     sendMockDiscordProfile();
   }, interval);
   
-  DeskThing.sendLog('Discord Profile Pal: App started successfully!');
+  console.log('Discord Profile Pal: App started successfully!');
 };
 
 const stop = () => {
-  DeskThing.sendLog('Discord Profile Pal: Stopping app');
+  console.log('Discord Profile Pal: Stopping app');
   
   if (refreshInterval) {
     clearInterval(refreshInterval);
@@ -85,35 +98,42 @@ const sendMockDiscordProfile = () => {
     }
   };
 
-  DeskThing.send({
-    type: 'discord_profile',
-    payload: mockProfile
-  });
-
-  DeskThing.sendLog('Discord Profile Pal: Sent Discord profile data to client');
+  try {
+    if (DeskThing.send) {
+      DeskThing.send({
+        type: 'discord_profile',
+        payload: mockProfile
+      });
+      console.log('Discord Profile Pal: Sent Discord profile data to client');
+    } else {
+      console.warn('Discord Profile Pal: DeskThing.send not available');
+    }
+  } catch (error) {
+    console.error('Discord Profile Pal: Error sending mock profile:', error);
+  }
 };
 
 // Handle messages from client
 const onMessageFromClient = async (data: any) => {
-  DeskThing.sendLog(`Discord Profile Pal: Received message from client: ${JSON.stringify(data)}`);
+  console.log(`Discord Profile Pal: Received message from client: ${JSON.stringify(data)}`);
   
   switch (data.type) {
     case 'refresh_profile':
-      DeskThing.sendLog('Discord Profile Pal: Refreshing Discord profile on client request');
+      console.log('Discord Profile Pal: Refreshing Discord profile on client request');
       sendMockDiscordProfile();
       break;
     case 'get_profile':
-      DeskThing.sendLog('Discord Profile Pal: Client requested Discord profile');
+      console.log('Discord Profile Pal: Client requested Discord profile');
       sendMockDiscordProfile();
       break;
     default:
-      DeskThing.sendLog(`Discord Profile Pal: Unknown message type: ${data.type}`);
+      console.log(`Discord Profile Pal: Unknown message type: ${data.type}`);
   }
 };
 
 // Handle settings changes
 const onSettingsChanged = async (settings: any) => {
-  DeskThing.sendLog('Discord Profile Pal: Settings changed:', settings);
+  console.log('Discord Profile Pal: Settings changed:', settings);
   
   // Update refresh interval if changed
   if (settings.refresh_interval && refreshInterval) {
@@ -122,55 +142,73 @@ const onSettingsChanged = async (settings: any) => {
     refreshInterval = setInterval(() => {
       sendMockDiscordProfile();
     }, interval);
-    DeskThing.sendLog(`Discord Profile Pal: Updated refresh interval to ${settings.refresh_interval.value}s`);
+    console.log(`Discord Profile Pal: Updated refresh interval to ${settings.refresh_interval.value}s`);
   }
 };
-
-// Register action for manual refresh
-DeskThing.registerAction('Refresh Discord Profile', 'refresh_discord', 'Manually refresh Discord profile data');
 
 // Handle action triggers
 const onActionTriggered = (action: string) => {
   switch (action) {
     case 'refresh_discord':
-      DeskThing.sendLog('Discord Profile Pal: Manual refresh triggered');
+      console.log('Discord Profile Pal: Manual refresh triggered');
       sendMockDiscordProfile();
       break;
     default:
-      DeskThing.sendLog(`Discord Profile Pal: Unknown action: ${action}`);
+      console.log(`Discord Profile Pal: Unknown action: ${action}`);
   }
 };
 
-// Set up event listeners
-const startListener = DeskThing.on('start', startup);
-const stopListener = DeskThing.on('stop', stop);
+// Set up event listeners with error handling
+try {
+  if (DeskThing.on) {
+    DeskThing.on('start', startup);
+    DeskThing.on('stop', stop);
 
-DeskThing.on('purge', () => {
-  DeskThing.sendLog('Discord Profile Pal: App cleaned up successfully');
-  if (refreshInterval) {
-    clearInterval(refreshInterval);
+    DeskThing.on('purge', () => {
+      console.log('Discord Profile Pal: App cleaned up successfully');
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+    });
+
+    // Handle client messages
+    DeskThing.on('message', onMessageFromClient);
+
+    // Handle settings changes
+    DeskThing.on('settings', onSettingsChanged);
+
+    // Handle action triggers
+    DeskThing.on('action', onActionTriggered);
+
+    // Handle get requests from client
+    DeskThing.on('get', async (data: any) => {
+      switch (data.request) {
+        case 'discord_profile':
+          sendMockDiscordProfile();
+          break;
+        default:
+          console.log(`Discord Profile Pal: Unknown get request: ${data.request}`);
+      }
+    });
+  } else {
+    console.warn('Discord Profile Pal: DeskThing.on not available, running in basic mode');
+    // Still try to start up
+    startup();
   }
-});
+} catch (error) {
+  console.error('Discord Profile Pal: Error setting up event listeners:', error);
+  // Fallback to basic startup
+  startup();
+}
 
-// Handle client messages
-DeskThing.on('message', onMessageFromClient);
-
-// Handle settings changes
-DeskThing.on('settings', onSettingsChanged);
-
-// Handle action triggers
-DeskThing.on('action', onActionTriggered);
-
-// Handle get requests from client
-DeskThing.on('get', async (data) => {
-  switch (data.request) {
-    case 'discord_profile':
-      sendMockDiscordProfile();
-      break;
-    default:
-      DeskThing.sendLog(`Discord Profile Pal: Unknown get request: ${data.request}`);
+// Register action for manual refresh (if available)
+try {
+  if (DeskThing.registerAction) {
+    DeskThing.registerAction('Refresh Discord Profile', 'refresh_discord', 'Manually refresh Discord profile data');
   }
-});
+} catch (error) {
+  console.warn('Discord Profile Pal: Could not register action:', error);
+}
 
 // Export for DeskThing
 export { DeskThing };

@@ -8,7 +8,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "deskthing-server": "^0.9.0"
+    "deskthing-server": "^0.11.2"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
