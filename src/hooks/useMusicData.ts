@@ -11,7 +11,11 @@ export const useMusicData = (profile: any, discordData: any) => {
     isConnected, 
     connectSpotify,
     connectionError,
-    loading
+    loading,
+    play,
+    pause,
+    nextTrack,
+    previousTrack
   } = useSpotify(user?.id);
   const [lastKnownSong, setLastKnownSong] = useLastKnownSong();
   const [lastSongUpdate, setLastSongUpdate] = useState<number>(0);
@@ -131,6 +135,10 @@ export const useMusicData = (profile: any, discordData: any) => {
     connectionError,
     songToDisplay,
     shouldShowConnectPrompt,
-    loading
+    loading,
+    play,
+    pause,
+    nextTrack,
+    previousTrack
   };
 };

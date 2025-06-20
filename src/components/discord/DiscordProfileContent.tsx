@@ -31,7 +31,11 @@ export const DiscordProfileContent = React.memo(({
     connectSpotify,
     songToDisplay,
     shouldShowConnectPrompt,
-    loading
+    loading,
+    play,
+    pause,
+    nextTrack,
+    previousTrack
   } = useMusicData(profile, discordData);
 
   const displayName = discordData?.user?.username || profile?.discord_username || profile?.username || "User";
@@ -63,7 +67,6 @@ export const DiscordProfileContent = React.memo(({
             customStatus={customStatus}
             connections={connections}
           />
-          {/* Updated Lyric Status indicator with error support */}
           <div className="mt-2 flex justify-center">
             <LyricStatusIndicator 
               isActive={isLyricActive || isLyricStatusActive} 
@@ -79,6 +82,10 @@ export const DiscordProfileContent = React.memo(({
               currentSong={songToDisplay}
               isSpotifyConnected={isConnected}
               spotifyData={spotifyData}
+              onPlay={play}
+              onPause={pause}
+              onNext={nextTrack}
+              onPrevious={previousTrack}
             />
           ) : shouldShowConnectPrompt ? (
             <EmptyMusicState 
