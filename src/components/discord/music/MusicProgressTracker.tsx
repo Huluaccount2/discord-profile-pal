@@ -50,19 +50,17 @@ export const useMusicProgressTracker = ({
         isCurrentlyPlaying = Boolean(spotifyData.isPlaying);
         
         if (isCurrentlyPlaying) {
-          // Music is playing - use Spotify's real-time progress
-          currentProgress = spotifyData.track.progress;
+          // Music is playing - use Spotify's real-time progress and advance it
+          const baseProgress = spotifyData.track.progress;
+          const timeSinceLastSpotifyUpdate = now - lastUpdateTime.current;
+          currentProgress = baseProgress + (timeSinceLastSpotifyUpdate > 1000 ? 0 : timeSinceLastSpotifyUpdate);
           setPausedAt(null);
           setLastProgressUpdate(currentProgress);
           lastUpdateTime.current = now;
         } else {
-          // Music is paused - use Spotify's paused progress
+          // Music is paused - freeze at Spotify's current progress
           currentProgress = spotifyData.track.progress;
-          if (pausedAt === null) {
-            setPausedAt(currentProgress);
-          } else {
-            currentProgress = pausedAt;
-          }
+          setPausedAt(currentProgress);
         }
         
         console.log('MusicProgressTracker: Using Spotify OAuth data:', { 
@@ -145,8 +143,8 @@ export const useMusicProgressTracker = ({
     }
     
     if (isPlaying) {
-      // Update every 500ms when playing for better responsiveness
-      updateIntervalRef.current = setInterval(updateProgress, 500);
+      // Update every 1000ms when playing for smooth progress
+      updateIntervalRef.current = setInterval(updateProgress, 1000);
       console.log('MusicProgressTracker: Started progress interval - music is playing');
     } else {
       // Update every 2 seconds when paused to check for resume
