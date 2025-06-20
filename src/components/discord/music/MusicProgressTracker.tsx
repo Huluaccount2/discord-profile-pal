@@ -45,25 +45,24 @@ export const useMusicProgressTracker = ({
       let currentProgress = 0;
       let isCurrentlyPlaying = false;
 
-      // Priority 1: Spotify OAuth integration with original pause handling
+      // Priority 1: Spotify OAuth integration
       if (isSpotifyConnected && currentSong.name === "Spotify" && spotifyData?.track) {
         isCurrentlyPlaying = Boolean(spotifyData.isPlaying);
         
         if (isCurrentlyPlaying) {
-          // Music is playing - use Spotify's progress and clear any pause state
+          // Music is playing - use Spotify's progress and clear pause state
           currentProgress = spotifyData.track.progress;
           setPausedAt(null);
           setLastProgressUpdate(currentProgress);
           lastUpdateTime.current = now;
         } else {
-          // Music is paused - set pausedAt if not already set
+          // Music is paused - freeze at Spotify's current progress
           if (pausedAt === null) {
+            // First time we detect pause - store the position
             setPausedAt(spotifyData.track.progress);
-            currentProgress = spotifyData.track.progress;
-          } else {
-            // Use the stored pause position
-            currentProgress = pausedAt;
           }
+          // Always use the paused position when not playing
+          currentProgress = pausedAt || spotifyData.track.progress;
         }
         
         console.log('MusicProgressTracker: Using Spotify OAuth data:', { 
@@ -125,7 +124,7 @@ export const useMusicProgressTracker = ({
         isCurrentlyPlaying = false;
       }
       
-      // Emit the update
+      // Emit the update - this is the key fix: currentProgress is now frozen when paused
       onProgressUpdate(currentProgress, isCurrentlyPlaying);
     };
 
