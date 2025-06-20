@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
@@ -29,46 +29,42 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  console.log('NowPlaying: Rendering with props:', {
-    currentSong: currentSong ? 'present' : 'null',
-    isSpotifyConnected,
-    spotifyData: spotifyData ? 'present' : 'null',
-    spotifyIsPlaying: spotifyData?.isPlaying,
-    hasControls: !!(onPlay && onPause)
-  });
+  // --- added for freeze-on-pause ---
+  const frozenTimeRef = useRef<number>(0);
 
   const handleProgressUpdate = useCallback((progress: { time: number; playing: boolean }) => {
-    console.log('NowPlaying: Progress update:', progress);
     setCurrentTime(progress.time);
     setIsPlaying(progress.playing);
   }, []);
 
   if (!currentSong) {
-    console.log('NowPlaying: No current song, not rendering');
     return null;
   }
 
   const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   // Use Spotify data for playing state if available
   const actuallyPlaying = isSpotifyConnected && spotifyData?.isPlaying !== undefined 
     ? spotifyData.isPlaying 
     : isPlaying;
 
+  // --- added for freeze-on-pause ---
+  useEffect(() => {
+    if (!actuallyPlaying) {
+      frozenTimeRef.current = currentTime;
+    }
+    // If song changes, reset the frozen ref:
+    // (Uncomment if you want to reset on song change)
+    // frozenTimeRef.current = 0;
+  }, [actuallyPlaying, currentSong, currentTime]);
+
+  // --- added for freeze-on-pause ---
+  const displayedTime = actuallyPlaying ? currentTime : frozenTimeRef.current;
+  const progress = duration > 0 ? (displayedTime / duration) * 100 : 0;
+
   const showControls = isSpotifyConnected && onPlay && onPause && onNext && onPrevious;
 
-  console.log('NowPlaying: Final render state:', { 
-    progress, 
-    actuallyPlaying, 
-    isSpotifyConnected,
-    currentTime,
-    duration,
-    showControls
-  });
-
   const handlePlayPause = () => {
-    console.log('NowPlaying: Play/Pause clicked, currently playing:', actuallyPlaying);
     if (actuallyPlaying) {
       onPause?.();
     } else {
@@ -115,7 +111,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
           
           <div className="w-full mt-4">
             <MusicProgressBar 
-              currentTime={currentTime}
+              currentTime={displayedTime}    // <- use displayedTime here!
               duration={duration}
               progress={progress}
               isPlaying={actuallyPlaying}
@@ -127,10 +123,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  console.log('Previous track clicked');
-                  onPrevious?.();
-                }}
+                onClick={() => onPrevious?.()}
                 className="text-white hover:bg-white/20"
               >
                 <SkipBack className="h-5 w-5" />
@@ -152,10 +145,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  console.log('Next track clicked');
-                  onNext?.();
-                }}
+                onClick={() => onNext?.()}
                 className="text-white hover:bg-white/20"
               >
                 <SkipForward className="h-5 w-5" />
