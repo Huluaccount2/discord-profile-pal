@@ -1,11 +1,7 @@
-
 {
-  "name": "discord-profile-pal-server",
-  "version": "1.0.0", 
-  "description": "DeskThing server for Discord Profile Pal",
-  "main": "dist/index.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "start": "node dist/index.js"
   },
   "dependencies": {
     "deskthing-server": "^0.9.3"
