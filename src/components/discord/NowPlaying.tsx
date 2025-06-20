@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { MusicArtwork } from './music/MusicArtwork';
 import { MusicInfo } from './music/MusicInfo';
 import { MusicProgressBar } from './music/MusicProgressBar';
-import { useMusicProgressTracker } from './music/MusicProgressTracker';
+import { MusicProgressTracker } from './music/MusicProgressTracker';
 
 interface NowPlayingProps {
   currentSong: any;
@@ -38,18 +37,11 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
     hasControls: !!(onPlay && onPause)
   });
 
-  const handleProgressUpdate = useCallback((time: number, playing: boolean) => {
-    console.log('NowPlaying: Progress update:', { time, playing });
-    setCurrentTime(time);
-    setIsPlaying(playing);
+  const handleProgressUpdate = useCallback((progress: { time: number; playing: boolean }) => {
+    console.log('NowPlaying: Progress update:', progress);
+    setCurrentTime(progress.time);
+    setIsPlaying(progress.playing);
   }, []);
-
-  useMusicProgressTracker({
-    currentSong,
-    isSpotifyConnected,
-    spotifyData,
-    onProgressUpdate: handleProgressUpdate
-  });
 
   if (!currentSong) {
     console.log('NowPlaying: No current song, not rendering');
@@ -87,6 +79,12 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   try {
     return (
       <div className="relative w-full h-full rounded-lg overflow-hidden">
+        <MusicProgressTracker
+          currentSong={currentSong}
+          isPlaying={actuallyPlaying}
+          onProgressUpdate={handleProgressUpdate}
+        />
+        
         <div 
           className="absolute inset-0 bg-cover bg-center filter blur-sm"
           style={{ 

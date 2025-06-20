@@ -1,4 +1,3 @@
-
 export interface UserProfile {
   discord_id: string | null;
   discord_username: string | null;
@@ -52,4 +51,22 @@ export interface DiscordData {
     };
   };
   connections?: DiscordConnection[];
+}
+
+export interface DiscordSong {
+  name: string;
+  type: number;
+  details?: string;
+  state?: string;
+  timestamps?: {
+    start?: number;
+    end?: number;
+  };
+  assets?: {
+    large_image?: string;
+    large_text?: string;
+    small_image?: string;
+    small_text?: string;
+  };
+  is_playing?: boolean;
 }
