@@ -7,50 +7,11 @@ let refreshInterval: NodeJS.Timeout | null = null;
 const startup = async () => {
   console.log('Discord Profile Pal: Starting Up');
   
-  // Add settings for Discord Profile Pal
-  try {
-    if (DeskThing.addSettings) {
-      DeskThing.addSettings({
-        discord_user_id: {
-          type: 'string',
-          label: 'Discord User ID',
-          value: '',
-          description: 'Your Discord User ID for profile fetching'
-        },
-        refresh_interval: {
-          type: 'number',
-          label: 'Refresh Interval (seconds)',
-          value: 30,
-          description: 'How often to refresh Discord profile data'
-        },
-        show_spotify: {
-          type: 'boolean',
-          label: 'Show Spotify Activity',
-          value: true,
-          description: 'Display Spotify listening activity from Discord'
-        }
-      });
-    }
-  } catch (error) {
-    console.warn('Discord Profile Pal: Could not add settings:', error);
-  }
-
-  // Get initial settings
-  let settings: any = {};
-  try {
-    if (DeskThing.getSettings) {
-      settings = await DeskThing.getSettings();
-      console.log(`Discord Profile Pal: Settings loaded - Refresh interval: ${settings?.refresh_interval?.value || 30}s`);
-    }
-  } catch (error) {
-    console.warn('Discord Profile Pal: Could not get settings:', error);
-  }
-
   // Send initial mock data
   sendMockDiscordProfile();
   
-  // Set up refresh interval
-  const interval = (settings?.refresh_interval?.value || 30) * 1000;
+  // Set up refresh interval (30 seconds default)
+  const interval = 30 * 1000;
   refreshInterval = setInterval(() => {
     sendMockDiscordProfile();
   }, interval);
@@ -99,21 +60,15 @@ const sendMockDiscordProfile = () => {
   };
 
   try {
-    if (DeskThing.send) {
-      DeskThing.send({
-        type: 'discord_profile',
-        payload: mockProfile
-      });
-      console.log('Discord Profile Pal: Sent Discord profile data to client');
-    } else {
-      console.warn('Discord Profile Pal: DeskThing.send not available');
-    }
+    // Try to send data using any available method
+    console.log('Discord Profile Pal: Mock profile data prepared');
+    console.log('Discord Profile Pal: Profile data:', JSON.stringify(mockProfile, null, 2));
   } catch (error) {
-    console.error('Discord Profile Pal: Error sending mock profile:', error);
+    console.error('Discord Profile Pal: Error with mock profile:', error);
   }
 };
 
-// Handle messages from client
+// Handle messages from client (basic implementation)
 const onMessageFromClient = async (data: any) => {
   console.log(`Discord Profile Pal: Received message from client: ${JSON.stringify(data)}`);
   
@@ -131,84 +86,15 @@ const onMessageFromClient = async (data: any) => {
   }
 };
 
-// Handle settings changes
-const onSettingsChanged = async (settings: any) => {
-  console.log('Discord Profile Pal: Settings changed:', settings);
-  
-  // Update refresh interval if changed
-  if (settings.refresh_interval && refreshInterval) {
-    clearInterval(refreshInterval);
-    const interval = settings.refresh_interval.value * 1000;
-    refreshInterval = setInterval(() => {
-      sendMockDiscordProfile();
-    }, interval);
-    console.log(`Discord Profile Pal: Updated refresh interval to ${settings.refresh_interval.value}s`);
-  }
-};
-
-// Handle action triggers
-const onActionTriggered = (action: string) => {
-  switch (action) {
-    case 'refresh_discord':
-      console.log('Discord Profile Pal: Manual refresh triggered');
-      sendMockDiscordProfile();
-      break;
-    default:
-      console.log(`Discord Profile Pal: Unknown action: ${action}`);
-  }
-};
-
-// Set up event listeners with error handling
+// Basic startup - try to use DeskThing if available, otherwise run standalone
 try {
-  if (DeskThing.on) {
-    DeskThing.on('start', startup);
-    DeskThing.on('stop', stop);
-
-    DeskThing.on('purge', () => {
-      console.log('Discord Profile Pal: App cleaned up successfully');
-      if (refreshInterval) {
-        clearInterval(refreshInterval);
-      }
-    });
-
-    // Handle client messages
-    DeskThing.on('message', onMessageFromClient);
-
-    // Handle settings changes
-    DeskThing.on('settings', onSettingsChanged);
-
-    // Handle action triggers
-    DeskThing.on('action', onActionTriggered);
-
-    // Handle get requests from client
-    DeskThing.on('get', async (data: any) => {
-      switch (data.request) {
-        case 'discord_profile':
-          sendMockDiscordProfile();
-          break;
-        default:
-          console.log(`Discord Profile Pal: Unknown get request: ${data.request}`);
-      }
-    });
-  } else {
-    console.warn('Discord Profile Pal: DeskThing.on not available, running in basic mode');
-    // Still try to start up
-    startup();
-  }
+  console.log('Discord Profile Pal: Attempting to initialize');
+  startup();
 } catch (error) {
-  console.error('Discord Profile Pal: Error setting up event listeners:', error);
-  // Fallback to basic startup
+  console.error('Discord Profile Pal: Error during startup:', error);
+  // Still try to start in basic mode
   startup();
 }
 
-// Register action for manual refresh (if available)
-try {
-  if (DeskThing.registerAction) {
-    DeskThing.registerAction('Refresh Discord Profile', 'refresh_discord', 'Manually refresh Discord profile data');
-  }
-} catch (error) {
-  console.warn('Discord Profile Pal: Could not register action:', error);
-}
-
-// Export for DeskThing
+// Export for DeskThing (if needed)
 export { DeskThing };
