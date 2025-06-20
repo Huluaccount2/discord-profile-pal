@@ -45,31 +45,36 @@ export const useMusicProgressTracker = ({
       let currentProgress = 0;
       let isCurrentlyPlaying = false;
 
-      // Priority 1: Spotify OAuth integration
+      // Priority 1: Spotify OAuth integration - completely freeze when paused
       if (isSpotifyConnected && currentSong.name === "Spotify" && spotifyData?.track) {
         isCurrentlyPlaying = Boolean(spotifyData.isPlaying);
         
         if (isCurrentlyPlaying) {
-          // Music is playing - use Spotify's progress and clear pause state
+          // Music is playing - use Spotify's current progress and clear pause state
           currentProgress = spotifyData.track.progress;
-          setPausedAt(null);
+          if (pausedAt !== null) {
+            console.log('MusicProgressTracker: Music resumed, clearing pause state');
+            setPausedAt(null);
+          }
           setLastProgressUpdate(currentProgress);
           lastUpdateTime.current = now;
         } else {
-          // Music is paused - freeze at Spotify's current progress
+          // Music is paused - freeze at the pause position
           if (pausedAt === null) {
-            // First time we detect pause - store the position
+            // First time detecting pause - store current Spotify position
+            console.log('MusicProgressTracker: Music paused, storing position:', spotifyData.track.progress);
             setPausedAt(spotifyData.track.progress);
           }
-          // Always use the paused position when not playing
-          currentProgress = pausedAt || spotifyData.track.progress;
+          // Always use the stored pause position - DO NOT advance
+          currentProgress = pausedAt;
         }
         
         console.log('MusicProgressTracker: Using Spotify OAuth data:', { 
           progress: currentProgress, 
           isPlaying: isCurrentlyPlaying,
           spotifyProgress: spotifyData.track.progress,
-          pausedAt
+          pausedAt,
+          frozen: !isCurrentlyPlaying
         });
       } else {
         // Priority 2: Discord fallback with improved stagnation detection
@@ -124,7 +129,7 @@ export const useMusicProgressTracker = ({
         isCurrentlyPlaying = false;
       }
       
-      // Emit the update - this is the key fix: currentProgress is now frozen when paused
+      // Emit the update - currentProgress is frozen when paused
       onProgressUpdate(currentProgress, isCurrentlyPlaying);
     };
 
@@ -136,22 +141,27 @@ export const useMusicProgressTracker = ({
     // Start with immediate update
     updateProgress();
     
-    // Determine update frequency based on playing state
-    let isPlaying = true;
+    // Determine if we should start an interval based on playing state
+    let shouldStartInterval = true;
+    let intervalDuration = 1000; // Default 1 second
+    
     if (isSpotifyConnected && spotifyData?.track) {
-      isPlaying = Boolean(spotifyData.isPlaying);
+      const isPlaying = Boolean(spotifyData.isPlaying);
+      if (!isPlaying) {
+        // Music is paused - only check every 5 seconds for resume
+        intervalDuration = 5000;
+        console.log('MusicProgressTracker: Music paused, checking every 5 seconds for resume');
+      } else {
+        console.log('MusicProgressTracker: Music playing, updating every second');
+      }
     } else if (pausedAt !== null) {
-      isPlaying = false;
+      // Discord music is paused - check every 5 seconds
+      intervalDuration = 5000;
+      console.log('MusicProgressTracker: Discord music paused, checking every 5 seconds');
     }
     
-    if (isPlaying) {
-      // Update every 1000ms when playing
-      updateIntervalRef.current = setInterval(updateProgress, 1000);
-      console.log('MusicProgressTracker: Started progress interval - music is playing');
-    } else {
-      // Update every 2 seconds when paused to check for resume
-      updateIntervalRef.current = setInterval(updateProgress, 2000);
-      console.log('MusicProgressTracker: Started check interval - music is paused');
+    if (shouldStartInterval) {
+      updateIntervalRef.current = setInterval(updateProgress, intervalDuration);
     }
 
     // Handle visibility changes for more accurate timing
