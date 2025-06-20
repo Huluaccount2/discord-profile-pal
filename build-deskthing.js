@@ -1,7 +1,7 @@
 
-const fs = require('fs');
-const path = require('path');
-const archiver = require('archiver');
+import fs from 'fs';
+import path from 'path';
+import archiver from 'archiver';
 
 async function buildForDeskThing() {
   console.log('Building Discord Profile Pal for DeskThing...');
