@@ -1,6 +1,4 @@
 
-import { DeskThing as DT } from 'deskthing-client';
-
 export class DeskThingCore {
   private static instance: DeskThingCore;
   private isConnected = false;
@@ -8,17 +6,13 @@ export class DeskThingCore {
   private listeners = new Map<string, () => void>();
 
   private constructor() {
-    // Handle different ways the DeskThing client might be exported
-    this.deskThing = DT;
-    
-    // Add safety check and logging
-    console.log('DeskThing client object:', this.deskThing);
-    console.log('DeskThing methods:', this.deskThing ? Object.keys(this.deskThing) : 'undefined');
+    // Use global DeskThing object
+    this.deskThing = (window as any).DeskThing;
     
     if (this.deskThing && typeof this.deskThing.on === 'function') {
       this.setupCoreListeners();
     } else {
-      console.warn('DeskThing: Client not available or missing .on method, running in fallback mode');
+      console.warn('DeskThing: Client not available, running in fallback mode');
       this.isConnected = false;
     }
   }
