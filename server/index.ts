@@ -1,4 +1,3 @@
-
 import { DeskThing } from 'deskthing-server';
 
 let discordProfileData: any = null;
