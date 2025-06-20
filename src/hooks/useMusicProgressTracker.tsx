@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface MusicProgressTrackerProps {
   currentSong: any;
@@ -22,11 +22,9 @@ export const MusicProgressTracker: React.FC<MusicProgressTrackerProps> = ({
     lastKnownTimeRef.current = currentSong.progress || 0;
     lastUpdateRef.current = Date.now();
 
-    // Cleanup old interval
     if (intervalRef.current) clearInterval(intervalRef.current);
 
     if (isPlaying) {
-      // Start interval to update progress
       intervalRef.current = setInterval(() => {
         const now = Date.now();
         const elapsed = now - lastUpdateRef.current;
@@ -35,17 +33,15 @@ export const MusicProgressTracker: React.FC<MusicProgressTrackerProps> = ({
         lastUpdateRef.current = now;
       }, 200);
     } else {
-      // When paused, do a one-time update with the latest known time
+      // When paused, update one last time to freeze bar
       onProgressUpdate({ time: lastKnownTimeRef.current, playing: false });
     }
 
-    // Cleanup on unmount or deps change
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [currentSong, isPlaying, onProgressUpdate]);
 
-  // Clean up on unmount (extra safety)
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
