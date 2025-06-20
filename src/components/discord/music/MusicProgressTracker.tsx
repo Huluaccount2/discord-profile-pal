@@ -1,72 +1,52 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
-import type { DiscordSong } from '@/types/discord';
+import { useEffect, useRef } from 'react';
 
-// Progress tracker with enhanced pause detection for Spotify integration
 interface MusicProgressTrackerProps {
-  currentSong: DiscordSong | null;
+  currentSong: any;
   isPlaying: boolean;
   onProgressUpdate: (progress: { time: number; playing: boolean }) => void;
 }
 
-export const MusicProgressTracker = ({
+export const MusicProgressTracker: React.FC<MusicProgressTrackerProps> = ({
   currentSong,
   isPlaying,
   onProgressUpdate,
-}: MusicProgressTrackerProps) => {
-  const [currentTime, setCurrentTime] = useState(0);
-  const [internalIsPlaying, setInternalIsPlaying] = useState(isPlaying);
-  const animationFrameRef = useRef<number | null>(null);
-  const startTimeRef = useRef<number | null>(null);
-  const pauseTimeRef = useRef<number | null>(null);
-
-  const updateProgress = useCallback(() => {
-    if (!startTimeRef.current) return;
-
-    const now = performance.now();
-    const elapsedTime = now - startTimeRef.current;
-    const newTime = (pauseTimeRef.current || 0) + elapsedTime;
-
-    setCurrentTime(newTime);
-    onProgressUpdate({ time: newTime, playing: internalIsPlaying });
-
-    if (internalIsPlaying) {
-      animationFrameRef.current = requestAnimationFrame(updateProgress);
-    }
-  }, [internalIsPlaying, onProgressUpdate, pauseTimeRef]);
+}) => {
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastKnownTimeRef = useRef<number>(currentSong?.progress || 0);
+  const lastUpdateRef = useRef<number>(Date.now());
 
   useEffect(() => {
-    setInternalIsPlaying(isPlaying);
-  }, [isPlaying]);
+    if (!currentSong) return;
 
-  useEffect(() => {
-    if (currentSong) {
-      setCurrentTime(0);
-      startTimeRef.current = null;
-      pauseTimeRef.current = null;
-      cancelAnimationFrame(animationFrameRef.current as number);
-      animationFrameRef.current = null;
-    }
-  }, [currentSong]);
+    // Reset progress if song changes
+    lastKnownTimeRef.current = currentSong.progress || 0;
+    lastUpdateRef.current = Date.now();
 
-  useEffect(() => {
-    if (currentSong && internalIsPlaying) {
-      if (!startTimeRef.current) {
-        startTimeRef.current = performance.now();
-      } else {
-        startTimeRef.current = performance.now();
-      }
-      cancelAnimationFrame(animationFrameRef.current as number);
-      animationFrameRef.current = requestAnimationFrame(updateProgress);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    if (isPlaying) {
+      intervalRef.current = setInterval(() => {
+        const now = Date.now();
+        const elapsed = now - lastUpdateRef.current;
+        lastKnownTimeRef.current += elapsed;
+        onProgressUpdate({ time: lastKnownTimeRef.current, playing: true });
+        lastUpdateRef.current = now;
+      }, 200);
     } else {
-      cancelAnimationFrame(animationFrameRef.current as number);
-      animationFrameRef.current = null;
-      if (startTimeRef.current) {
-        pauseTimeRef.current = currentTime;
-        startTimeRef.current = null;
-      }
+      // When paused, update one last time to freeze bar
+      onProgressUpdate({ time: lastKnownTimeRef.current, playing: false });
     }
-    return () => cancelAnimationFrame(animationFrameRef.current as number);
-  }, [internalIsPlaying, currentSong, updateProgress, currentTime]);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [currentSong, isPlaying, onProgressUpdate]);
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
   return null;
 };
