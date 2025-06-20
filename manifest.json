@@ -6,12 +6,14 @@
   "isLocalApp": false,
   "requires": [],
   "label": "Discord Profile Pal",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Display your Discord profile with real-time Spotify integration on your Car Thing",
   "author": "Lovable",
+  "manifestVersion": "1.0.0",
+  "minimumDeskThingVersion": "1.0.0",
   "platforms": [
     "windows",
-    "macos",
+    "macos", 
     "linux"
   ],
   "homepage": "https://lovable.dev",
