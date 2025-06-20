@@ -86,8 +86,9 @@
   * {
     border-color: hsl(var(--border));
   }
+}
 
-  body {
-    @apply bg-background text-foreground;
-  }
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
