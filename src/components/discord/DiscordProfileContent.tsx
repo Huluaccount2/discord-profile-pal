@@ -30,7 +30,8 @@ export const DiscordProfileContent = React.memo(({
     isConnected,
     connectSpotify,
     songToDisplay,
-    shouldShowConnectPrompt
+    shouldShowConnectPrompt,
+    loading
   } = useMusicData(profile, discordData);
 
   const displayName = discordData?.user?.username || profile?.discord_username || profile?.username || "User";
@@ -83,7 +84,7 @@ export const DiscordProfileContent = React.memo(({
             <EmptyMusicState 
               isConnected={isConnected}
               onConnect={connectSpotify}
-              isLoading={false}
+              isLoading={loading}
             />
           ) : (
             <div className="text-white text-center w-full">
