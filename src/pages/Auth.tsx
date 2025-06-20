@@ -8,12 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [discordLoading, setDiscordLoading] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -32,6 +34,9 @@ const Auth = () => {
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`
+          }
         });
         if (error) throw error;
         toast.success("Check your email for the confirmation link!");
@@ -50,6 +55,28 @@ const Auth = () => {
     }
   };
 
+  const handleDiscordLogin = async () => {
+    setDiscordLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: {
+          redirectTo: `${window.location.origin}/`
+        }
+      });
+      
+      if (error) {
+        console.error('Discord OAuth error:', error);
+        toast.error('Failed to login with Discord: ' + error.message);
+      }
+    } catch (error: any) {
+      console.error('Discord login error:', error);
+      toast.error('Failed to login with Discord');
+    } finally {
+      setDiscordLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-gray-900/90 backdrop-blur-xl border-gray-700/50">
@@ -63,7 +90,24 @@ const Auth = () => {
               : "Sign in to your account"}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <Button
+            onClick={handleDiscordLogin}
+            disabled={discordLoading}
+            className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white"
+          >
+            {discordLoading ? "Connecting..." : "Continue with Discord"}
+          </Button>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full bg-gray-600" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-gray-900 px-2 text-gray-400">Or continue with</span>
+            </div>
+          </div>
+
           <form onSubmit={handleAuth} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-white">Email</Label>
