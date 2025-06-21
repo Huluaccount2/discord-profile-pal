@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
@@ -25,27 +25,16 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   isSpotifyConnected = false,
   spotifyData
 }) => {
-  // Unique key for song (details+state, fallback to timestamps if needed)
-  const songKey =
-    currentSong?.id ||
-    (currentSong?.details && currentSong?.state
-      ? `${currentSong.details} - ${currentSong.state}`
-      : currentSong?.timestamps?.start?.toString() || 'unknown');
-
-  // Progress tracking state
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  // New: remember progress at the time of pausing
   const [frozenProgress, setFrozenProgress] = useState<number | null>(null);
-  const lastSongKeyRef = useRef<string>(songKey);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // On song change, reset all states
+  // Reset timer when song changes
   useEffect(() => {
-    if (!currentSong) return;
-
-    if (lastSongKeyRef.current !== songKey) {
-      // New song detected: reset progress
+    if (currentSong) {
       const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
       let initialProgress = 0;
       if (isSpotifyConnected && spotifyData?.track?.progress != null) {
@@ -56,27 +45,28 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
       setCurrentTime(Math.min(initialProgress, duration));
       setFrozenProgress(null);
       setIsPlaying(isSpotifyConnected && spotifyData?.isPlaying);
-      lastSongKeyRef.current = songKey;
     }
     // eslint-disable-next-line
-  }, [currentSong, songKey, isSpotifyConnected, spotifyData?.track?.progress, spotifyData?.isPlaying]);
+  }, [currentSong, isSpotifyConnected, spotifyData?.track?.progress, spotifyData?.isPlaying]);
 
-  // On pause, freeze progress at current spot
+  // Freeze progress when paused, unfreeze when playing
   useEffect(() => {
-    if (!isPlaying && currentSong) {
+    if (!isPlaying && currentSong && currentSong.timestamps?.start) {
       setFrozenProgress(currentTime);
     }
     if (isPlaying) {
       setFrozenProgress(null);
     }
-  }, [isPlaying, currentSong, currentTime]);
+    // eslint-disable-next-line
+  }, [isPlaying, currentSong]);
 
-  // Timer to update progress bar every second (only when playing, and only for THIS song)
+  // Timer to update progress bar every second (only when playing)
   useEffect(() => {
-    if (isPlaying && currentSong && lastSongKeyRef.current === songKey) {
+    if (isPlaying && currentSong && currentSong.timestamps) {
       intervalRef.current = setInterval(() => {
         setCurrentTime((prev) => {
           const duration = currentSong.timestamps.end - currentSong.timestamps.start;
+          // Clamp to duration (song end)
           return Math.min(prev + 1000, duration);
         });
       }, 1000);
@@ -90,37 +80,17 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
         intervalRef.current = null;
       }
     };
-  }, [isPlaying, currentSong, songKey]);
+  }, [isPlaying, currentSong]);
 
   if (!currentSong) return null;
 
-  const validTimestamps =
-    currentSong.timestamps &&
-    typeof currentSong.timestamps.start === 'number' &&
-    typeof currentSong.timestamps.end === 'number' &&
-    currentSong.timestamps.end > currentSong.timestamps.start;
+  const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
 
-  const duration = validTimestamps
-    ? currentSong.timestamps.end - currentSong.timestamps.start
-    : 0;
-
-  // Use frozen progress only for this song, when paused
+  // New: freeze progress when paused
   const shownTime =
-    !isPlaying && frozenProgress !== null && lastSongKeyRef.current === songKey
+    !isPlaying && frozenProgress !== null
       ? frozenProgress
       : currentTime;
-
-  // ======== DEBUG LOG HERE =========
-  console.log(
-    '[NowPlaying] Song:', currentSong.details, '|',
-    'Artist:', currentSong.state, '|',
-    'Start:', currentSong.timestamps?.start, '|',
-    'End:', currentSong.timestamps?.end, '|',
-    'Duration:', duration, '|',
-    'Now:', Date.now(),
-    '| isPlaying:', isPlaying, '| shownTime:', shownTime
-  );
-  // ======== END DEBUG LOG ==========
 
   const progress = duration > 0 ? (shownTime / duration) * 100 : 0;
 
