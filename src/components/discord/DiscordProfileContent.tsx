@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { ProfileHeader } from "@/components/discord/ProfileHeader";
@@ -43,15 +42,8 @@ export const DiscordProfileContent = React.memo(({
   const avatarUrl = discordData?.avatar_url || profile?.discord_avatar || profile?.avatar_url || null;
   const status = discordData?.status || 'offline';
 
-  console.log('DiscordProfileContent: Rendering with data:', { 
-    displayName, 
-    discriminator, 
-    avatarUrl, 
-    status,
-    songToDisplay: !!songToDisplay,
-    shouldShowConnectPrompt,
-    songDetails: songToDisplay?.details || 'none'
-  });
+  // Debug log - THIS IS WHERE THE LOG GOES
+  console.log('DiscordProfileContent: songToDisplay:', songToDisplay);
 
   const bannerUrl = discordData?.user?.banner ? 
     `https://cdn.discordapp.com/banners/${discordData.user.id}/${discordData.user.banner}.png?size=600` : 
