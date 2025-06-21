@@ -10,16 +10,16 @@ export const useSpotify = (userId: string | undefined) => {
   const { isRunningOnDeskThing } = useDeskThing();
 
   const { loading, connectSpotify } = useSpotifyAuth(userId);
-  const { spotifyData, isConnected, connectionError, fetchCurrentTrack } = useSpotifyData(userId);
+  const { spotifyData, isConnected, connectionError, fetchCurrentTrack, isInitialized } = useSpotifyData(userId);
   const { play, pause, nextTrack, previousTrack } = useSpotifyControls(userId, isConnected, fetchCurrentTrack);
   
   // Only enable polling for web usage, not DeskThing
-  useSpotifyPolling(isRunningOnDeskThing ? undefined : userId, isConnected, fetchCurrentTrack);
+  useSpotifyPolling(isRunningOnDeskThing ? undefined : userId, isConnected && isInitialized, fetchCurrentTrack);
 
   return {
     spotifyData,
     loading,
-    isConnected: isRunningOnDeskThing ? false : isConnected, // DeskThing uses Discord connection
+    isConnected: isRunningOnDeskThing ? false : isConnected,
     connectionError: isRunningOnDeskThing ? null : connectionError,
     connectSpotify,
     fetchCurrentTrack,
@@ -27,5 +27,6 @@ export const useSpotify = (userId: string | undefined) => {
     pause,
     nextTrack,
     previousTrack,
+    isInitialized,
   };
 };

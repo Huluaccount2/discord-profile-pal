@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDeskThing } from "@/contexts/DeskThingContext";
 
@@ -22,19 +22,66 @@ export const useSpotifyData = (userId: string | undefined) => {
   const [spotifyData, setSpotifyData] = useState<SpotifyState | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { isRunningOnDeskThing } = useDeskThing();
+
+  // Check connection status on mount
+  useEffect(() => {
+    if (isRunningOnDeskThing || !userId) {
+      console.log('useSpotifyData: Running on DeskThing or no userId, skipping connection check');
+      setIsInitialized(true);
+      return;
+    }
+
+    const checkConnection = async () => {
+      try {
+        console.log('useSpotifyData: Checking Spotify connection status');
+        const session = await supabase.auth.getSession();
+        if (!session.data.session) {
+          console.log('useSpotifyData: No authenticated session');
+          setIsConnected(false);
+          setIsInitialized(true);
+          return;
+        }
+
+        // Check if user has Spotify tokens in profile
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('spotify_access_token, spotify_refresh_token')
+          .eq('id', userId)
+          .single();
+
+        if (error || !profile?.spotify_access_token) {
+          console.log('useSpotifyData: No Spotify tokens found in profile');
+          setIsConnected(false);
+          setConnectionError(null);
+        } else {
+          console.log('useSpotifyData: Spotify tokens found, user is connected');
+          setIsConnected(true);
+          setConnectionError(null);
+        }
+      } catch (error) {
+        console.error('useSpotifyData: Error checking connection:', error);
+        setIsConnected(false);
+        setConnectionError('Failed to check connection status');
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    checkConnection();
+  }, [userId, isRunningOnDeskThing]);
 
   const fetchCurrentTrack = useCallback(async () => {
     if (isRunningOnDeskThing) {
       console.log('useSpotifyData: Running on DeskThing, skipping Spotify OAuth');
-      // DeskThing handles Spotify through Discord connection, not OAuth
       setConnectionError(null);
       setSpotifyData(null);
       return;
     }
 
-    if (!userId) {
-      console.log('useSpotifyData: No userId provided for fetching track');
+    if (!userId || !isInitialized) {
+      console.log('useSpotifyData: No userId or not initialized, skipping track fetch');
       return;
     }
 
@@ -44,6 +91,7 @@ export const useSpotifyData = (userId: string | undefined) => {
       if (!session.data.session) {
         console.log('useSpotifyData: No authenticated session, skipping track fetch');
         setConnectionError('No authenticated session');
+        setIsConnected(false);
         return;
       }
 
@@ -62,18 +110,20 @@ export const useSpotifyData = (userId: string | undefined) => {
         console.log('useSpotifyData: Function returned error:', data.error);
         if (data.error.includes('No Spotify connection')) {
           setIsConnected(false);
-          setConnectionError('No Spotify connection - please connect your Spotify account');
+          setConnectionError('No Spotify connection found');
           setSpotifyData(null);
           return;
         }
       }
 
       if (!error && data) {
+        // Mark as connected since we got a valid response
+        setIsConnected(true);
+        setConnectionError(null);
+
         if (data.track && data.isPlaying) {
           // Currently playing
           console.log('useSpotifyData: Currently playing track:', data.track);
-          setIsConnected(true);
-          setConnectionError(null);
           setSpotifyData({
             isPlaying: true,
             track: data.track
@@ -82,8 +132,6 @@ export const useSpotifyData = (userId: string | undefined) => {
         } else if (data.track && !data.isPlaying) {
           // Track exists but not playing
           console.log('useSpotifyData: Track exists but not playing:', data.track);
-          setIsConnected(true);
-          setConnectionError(null);
           setSpotifyData({
             isPlaying: false,
             lastPlayed: data.track
@@ -128,12 +176,13 @@ export const useSpotifyData = (userId: string | undefined) => {
       setConnectionError('Failed to fetch track data');
       setSpotifyData(null);
     }
-  }, [userId, isRunningOnDeskThing]);
+  }, [userId, isRunningOnDeskThing, isInitialized]);
 
   return {
     spotifyData,
     isConnected,
     connectionError,
     fetchCurrentTrack,
+    isInitialized,
   };
 };

@@ -17,7 +17,8 @@ export const useMusicData = (profile: any, discordData: any) => {
     play,
     pause,
     nextTrack,
-    previousTrack
+    previousTrack,
+    isInitialized
   } = useSpotify(user?.id);
   const [lastKnownSong, setLastKnownSong] = useLastKnownSong();
   const [lastSongUpdate, setLastSongUpdate] = useState<number>(0);
@@ -116,7 +117,7 @@ export const useMusicData = (profile: any, discordData: any) => {
   // Determine if we should show connect prompt
   const shouldShowConnectPrompt = isRunningOnDeskThing 
     ? false // DeskThing doesn't need connect prompt
-    : !isConnected && !songToDisplay;
+    : !isConnected && !songToDisplay && isInitialized; // Only show after we've checked connection
 
   return {
     spotifyData,
