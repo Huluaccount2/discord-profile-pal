@@ -20,22 +20,22 @@ export const useMusicData = (profile: any, discordData: any) => {
   const [lastKnownSong, setLastKnownSong] = useLastKnownSong();
   const [lastSongUpdate, setLastSongUpdate] = useState<number>(0);
 
-  // Calculate current song data with improved priority logic and staleness detection
+  // Calculate current song data with improved priority logic and consistent progress
   let currentSong = null;
   if (profile && discordData) {
     // Priority 1: Spotify OAuth if connected and has current track
     if (isConnected && spotifyData?.track && spotifyData?.isPlaying) {
       const track = spotifyData.track;
-      const startTime = Date.now() - track.progress;
       currentSong = {
         name: "Spotify",
         type: 2,
         details: track.name,
         state: track.artist,
-        isPlaying: spotifyData.isPlaying,
+        isPlaying: true,
+        progress: track.progress, // Use Spotify's progress directly
         timestamps: {
-          start: Math.floor(startTime),
-          end: Math.floor(startTime + track.duration),
+          start: Date.now() - track.progress,
+          end: Date.now() - track.progress + track.duration,
         },
         assets: {
           large_image: track.albumCover,
@@ -46,16 +46,16 @@ export const useMusicData = (profile: any, discordData: any) => {
     // Priority 2: Spotify OAuth last played if connected but not currently playing
     else if (isConnected && spotifyData?.lastPlayed) {
       const track = spotifyData.lastPlayed;
-      const now = Date.now();
       currentSong = {
         name: "Spotify",
         type: 2,
         details: track.name,
         state: track.artist,
         isPlaying: false,
+        progress: track.duration, // Full duration for completed track
         timestamps: {
-          start: now - track.duration,
-          end: now,
+          start: Date.now() - track.duration,
+          end: Date.now(),
         },
         assets: {
           large_image: track.albumCover,
@@ -73,8 +73,7 @@ export const useMusicData = (profile: any, discordData: any) => {
         if (songAge < maxAge) {
           currentSong = {
             ...discordSong,
-            // Add playing state detection for Discord songs
-            isPlaying: discordSong.isPlaying !== undefined ? discordSong.isPlaying : true
+            isPlaying: true // Discord songs are assumed playing if recent
           };
         }
       }
@@ -99,7 +98,10 @@ export const useMusicData = (profile: any, discordData: any) => {
     const songAge = lastKnownSong.timestamps?.start ? Date.now() - lastKnownSong.timestamps.start : Infinity;
     const maxLastKnownAge = 10 * 60 * 1000; // 10 minutes
     if (songAge < maxLastKnownAge) {
-      songToDisplay = lastKnownSong;
+      songToDisplay = {
+        ...lastKnownSong,
+        isPlaying: false // Last known songs are not playing
+      };
     }
   }
   

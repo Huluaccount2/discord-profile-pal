@@ -13,76 +13,84 @@ export const MusicProgressTracker: React.FC<MusicProgressTrackerProps> = ({
   onProgressUpdate,
 }) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimeRef = useRef<number>(0);
-  const progressAtPauseRef = useRef<number>(0);
+  const lastSongRef = useRef<string | null>(null);
+  const progressRef = useRef<number>(0);
 
-  useEffect(() => {
-    if (!currentSong?.timestamps) return;
-
-    // Clear any existing interval
+  // Clear interval helper
+  const clearCurrentInterval = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+  };
 
-    if (isPlaying) {
-      // Calculate current progress when resuming
-      const now = Date.now();
-      const songStart = currentSong.timestamps.start;
-      let currentProgress = now - songStart;
+  // Calculate initial progress based on song source
+  const calculateInitialProgress = () => {
+    if (!currentSong?.timestamps) return 0;
 
-      // If we were paused, add the paused progress to the current time
-      if (progressAtPauseRef.current > 0) {
-        const timeSincePause = now - startTimeRef.current;
-        currentProgress = progressAtPauseRef.current;
-        // Update the song start time to account for the pause
-        currentSong.timestamps.start = now - progressAtPauseRef.current;
-      }
+    const now = Date.now();
+    
+    // For Spotify, use the provided progress directly
+    if (currentSong.name === "Spotify" && currentSong.progress !== undefined) {
+      return currentSong.progress;
+    }
+    
+    // For Discord, calculate from timestamps
+    if (currentSong.timestamps.start) {
+      return Math.max(0, now - currentSong.timestamps.start);
+    }
+    
+    return 0;
+  };
 
-      startTimeRef.current = now;
+  // Check if this is a new song
+  const getCurrentSongId = () => {
+    if (!currentSong) return null;
+    return `${currentSong.details || ''}-${currentSong.state || ''}-${currentSong.name || ''}`;
+  };
 
-      // Start interval to update progress
-      intervalRef.current = setInterval(() => {
-        const elapsed = Date.now() - startTimeRef.current;
-        const totalProgress = progressAtPauseRef.current + elapsed;
-        onProgressUpdate({ time: totalProgress, playing: true });
-      }, 100);
-
-      // Send immediate update
-      onProgressUpdate({ time: currentProgress, playing: true });
-    } else {
-      // Music is paused - freeze the progress
-      const now = Date.now();
-      if (startTimeRef.current > 0) {
-        const elapsed = now - startTimeRef.current;
-        progressAtPauseRef.current = progressAtPauseRef.current + elapsed;
-      } else {
-        // First time pause - calculate from song start
-        progressAtPauseRef.current = now - currentSong.timestamps.start;
-      }
-      
-      onProgressUpdate({ time: progressAtPauseRef.current, playing: false });
+  useEffect(() => {
+    if (!currentSong) {
+      clearCurrentInterval();
+      return;
     }
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
+    const currentSongId = getCurrentSongId();
+    const isNewSong = currentSongId !== lastSongRef.current;
+    
+    // Clear any existing interval
+    clearCurrentInterval();
+
+    if (isNewSong) {
+      // New song - reset progress
+      progressRef.current = calculateInitialProgress();
+      lastSongRef.current = currentSongId;
+      console.log('MusicProgressTracker: New song detected, initial progress:', progressRef.current);
+    }
+
+    // Send current progress immediately
+    onProgressUpdate({ 
+      time: progressRef.current, 
+      playing: isPlaying 
+    });
+
+    if (isPlaying) {
+      // Start interval to update progress
+      intervalRef.current = setInterval(() => {
+        progressRef.current += 100; // Add 100ms each interval
+        onProgressUpdate({ 
+          time: progressRef.current, 
+          playing: true 
+        });
+      }, 100);
+    }
+
+    return clearCurrentInterval;
   }, [currentSong, isPlaying, onProgressUpdate]);
 
-  // Reset progress when song changes
+  // Cleanup on unmount
   useEffect(() => {
-    progressAtPauseRef.current = 0;
-    startTimeRef.current = 0;
-  }, [currentSong?.details, currentSong?.state]); // Reset when song changes
-
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
+    return clearCurrentInterval;
   }, []);
 
   return null;

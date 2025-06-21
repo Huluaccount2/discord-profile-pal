@@ -1,5 +1,4 @@
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
@@ -28,40 +27,55 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   spotifyData
 }) => {
   const [currentTime, setCurrentTime] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   const handleProgressUpdate = useCallback((progress: { time: number; playing: boolean }) => {
     setCurrentTime(progress.time);
-    setIsPlaying(progress.playing);
   }, []);
+
+  // Determine the actual playing state with cleaner logic
+  const getPlayingState = () => {
+    // Priority 1: Spotify data (most reliable)
+    if (isSpotifyConnected && spotifyData?.isPlaying !== undefined) {
+      return spotifyData.isPlaying;
+    }
+    
+    // Priority 2: Song's explicit playing state
+    if (currentSong?.isPlaying !== undefined) {
+      return currentSong.isPlaying;
+    }
+    
+    // Priority 3: Default to false for paused state
+    return false;
+  };
+
+  const isPlaying = getPlayingState();
+
+  // Initialize progress when song changes
+  useEffect(() => {
+    if (currentSong) {
+      // For Spotify, use the provided progress
+      if (isSpotifyConnected && spotifyData?.track?.progress !== undefined) {
+        setCurrentTime(spotifyData.track.progress);
+      } else if (currentSong.timestamps?.start) {
+        // For Discord, calculate from start time
+        const elapsed = Date.now() - currentSong.timestamps.start;
+        setCurrentTime(Math.max(0, elapsed));
+      } else {
+        setCurrentTime(0);
+      }
+    }
+  }, [currentSong?.details, currentSong?.state, isSpotifyConnected, spotifyData]);
 
   if (!currentSong) {
     return null;
   }
 
   const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
-
-  // Determine the actual playing state - prioritize Spotify data if available
-  let actuallyPlaying = false;
-  if (isSpotifyConnected && spotifyData?.isPlaying !== undefined) {
-    actuallyPlaying = spotifyData.isPlaying;
-  } else {
-    // For Discord data, check if song has playing state or use timestamp logic
-    if (currentSong.isPlaying !== undefined) {
-      actuallyPlaying = currentSong.isPlaying;
-    } else {
-      // Fallback: assume playing if we have recent timestamps (within last 10 seconds)
-      const now = Date.now();
-      const timeSinceStart = now - (currentSong.timestamps?.start || 0);
-      actuallyPlaying = timeSinceStart < duration + 10000; // 10 second buffer
-    }
-  }
-
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const showControls = isSpotifyConnected && onPlay && onPause && onNext && onPrevious;
 
   const handlePlayPause = () => {
-    if (actuallyPlaying) {
+    if (isPlaying) {
       onPause?.();
     } else {
       onPlay?.();
@@ -73,7 +87,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
       <div className="relative w-full h-full rounded-lg overflow-hidden">
         <MusicProgressTracker
           currentSong={currentSong}
-          isPlaying={actuallyPlaying}
+          isPlaying={isPlaying}
           onProgressUpdate={handleProgressUpdate}
         />
         
@@ -91,7 +105,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
               <MusicArtwork 
                 imageUrl={currentSong.assets?.large_image}
                 altText={currentSong.assets?.large_text}
-                isPlaying={actuallyPlaying}
+                isPlaying={isPlaying}
               />
             </div>
 
@@ -100,7 +114,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
                 title={currentSong.details}
                 artist={currentSong.state}
                 album={currentSong.assets?.large_text}
-                isPlaying={actuallyPlaying}
+                isPlaying={isPlaying}
               />
             </div>
           </div>
@@ -110,7 +124,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
               currentTime={currentTime}
               duration={duration}
               progress={progress}
-              isPlaying={actuallyPlaying}
+              isPlaying={isPlaying}
             />
           </div>
 
@@ -131,7 +145,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
                 onClick={handlePlayPause}
                 className="text-white hover:bg-white/20"
               >
-                {actuallyPlaying ? (
+                {isPlaying ? (
                   <Pause className="h-6 w-6" />
                 ) : (
                   <Play className="h-6 w-6" />
