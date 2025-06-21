@@ -25,15 +25,15 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   isSpotifyConnected = false,
   spotifyData
 }) => {
-  // Internal progress/time for the bar, initialized to song's progress if available
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  // New: remember progress at the time of pausing
+  const [frozenProgress, setFrozenProgress] = useState<number | null>(null);
 
-  // Keep track of last timestamps so progress continues smoothly
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Reset timer when song changes
   useEffect(() => {
-    // When song changes, reset timer state
     if (currentSong) {
       const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
       let initialProgress = 0;
@@ -43,10 +43,22 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
         initialProgress = Math.max(0, Date.now() - currentSong.timestamps.start);
       }
       setCurrentTime(Math.min(initialProgress, duration));
+      setFrozenProgress(null);
       setIsPlaying(isSpotifyConnected && spotifyData?.isPlaying);
     }
     // eslint-disable-next-line
   }, [currentSong, isSpotifyConnected, spotifyData?.track?.progress, spotifyData?.isPlaying]);
+
+  // Freeze progress when paused, unfreeze when playing
+  useEffect(() => {
+    if (!isPlaying && currentSong && currentSong.timestamps?.start) {
+      setFrozenProgress(currentTime);
+    }
+    if (isPlaying) {
+      setFrozenProgress(null);
+    }
+    // eslint-disable-next-line
+  }, [isPlaying, currentSong]);
 
   // Timer to update progress bar every second (only when playing)
   useEffect(() => {
@@ -73,9 +85,15 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   if (!currentSong) return null;
 
   const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
-  // Priority: Spotify API state, then fallback to local state
+  // New: freeze progress when paused
+  const shownTime =
+    !isPlaying && frozenProgress !== null
+      ? frozenProgress
+      : currentTime;
+
+  const progress = duration > 0 ? (shownTime / duration) * 100 : 0;
+
   const actuallyPlaying =
     isSpotifyConnected && spotifyData?.isPlaying !== undefined
       ? spotifyData.isPlaying
@@ -83,7 +101,6 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 
   const showControls = isSpotifyConnected && onPlay && onPause && onNext && onPrevious;
 
-  // Handler for Play/Pause button
   const handlePlayPause = () => {
     if (actuallyPlaying) {
       onPause?.();
@@ -123,7 +140,7 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
         </div>
         <div className="w-full mt-4">
           <MusicProgressBar
-            currentTime={currentTime}
+            currentTime={shownTime}
             duration={duration}
             progress={progress}
             isPlaying={actuallyPlaying}
