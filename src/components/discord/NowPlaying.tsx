@@ -111,15 +111,16 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
       : currentTime;
 
   // ======== DEBUG LOG HERE =========
-  console.log(
-    '[NowPlaying] Song:', currentSong.details, '|',
-    'Artist:', currentSong.state, '|',
-    'Start:', currentSong.timestamps?.start, '|',
-    'End:', currentSong.timestamps?.end, '|',
-    'Duration:', duration, '|',
-    'Now:', Date.now(),
-    '| isPlaying:', isPlaying, '| shownTime:', shownTime
-  );
+console.log(
+  '[NowPlaying] Song:', currentSong?.details,
+  '| Artist:', currentSong?.state,
+  '| Start:', currentSong?.timestamps?.start,
+  '| End:', currentSong?.timestamps?.end,
+  '| Duration:', duration,
+  '| Now:', Date.now(),
+  '| isPlaying:', isPlaying,
+  '| shownTime:', typeof shownTime !== "undefined" ? shownTime : "n/a"
+);
   // ======== END DEBUG LOG ==========
 
   const progress = duration > 0 ? (shownTime / duration) * 100 : 0;
