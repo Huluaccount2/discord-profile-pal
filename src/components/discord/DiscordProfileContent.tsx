@@ -43,7 +43,15 @@ export const DiscordProfileContent = React.memo(({
   const avatarUrl = discordData?.avatar_url || profile?.discord_avatar || profile?.avatar_url || null;
   const status = discordData?.status || 'offline';
 
-  console.log('DiscordProfileContent: Display data:', { displayName, discriminator, avatarUrl, status });
+  console.log('DiscordProfileContent: Rendering with data:', { 
+    displayName, 
+    discriminator, 
+    avatarUrl, 
+    status,
+    songToDisplay: !!songToDisplay,
+    shouldShowConnectPrompt,
+    songDetails: songToDisplay?.details || 'none'
+  });
 
   const bannerUrl = discordData?.user?.banner ? 
     `https://cdn.discordapp.com/banners/${discordData.user.id}/${discordData.user.banner}.png?size=600` : 
@@ -94,8 +102,10 @@ export const DiscordProfileContent = React.memo(({
               isLoading={loading}
             />
           ) : (
-            <div className="text-white text-center w-full">
-              No music currently detected.
+            <div className="text-white text-center w-full flex items-center justify-center">
+              <div className="text-gray-400">
+                No music currently detected.
+              </div>
             </div>
           )}
         </div>
