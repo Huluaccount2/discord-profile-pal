@@ -128,42 +128,15 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
             progress={progress}
             isPlaying={actuallyPlaying}
           />
+       <div className="w-full mt-4">
+          <MusicProgressBar
+            currentTime={currentTime}
+            duration={duration}
+            progress={progress}
+            isPlaying={actuallyPlaying}
+          />
         </div>
-        {showControls && (
-          <div className="flex items-center justify-center space-x-4 mt-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onPrevious?.()}
-              className="text-white hover:bg-white/20"
-              disabled={!isSpotifyConnected}
-            >
-              <SkipBack className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handlePlayPause}
-              className="text-white hover:bg-white/20"
-              disabled={!isSpotifyConnected}
-            >
-              {actuallyPlaying ? (
-                <Pause className="h-6 w-6" />
-              ) : (
-                <Play className="h-6 w-6" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onNext?.()}
-              className="text-white hover:bg-white/20"
-              disabled={!isSpotifyConnected}
-            >
-              <SkipForward className="h-5 w-5" />
-            </Button>
-          </div>
-        )}
+        {/* Playback controls removed as per user request */}
       </Card>
     </div>
   );
