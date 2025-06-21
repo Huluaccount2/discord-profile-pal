@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSpotify } from "@/hooks/useSpotify";
@@ -19,9 +20,6 @@ export const useMusicData = (profile: any, discordData: any) => {
   const [lastKnownSong, setLastKnownSong] = useLastKnownSong();
   const [lastSongUpdate, setLastSongUpdate] = useState<number>(0);
 
-  // --- added for freeze-on-pause ---
-  const frozenTimestampsRef = useRef<{ start: number; end: number } | null>(null);
-
   // Calculate current song data with improved priority logic and staleness detection
   let currentSong = null;
   if (profile && discordData) {
@@ -34,6 +32,7 @@ export const useMusicData = (profile: any, discordData: any) => {
         type: 2,
         details: track.name,
         state: track.artist,
+        isPlaying: spotifyData.isPlaying,
         timestamps: {
           start: Math.floor(startTime),
           end: Math.floor(startTime + track.duration),
@@ -53,6 +52,7 @@ export const useMusicData = (profile: any, discordData: any) => {
         type: 2,
         details: track.name,
         state: track.artist,
+        isPlaying: false,
         timestamps: {
           start: now - track.duration,
           end: now,
@@ -71,28 +71,14 @@ export const useMusicData = (profile: any, discordData: any) => {
         const songAge = discordSong.timestamps?.start ? now - discordSong.timestamps.start : 0;
         const maxAge = 5 * 60 * 1000; // 5 minutes
         if (songAge < maxAge) {
-          currentSong = discordSong;
+          currentSong = {
+            ...discordSong,
+            // Add playing state detection for Discord songs
+            isPlaying: discordSong.isPlaying !== undefined ? discordSong.isPlaying : true
+          };
         }
       }
     }
-  }
-
-  // --- Freeze progress logic ---
-  // Figure out: are we currently playing?
-  const isActuallyPlaying = isConnected && spotifyData?.isPlaying === true;
-  if (currentSong && !isActuallyPlaying) {
-    if (!frozenTimestampsRef.current) {
-      frozenTimestampsRef.current = {
-        start: currentSong.timestamps.start,
-        end: currentSong.timestamps.end
-      };
-    }
-    currentSong = {
-      ...currentSong,
-      timestamps: { ...frozenTimestampsRef.current }
-    };
-  } else if (isActuallyPlaying) {
-    frozenTimestampsRef.current = null;
   }
 
   // Store current song with timestamp tracking
