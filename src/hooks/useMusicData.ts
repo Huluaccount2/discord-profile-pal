@@ -3,9 +3,11 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSpotify } from "@/hooks/useSpotify";
 import { useLastKnownSong } from "@/hooks/useLastKnownSong";
+import { useDeskThing } from "@/contexts/DeskThingContext";
 
 export const useMusicData = (profile: any, discordData: any) => {
   const { user } = useAuth();
+  const { isRunningOnDeskThing } = useDeskThing();
   const { 
     spotifyData, 
     isConnected, 
@@ -20,10 +22,30 @@ export const useMusicData = (profile: any, discordData: any) => {
   const [lastKnownSong, setLastKnownSong] = useLastKnownSong();
   const [lastSongUpdate, setLastSongUpdate] = useState<number>(0);
 
-  // Calculate current song data with improved priority logic and freshness checks
+  // Calculate current song data with improved priority logic
   let currentSong = null;
-  if (profile && discordData) {
-    // Priority 1: Spotify OAuth if connected and has current track
+  
+  if (isRunningOnDeskThing) {
+    // DeskThing mode: Only use fresh Discord Spotify data
+    if (profile && discordData?.has_valid_spotify && discordData?.activities?.length > 0) {
+      const discordSong = discordData.activities.find(activity => activity.type === 2);
+      if (discordSong) {
+        const dataAge = discordData.last_updated ? Date.now() - discordData.last_updated : Infinity;
+        const maxDataAge = 2 * 60 * 1000; // 2 minutes for DeskThing
+        
+        if (dataAge < maxDataAge) {
+          currentSong = {
+            ...discordSong,
+            isPlaying: true
+          };
+          console.log('DeskThing: Using fresh Discord Spotify data');
+        } else {
+          console.log('DeskThing: Discord Spotify data too old, no music detected');
+        }
+      }
+    }
+  } else {
+    // Web mode: Use Spotify OAuth integration
     if (isConnected && spotifyData?.track && spotifyData?.isPlaying) {
       const track = spotifyData.track;
       currentSong = {
@@ -42,9 +64,8 @@ export const useMusicData = (profile: any, discordData: any) => {
           large_text: track.album,
         },
       };
-    }
-    // Priority 2: Spotify OAuth last played if connected but not currently playing
-    else if (isConnected && spotifyData?.lastPlayed) {
+      console.log('Web: Using Spotify OAuth current track');
+    } else if (isConnected && spotifyData?.lastPlayed) {
       const track = spotifyData.lastPlayed;
       currentSong = {
         name: "Spotify",
@@ -62,25 +83,7 @@ export const useMusicData = (profile: any, discordData: any) => {
           large_text: track.album,
         },
       };
-    }
-    // Priority 3: Discord Spotify activities (with freshness and validity check)
-    else if (discordData?.has_valid_spotify && discordData?.activities?.length > 0) {
-      const discordSong = discordData.activities.find(activity => activity.type === 2);
-      if (discordSong) {
-        // Check if the Discord data is fresh (less than 5 minutes old)
-        const dataAge = discordData.last_updated ? Date.now() - discordData.last_updated : Infinity;
-        const maxDataAge = 5 * 60 * 1000; // 5 minutes
-        
-        if (dataAge < maxDataAge) {
-          currentSong = {
-            ...discordSong,
-            isPlaying: true // Discord songs with valid Spotify data are currently playing
-          };
-          console.log('Using fresh Discord Spotify data');
-        } else {
-          console.log('Discord Spotify data is too old, ignoring');
-        }
-      }
+      console.log('Web: Using Spotify OAuth last played track');
     }
   }
 
@@ -99,27 +102,30 @@ export const useMusicData = (profile: any, discordData: any) => {
   let songToDisplay = currentSong;
 
   // Only use last known song if no current song and it's reasonably fresh
-  if (!currentSong && lastKnownSong) {
+  if (!currentSong && lastKnownSong && !isRunningOnDeskThing) {
     const songAge = lastKnownSong.timestamps?.start ? Date.now() - lastKnownSong.timestamps.start : Infinity;
-    const maxLastKnownAge = 5 * 60 * 1000; // 5 minutes - shorter than before
+    const maxLastKnownAge = 5 * 60 * 1000; // 5 minutes
     if (songAge < maxLastKnownAge) {
       songToDisplay = {
         ...lastKnownSong,
-        isPlaying: false // Last known songs are not playing
+        isPlaying: false
       };
     }
   }
   
-  const shouldShowConnectPrompt = !isConnected && !songToDisplay;
+  // Determine if we should show connect prompt
+  const shouldShowConnectPrompt = isRunningOnDeskThing 
+    ? false // DeskThing doesn't need connect prompt
+    : !isConnected && !songToDisplay;
 
   return {
     spotifyData,
-    isConnected,
+    isConnected: isRunningOnDeskThing ? false : isConnected,
     connectSpotify,
-    connectionError,
+    connectionError: isRunningOnDeskThing ? null : connectionError,
     songToDisplay,
     shouldShowConnectPrompt,
-    loading,
+    loading: isRunningOnDeskThing ? false : loading,
     play,
     pause,
     nextTrack,

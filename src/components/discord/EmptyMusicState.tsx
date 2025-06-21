@@ -3,6 +3,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Music, Loader2 } from 'lucide-react';
+import { useDeskThing } from '@/contexts/DeskThingContext';
 
 interface EmptyMusicStateProps {
   isConnected: boolean;
@@ -15,14 +16,25 @@ export const EmptyMusicState: React.FC<EmptyMusicStateProps> = ({
   onConnect,
   isLoading = false
 }) => {
-  console.log('EmptyMusicState: Rendering with isConnected:', isConnected, 'isLoading:', isLoading);
+  const { isRunningOnDeskThing } = useDeskThing();
+  
+  console.log('EmptyMusicState: Rendering with isConnected:', isConnected, 'isLoading:', isLoading, 'isDeskThing:', isRunningOnDeskThing);
 
   return (
     <Card className="bg-gray-800/50 border-gray-700/50 p-6 w-full">
       <div className="text-center">
         <Music className="h-12 w-12 text-gray-400 mx-auto mb-4" />
         
-        {!isConnected ? (
+        {isRunningOnDeskThing ? (
+          <>
+            <h3 className="text-white font-semibold text-lg mb-2">
+              No music playing
+            </h3>
+            <p className="text-gray-400 text-sm">
+              Start playing music on Spotify to see it here via Discord integration
+            </p>
+          </>
+        ) : !isConnected ? (
           <>
             <h3 className="text-white font-semibold text-lg mb-2">
               Connect Spotify
