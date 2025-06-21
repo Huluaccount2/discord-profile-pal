@@ -94,13 +94,33 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 
   if (!currentSong) return null;
 
-  const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
+  const validTimestamps =
+    currentSong.timestamps &&
+    typeof currentSong.timestamps.start === 'number' &&
+    typeof currentSong.timestamps.end === 'number' &&
+    currentSong.timestamps.end > currentSong.timestamps.start;
+
+  const duration = validTimestamps
+    ? currentSong.timestamps.end - currentSong.timestamps.start
+    : 0;
 
   // Use frozen progress only for this song, when paused
   const shownTime =
     !isPlaying && frozenProgress !== null && lastSongKeyRef.current === songKey
       ? frozenProgress
       : currentTime;
+
+  // ======== DEBUG LOG HERE =========
+  console.log(
+    '[NowPlaying] Song:', currentSong.details, '|',
+    'Artist:', currentSong.state, '|',
+    'Start:', currentSong.timestamps?.start, '|',
+    'End:', currentSong.timestamps?.end, '|',
+    'Duration:', duration, '|',
+    'Now:', Date.now(),
+    '| isPlaying:', isPlaying, '| shownTime:', shownTime
+  );
+  // ======== END DEBUG LOG ==========
 
   const progress = duration > 0 ? (shownTime / duration) * 100 : 0;
 
