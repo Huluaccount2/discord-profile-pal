@@ -1,12 +1,10 @@
-
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { MusicArtwork } from './music/MusicArtwork';
 import { MusicInfo } from './music/MusicInfo';
 import { MusicProgressBar } from './music/MusicProgressBar';
-import { MusicProgressTracker } from './music/MusicProgressTracker';
 
 interface NowPlayingProps {
   currentSong: any;
@@ -27,153 +25,146 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
   isSpotifyConnected = false,
   spotifyData
 }) => {
+  // Internal progress/time for the bar, initialized to song's progress if available
   const [currentTime, setCurrentTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  const handleProgressUpdate = useCallback((progress: { time: number; playing: boolean }) => {
-    setCurrentTime(progress.time);
-  }, []);
+  // Keep track of last timestamps so progress continues smoothly
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Determine the actual playing state with cleaner logic
-  const getPlayingState = () => {
-    // Priority 1: Spotify data (most reliable)
-    if (isSpotifyConnected && spotifyData?.isPlaying !== undefined) {
-      return spotifyData.isPlaying;
-    }
-    
-    // Priority 2: Song's explicit playing state
-    if (currentSong?.isPlaying !== undefined) {
-      return currentSong.isPlaying;
-    }
-    
-    // Priority 3: Default to false for paused state
-    return false;
-  };
-
-  const isPlaying = getPlayingState();
-
-  // Initialize progress when song changes
   useEffect(() => {
+    // When song changes, reset timer state
     if (currentSong) {
-      // For Spotify, use the provided progress
-      if (isSpotifyConnected && spotifyData?.track?.progress !== undefined) {
-        setCurrentTime(spotifyData.track.progress);
+      const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
+      let initialProgress = 0;
+      if (isSpotifyConnected && spotifyData?.track?.progress != null) {
+        initialProgress = spotifyData.track.progress;
       } else if (currentSong.timestamps?.start) {
-        // For Discord, calculate from start time
-        const elapsed = Date.now() - currentSong.timestamps.start;
-        setCurrentTime(Math.max(0, elapsed));
-      } else {
-        setCurrentTime(0);
+        initialProgress = Math.max(0, Date.now() - currentSong.timestamps.start);
       }
+      setCurrentTime(Math.min(initialProgress, duration));
+      setIsPlaying(isSpotifyConnected && spotifyData?.isPlaying);
     }
-  }, [currentSong?.details, currentSong?.state, isSpotifyConnected, spotifyData]);
+    // eslint-disable-next-line
+  }, [currentSong, isSpotifyConnected, spotifyData?.track?.progress, spotifyData?.isPlaying]);
 
-  if (!currentSong) {
-    return null;
-  }
+  // Timer to update progress bar every second (only when playing)
+  useEffect(() => {
+    if (isPlaying && currentSong && currentSong.timestamps) {
+      intervalRef.current = setInterval(() => {
+        setCurrentTime((prev) => {
+          const duration = currentSong.timestamps.end - currentSong.timestamps.start;
+          // Clamp to duration (song end)
+          return Math.min(prev + 1000, duration);
+        });
+      }, 1000);
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [isPlaying, currentSong]);
+
+  if (!currentSong) return null;
 
   const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
-  
-  // Only show controls if Spotify is connected AND we have all the control functions
+
+  // Priority: Spotify API state, then fallback to local state
+  const actuallyPlaying =
+    isSpotifyConnected && spotifyData?.isPlaying !== undefined
+      ? spotifyData.isPlaying
+      : isPlaying;
+
   const showControls = isSpotifyConnected && onPlay && onPause && onNext && onPrevious;
 
+  // Handler for Play/Pause button
   const handlePlayPause = () => {
-    if (isPlaying) {
+    if (actuallyPlaying) {
       onPause?.();
+      setIsPlaying(false);
     } else {
       onPlay?.();
+      setIsPlaying(true);
     }
   };
 
-  try {
-    return (
-      <div className="relative w-full h-full rounded-lg overflow-hidden">
-        <MusicProgressTracker
-          currentSong={currentSong}
-          isPlaying={isPlaying}
-          onProgressUpdate={handleProgressUpdate}
-        />
-        
-        <div 
-          className="absolute inset-0 bg-cover bg-center filter blur-sm"
-          style={{ 
-            backgroundImage: `url(${currentSong.assets?.large_image || '/placeholder.svg'})`,
-            filter: 'blur(20px) brightness(0.6)'
-          }}
-        />
-        
-        <Card className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-6 w-full h-full flex flex-col overflow-hidden">
-          <div className="flex items-center space-x-8 w-full min-w-0 flex-1">
-            <div className="flex-shrink-0">
-              <MusicArtwork 
-                imageUrl={currentSong.assets?.large_image}
-                altText={currentSong.assets?.large_text}
-                isPlaying={isPlaying}
-              />
-            </div>
-
-            <div className="flex-1 min-w-0 overflow-hidden">
-              <MusicInfo 
-                title={currentSong.details}
-                artist={currentSong.state}
-                album={currentSong.assets?.large_text}
-                isPlaying={isPlaying}
-              />
-            </div>
-          </div>
-          
-          <div className="w-full mt-4">
-            <MusicProgressBar 
-              currentTime={currentTime}
-              duration={duration}
-              progress={progress}
-              isPlaying={isPlaying}
+  return (
+    <div className="relative w-full h-full rounded-lg overflow-hidden">
+      <div
+        className="absolute inset-0 bg-cover bg-center filter blur-sm"
+        style={{
+          backgroundImage: `url(${currentSong.assets?.large_image || '/placeholder.svg'})`,
+          filter: 'blur(20px) brightness(0.6)'
+        }}
+      />
+      <Card className="relative bg-black/30 backdrop-blur-sm border-gray-700/50 p-6 w-full h-full flex flex-col overflow-hidden">
+        <div className="flex items-center space-x-8 w-full min-w-0 flex-1">
+          <div className="flex-shrink-0">
+            <MusicArtwork
+              imageUrl={currentSong.assets?.large_image}
+              altText={currentSong.assets?.large_text}
+              isPlaying={actuallyPlaying}
             />
           </div>
-
-          {showControls && (
-            <div className="flex items-center justify-center space-x-4 mt-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onPrevious?.()}
-                className="text-white hover:bg-white/20"
-              >
-                <SkipBack className="h-5 w-5" />
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handlePlayPause}
-                className="text-white hover:bg-white/20"
-              >
-                {isPlaying ? (
-                  <Pause className="h-6 w-6" />
-                ) : (
-                  <Play className="h-6 w-6" />
-                )}
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onNext?.()}
-                className="text-white hover:bg-white/20"
-              >
-                <SkipForward className="h-5 w-5" />
-              </Button>
-            </div>
-          )}
-        </Card>
-      </div>
-    );
-  } catch (error) {
-    console.error('NowPlaying: Render error:', error);
-    return (
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="text-red-500">Error rendering music component</div>
-      </div>
-    );
-  }
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <MusicInfo
+              title={currentSong.details}
+              artist={currentSong.state}
+              album={currentSong.assets?.large_text}
+              isPlaying={actuallyPlaying}
+            />
+          </div>
+        </div>
+        <div className="w-full mt-4">
+          <MusicProgressBar
+            currentTime={currentTime}
+            duration={duration}
+            progress={progress}
+            isPlaying={actuallyPlaying}
+          />
+        </div>
+        {showControls && (
+          <div className="flex items-center justify-center space-x-4 mt-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onPrevious?.()}
+              className="text-white hover:bg-white/20"
+              disabled={!isSpotifyConnected}
+            >
+              <SkipBack className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handlePlayPause}
+              className="text-white hover:bg-white/20"
+              disabled={!isSpotifyConnected}
+            >
+              {actuallyPlaying ? (
+                <Pause className="h-6 w-6" />
+              ) : (
+                <Play className="h-6 w-6" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onNext?.()}
+              className="text-white hover:bg-white/20"
+              disabled={!isSpotifyConnected}
+            >
+              <SkipForward className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
 };
