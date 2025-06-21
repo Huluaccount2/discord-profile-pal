@@ -20,7 +20,7 @@ export const useMusicData = (profile: any, discordData: any) => {
   const [lastKnownSong, setLastKnownSong] = useLastKnownSong();
   const [lastSongUpdate, setLastSongUpdate] = useState<number>(0);
 
-  // Calculate current song data with improved priority logic and consistent progress
+  // Calculate current song data with improved priority logic and freshness checks
   let currentSong = null;
   if (profile && discordData) {
     // Priority 1: Spotify OAuth if connected and has current track
@@ -32,7 +32,7 @@ export const useMusicData = (profile: any, discordData: any) => {
         details: track.name,
         state: track.artist,
         isPlaying: true,
-        progress: track.progress, // Use Spotify's progress directly
+        progress: track.progress,
         timestamps: {
           start: Date.now() - track.progress,
           end: Date.now() - track.progress + track.duration,
@@ -52,7 +52,7 @@ export const useMusicData = (profile: any, discordData: any) => {
         details: track.name,
         state: track.artist,
         isPlaying: false,
-        progress: track.duration, // Full duration for completed track
+        progress: track.duration,
         timestamps: {
           start: Date.now() - track.duration,
           end: Date.now(),
@@ -63,24 +63,28 @@ export const useMusicData = (profile: any, discordData: any) => {
         },
       };
     }
-    // Priority 3: Discord activities (with staleness check)
-    else {
-      const discordSong = discordData?.activities?.find(activity => activity.type === 2);
+    // Priority 3: Discord Spotify activities (with freshness and validity check)
+    else if (discordData?.has_valid_spotify && discordData?.activities?.length > 0) {
+      const discordSong = discordData.activities.find(activity => activity.type === 2);
       if (discordSong) {
-        const now = Date.now();
-        const songAge = discordSong.timestamps?.start ? now - discordSong.timestamps.start : 0;
-        const maxAge = 5 * 60 * 1000; // 5 minutes
-        if (songAge < maxAge) {
+        // Check if the Discord data is fresh (less than 5 minutes old)
+        const dataAge = discordData.last_updated ? Date.now() - discordData.last_updated : Infinity;
+        const maxDataAge = 5 * 60 * 1000; // 5 minutes
+        
+        if (dataAge < maxDataAge) {
           currentSong = {
             ...discordSong,
-            isPlaying: true // Discord songs are assumed playing if recent
+            isPlaying: true // Discord songs with valid Spotify data are currently playing
           };
+          console.log('Using fresh Discord Spotify data');
+        } else {
+          console.log('Discord Spotify data is too old, ignoring');
         }
       }
     }
   }
 
-  // Store current song with timestamp tracking
+  // Store current song with timestamp tracking (only if it's actually fresh)
   useEffect(() => {
     if (currentSong) {
       const now = Date.now();
@@ -94,9 +98,10 @@ export const useMusicData = (profile: any, discordData: any) => {
   // Final song selection with better fallback logic
   let songToDisplay = currentSong;
 
+  // Only use last known song if no current song and it's reasonably fresh
   if (!currentSong && lastKnownSong) {
     const songAge = lastKnownSong.timestamps?.start ? Date.now() - lastKnownSong.timestamps.start : Infinity;
-    const maxLastKnownAge = 10 * 60 * 1000; // 10 minutes
+    const maxLastKnownAge = 5 * 60 * 1000; // 5 minutes - shorter than before
     if (songAge < maxLastKnownAge) {
       songToDisplay = {
         ...lastKnownSong,
