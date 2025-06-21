@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -72,6 +73,8 @@ export const NowPlaying: React.FC<NowPlayingProps> = ({
 
   const duration = currentSong.timestamps?.end - currentSong.timestamps?.start || 0;
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  
+  // Only show controls if Spotify is connected AND we have all the control functions
   const showControls = isSpotifyConnected && onPlay && onPause && onNext && onPrevious;
 
   const handlePlayPause = () => {

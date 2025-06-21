@@ -15,6 +15,7 @@ export const MusicProgressTracker: React.FC<MusicProgressTrackerProps> = ({
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastSongRef = useRef<string | null>(null);
   const progressRef = useRef<number>(0);
+  const startTimeRef = useRef<number>(0);
 
   // Clear interval helper
   const clearCurrentInterval = () => {
@@ -62,8 +63,9 @@ export const MusicProgressTracker: React.FC<MusicProgressTrackerProps> = ({
     clearCurrentInterval();
 
     if (isNewSong) {
-      // New song - reset progress
+      // New song - reset progress and set start time
       progressRef.current = calculateInitialProgress();
+      startTimeRef.current = Date.now();
       lastSongRef.current = currentSongId;
       console.log('MusicProgressTracker: New song detected, initial progress:', progressRef.current);
     }
@@ -75,14 +77,17 @@ export const MusicProgressTracker: React.FC<MusicProgressTrackerProps> = ({
     });
 
     if (isPlaying) {
-      // Start interval to update progress
+      // Start interval to update progress more frequently for smoother updates
       intervalRef.current = setInterval(() => {
-        progressRef.current += 100; // Add 100ms each interval
+        // Calculate elapsed time since we started tracking this song
+        const elapsedSinceStart = Date.now() - startTimeRef.current;
+        progressRef.current = calculateInitialProgress() + elapsedSinceStart;
+        
         onProgressUpdate({ 
           time: progressRef.current, 
           playing: true 
         });
-      }, 100);
+      }, 250); // Update every 250ms for smoother progress
     }
 
     return clearCurrentInterval;
